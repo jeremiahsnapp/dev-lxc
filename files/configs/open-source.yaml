@@ -1,0 +1,11 @@
+base_platform: b-ubuntu-1204
+topology: open-source
+api_fqdn: chef-osc.lxc
+mount:
+  - /oc oc
+  - /dev-shared dev-shared
+package:
+  server: /dev-shared/chef-packages/osc/chef-server_11.0.10-1.ubuntu.12.04_amd64.deb
+server:
+  chef-osc.lxc:
+    ipaddress: 10.0.3.205

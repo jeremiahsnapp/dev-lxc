@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require 'dev-lxc/cli'
+
+DevLXC::CLI::DevLXC.start
