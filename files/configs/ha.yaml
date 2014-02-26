@@ -22,9 +22,9 @@ server:
   fe1-ha.lxc:
     role: frontend
     ipaddress: 10.0.3.208
-  fe2-ha.lxc:
-    role: frontend
-    ipaddress: 10.0.3.209
+#  fe2-ha.lxc:
+#    role: frontend
+#    ipaddress: 10.0.3.209
 backend_vip:
   be-ha.lxc:
     ipaddress: 10.0.3.210

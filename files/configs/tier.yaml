@@ -17,6 +17,6 @@ server:
   fe1-tier.lxc:
     role: frontend
     ipaddress: 10.0.3.203
-  fe2-tier.lxc:
-    role: frontend
-    ipaddress: 10.0.3.204
+#  fe2-tier.lxc:
+#    role: frontend
+#    ipaddress: 10.0.3.204
