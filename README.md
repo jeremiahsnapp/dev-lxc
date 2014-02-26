@@ -2,6 +2,23 @@
 
 A tool for creating Chef server clusters using LXC containers.
 
+Using [ruby-lxc](https://github.com/lxc/ruby-lxc) it builds a standalone server or
+tier cluster composed of a backend and multiple frontends with round-robin DNS resolution.
+
+The dev-lxc tool is well suited as a tool for support related work, customized
+cluster builds for demo purposes, as well as general experimentation and exploration.
+
+Its containers, standard init, networking and build process are designed to be similar
+to what you would build if you follow the product installation documentation so the end
+result is a cluster that is relatively similar to a more traditionally built cluster.
+
+The Btrfs backed clones provides a quick clean slate which is so helpful especially
+for experimenting and troubleshooting. Or it can be used to build a customized cluster
+for demo purposes and be able to bring it up quickly and reliably.
+
+While most of the plumbing is already in place for an HA cluster it actually can't be
+used since I haven't been able to get DRBD working inside containers yet.
+
 If you aren't familiar with using containers please read this introduction.
 
 [LXC 1.0 Introduction](https://www.stgraber.org/2013/12/20/lxc-1-0-blog-post-series/)
