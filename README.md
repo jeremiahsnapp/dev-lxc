@@ -37,20 +37,24 @@ You can see a menu of base servers this tool can create by using the following c
 ### Cluster Config Files
 
 dev-lxc uses a yaml configuration file to define a cluster.
-You can get sample config files for various cluster topologies
-by using the following command.
+
+You can get sample config files for various cluster topologies by using the following command.
 
 	dev-lxc cluster init
 
 You can specify a particular config file as an option for most dev-lxc commands
-or let dev-lxc use a dev-lxc.yaml file in the present working directory.
+or let dev-lxc look for a dev-lxc.yaml file in the present working directory by default.
 
 The following instructions will use a tier cluster for demonstration purposes.
-The size of this cluster uses about 4GB ram and takes a long time for the first
+The size of this cluster uses about 3GB ram and takes a longer time for the first
 build of the servers. Feel free to try the standalone config first.
 
 The following command saves a predefined config to dev-lxc.yaml.
-This config defines a tier cluster consisting of a single backend and two frontends.
+This config defines a tier cluster consisting of a single backend and a single frontend.
+A second frontend is commented out to conserve resources.
+
+If you uncomment the second frontend then both frontends will be created and dnsmasq will
+resolve the api_fqdn chef-tier.lxc to both frontends using a round-robin policy.
 
 	dev-lxc cluster init tier > dev-lxc.yaml
 
@@ -69,7 +73,7 @@ creation of the cluster's servers is very quick.
 
 	dev-lxc cluster start
 
-https://chef-tier.lxc resolves to the two frontends in round-robin fashion.
+https://chef-tier.lxc resolves to the frontend.
 
 Typical ponyville and wonderbolts orgs, users, knife.rb and keys are automatically created.
 
