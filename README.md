@@ -80,9 +80,9 @@ The file looks like this:
       - /dev-shared dev-shared
     package:
       server: /dev-shared/chef-packages/ec/private-chef_11.1.1-1.ubuntu.12.04_amd64.deb
-      reporting: /dev-shared/chef-packages/ec/opscode-reporting_1.1.0-1.ubuntu.12.04_amd64.deb
-      push-jobs-server: /dev-shared/chef-packages/ec/opscode-push-jobs-server_1.1.0-1.ubuntu.12.04_amd64.deb
-      manage: /dev-shared/chef-packages/ec/opscode-manage_1.1.1-1.ubuntu.12.04_amd64.deb
+      reporting: /dev-shared/chef-packages/ec/reporting/opscode-reporting_1.1.0-1.ubuntu.12.04_amd64.deb
+      push-jobs-server: /dev-shared/chef-packages/ec/push-jobs-server/opscode-push-jobs-server_1.1.0-1.ubuntu.12.04_amd64.deb
+      manage: /dev-shared/chef-packages/ec/manage/opscode-manage_1.1.1-1.ubuntu.12.04_amd64.deb
     server:
       be-tier.lxc:
         role: backend
