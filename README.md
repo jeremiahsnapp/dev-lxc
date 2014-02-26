@@ -50,17 +50,42 @@ The size of this cluster uses about 3GB ram and takes a longer time for the firs
 build of the servers. Feel free to try the standalone config first.
 
 The following command saves a predefined config to dev-lxc.yaml.
+
+	dev-lxc cluster init tier > dev-lxc.yaml
+
+The file looks like this:
+
+    base_platform: b-ubuntu-1204
+    topology: tier
+    api_fqdn: chef-tier.lxc
+    mount:
+      - /oc oc
+      - /dev-shared dev-shared
+    package:
+      server: /dev-shared/chef-packages/ec/private-chef_11.1.1-1.ubuntu.12.04_amd64.deb
+      reporting: /dev-shared/chef-packages/ec/opscode-reporting_1.1.0-1.ubuntu.12.04_amd64.deb
+      push-jobs-server: /dev-shared/chef-packages/ec/opscode-push-jobs-server_1.1.0-1.ubuntu.12.04_amd64.deb
+      manage: /dev-shared/chef-packages/ec/opscode-manage_1.1.1-1.ubuntu.12.04_amd64.deb
+    server:
+      be-tier.lxc:
+        role: backend
+        ipaddress: 10.0.3.202
+        bootstrap: true
+      fe1-tier.lxc:
+        role: frontend
+        ipaddress: 10.0.3.203
+    #  fe2-tier.lxc:
+    #    role: frontend
+    #    ipaddress: 10.0.3.204
+
 This config defines a tier cluster consisting of a single backend and a single frontend.
 A second frontend is commented out to conserve resources.
 
 If you uncomment the second frontend then both frontends will be created and dnsmasq will
 resolve the api_fqdn chef-tier.lxc to both frontends using a round-robin policy.
 
-	dev-lxc cluster init tier > dev-lxc.yaml
-
-These config files are very customizable.
-You can add or remove mounts, packages or servers, change ip addresses, change server names,
-change the base_platform and more.
+The config file is very customizable. You can add or remove mounts, packages or servers,
+change ip addresses, change server names, change the base_platform and more.
 
 Make sure the mounts and packages represent paths that are available in your environment.
 
