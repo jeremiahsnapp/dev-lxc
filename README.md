@@ -8,6 +8,16 @@ tier cluster composed of a backend and multiple frontends with round-robin DNS r
 The dev-lxc tool is well suited as a tool for support related work, customized
 cluster builds for demo purposes, as well as general experimentation and exploration.
 
+### Features
+
+1. LXC 1.0 Containers - Resource efficient servers with fast start and stop times
+2. Btrfs - Storage efficient container backend provides fast container cloning
+3. Dnsmasq - Simple DHCP networking and DNS resolution
+4. Base Platforms - Containers that are built to resemble a traditional server
+5. Ruby-lxc - Ruby bindings for LXC
+6. Yaml - Simple, customizable definition of clusters
+7. Build process closely models the docs instructions
+
 Its containers, standard init, networking and build process are designed to be similar
 to what you would build if you follow the product installation documentation so the end
 result is a cluster that is relatively similar to a more traditionally built cluster.
