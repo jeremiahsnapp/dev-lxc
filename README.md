@@ -10,12 +10,12 @@ cluster builds for demo purposes, as well as general experimentation and explora
 
 ### Features
 
-1. LXC 1.0 Containers - Resource efficient servers with fast start and stop times
+1. LXC 1.0 Containers - Resource efficient servers with fast start/stop times and standard init
 2. Btrfs - Storage efficient container backend provides fast container cloning
-3. Dnsmasq - Simple DHCP networking and DNS resolution
-4. Base Platforms - Containers that are built to resemble a traditional server
-5. Ruby-lxc - Ruby bindings for LXC
-6. Yaml - Simple, customizable definition of clusters
+3. Dnsmasq - DHCP networking and DNS resolution
+4. Base platforms - Containers that are built to resemble a traditional server
+5. ruby-lxc - Ruby bindings for LXC
+6. YAML - Simple, customizable definition of clusters
 7. Build process closely models the docs instructions
 
 Its containers, standard init, networking and build process are designed to be similar
