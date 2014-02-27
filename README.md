@@ -1,4 +1,4 @@
-# DevLXC
+# dev-lxc
 
 A tool for creating Chef server clusters using LXC containers.
 
