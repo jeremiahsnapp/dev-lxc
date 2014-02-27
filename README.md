@@ -146,6 +146,11 @@ to run `private-chef-ctl reconfigure`.
 
     dev-lxc cluster run_command 'private-chef-ctl reconfigure'
 
+Use the following command to destroy the cluster's servers and also destroy their corresponding
+base servers so you can build them from scratch.
+
+    dev-lxc cluster destroy -b
+
 You can also run most of these commands against individual servers by using the server subcommand.
 
     dev-lxc server ...
