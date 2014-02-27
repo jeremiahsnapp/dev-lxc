@@ -117,7 +117,8 @@ creation of the cluster's servers is very quick.
 
 https://chef-tier.lxc resolves to the frontend.
 
-Typical ponyville and wonderbolts orgs, users, knife.rb and keys are automatically created.
+Typical ponyville and wonderbolts orgs, users, knife.rb and keys are automatically created in
+the bootstrap backend server in /srv/piab/users.
 
 Show the status of the cluster.
 
