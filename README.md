@@ -36,7 +36,7 @@ If you aren't familiar with using containers please read this introduction.
 ## Requirements
 
 The dev-lxc tool is designed to be used in platform built by the
-[dev-lxc-platform cookbook](https://github.com/jeremiahsnapp/dev-lxc-platform).
+[dev-lxc-platform](https://github.com/jeremiahsnapp/dev-lxc-platform) cookbook.
 
 Please follow the dev-lxc-platform usage instructions to create a suitable platform.
 
@@ -48,6 +48,26 @@ To upgrade the dev-lxc gem at any time you can run `gem uninstall -x dev-lxc` in
 the Vagrant VM and then reprovision the VM using `vagrant provision`.
 
 ## Usage
+
+### Shorter Commands are Faster (to type that is :)
+
+I like to create an alias for `dev-lxc` for ease of use but for the purpose of these
+instructions I will use `dev-lxc`.
+
+	echo 'alias dl=dev-lxc' >> ~/.bashrc && source ~/.bashrc
+
+You only have to type enough of a `dev-lxc` subcommand to make it unique.
+
+The following commands are equivalent:
+
+    dev-lxc cluster init tier
+	dl cl i
+
+    dev-lxc cluster start
+	dl cl start
+
+    dev-lxc cluster destroy
+	dl cl d
 
 ### Base Servers
 
@@ -70,22 +90,11 @@ You can see a menu of base servers this tool can create by using the following c
 
 dev-lxc uses a yaml configuration file to define a cluster.
 
-You can get sample config files for various cluster topologies by using the following command.
+The following command generates sample config files for various cluster topologies.
 
 	dev-lxc cluster init
 
-You can specify a particular config file as an option for most dev-lxc commands
-or let dev-lxc look for a dev-lxc.yaml file in the present working directory by default.
-
-The following instructions will use a tier cluster for demonstration purposes.
-The size of this cluster uses about 3GB ram and takes a longer time for the first
-build of the servers. Feel free to try the standalone config first.
-
-The following command saves a predefined config to dev-lxc.yaml.
-
-	dev-lxc cluster init tier > dev-lxc.yaml
-
-The file looks like this:
+`dev-lxc cluster init tier` generates the following file:
 
     base_platform: b-ubuntu-1204
     topology: tier
@@ -114,14 +123,70 @@ This config defines a tier cluster consisting of a single backend and a single f
 A second frontend is commented out to conserve resources.
 
 If you uncomment the second frontend then both frontends will be created and dnsmasq will
-resolve the api_fqdn chef-tier.lxc to both frontends using a round-robin policy.
+resolve the `api_fqdn` [chef-tier.lxc](chef-tier.lxc) to both frontends using a round-robin policy.
 
 The config file is very customizable. You can add or remove mounts, packages or servers,
 change ip addresses, change server names, change the base_platform and more.
 
 Make sure the mounts and packages represent paths that are available in your environment.
 
-### Managing a Cluster
+### Managing Multiple Clusters
+
+By default, `dev-lxc` looks for a `dev-lxc.yaml` file in the present working directory.
+You can also specify a particular config file as an option for most dev-lxc commands.
+
+I use the following to avoid specifying each cluster's config file while managing multiple clusters.
+
+	mkdir -p ~/clusters/{clusterA,clusterB}
+	dev-lxc cluster init tier > ~/clusters/clusterA/dev-lxc.yaml
+	dev-lxc cluster init standalone > ~/clusters/clusterB/dev-lxc.yaml
+	cd ~/clusters/clusterA && dev-lxc cluster start  # starts clusterA
+	cd ~/clusters/clusterB && dev-lxc cluster start  # starts clusterB
+
+### Maintain Uniqueness Across Multiple Clusters
+
+The default cluster configs are already designed to be unique from each other but as you build
+more clusters you have to maintain uniqueness across the YAML config files for the following items.
+
+1. Server names and `api_fqdn`
+
+    Server names should really be unique across all clusters.
+
+    Even when cluster A is shutdown, if cluster B uses the same server names when it is created it
+	will use the already existing servers from cluster A.
+
+    `api_fqdn` uniqueness only matters when clusters with the same `api_fqdn` are running.
+
+    If cluster B is started with the same `api_fqdn` as an already running cluster A, then cluster B
+	will overwrite cluster A's DNS resolution of `api_fqdn`.
+
+    It is easy to provide uniqueness. For example, you can use the following command to replace `-tier`
+	with `-1234` in a tier cluster's config.
+
+        sed -i 's/-tier/-1234/' dev-lxc.yaml
+
+2. IP Addresses
+
+    IP addresses uniqueness only matters when clusters with the same IP's are running.
+	
+    If cluster B is started with the same IP's as an already running cluster A, then cluster B
+	will overwrite cluster A's DHCP reservation of the IP's but dnsmasq will still refuse to
+	assign the IP's to cluster B because they already in use by cluster A. dnsmasq then assigns
+	random IP's from the DHCP pool to cluster B leaving it in an unexpected state.
+
+    The `dev-lxc-platform` creates the IP range 10.0.3.150 - 254 for DHCP reserved IP's.
+	
+    Use unique IP's from that range when configuring clusters.
+   
+### Create and Manage a Cluster
+
+The following instructions will use a tier cluster for demonstration purposes.
+The size of this cluster uses about 3GB ram and takes a long time for the first
+build of the servers. Feel free to try the standalone config first.
+
+The following command saves a predefined config to dev-lxc.yaml.
+
+	dev-lxc cluster init tier > dev-lxc.yaml
 
 Starting the cluster the first time takes awhile since it has a lot to build.
 
@@ -130,10 +195,10 @@ creation of the cluster's servers is very quick.
 
 	dev-lxc cluster start
 
-https://chef-tier.lxc resolves to the frontend.
+[https://chef-tier.lxc](https://chef-tier.lxc) resolves to the frontend.
 
-Typical ponyville and wonderbolts orgs, users, knife.rb and keys are automatically created in
-the bootstrap backend server in /srv/piab/users.
+Ponyville and wonderbolts orgs, users, knife.rb and keys are automatically created in
+the bootstrap backend server in /srv/piab/users for testing purposes.
 
 Show the status of the cluster.
 
