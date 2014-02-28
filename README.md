@@ -42,6 +42,11 @@ Please follow the dev-lxc-platform usage instructions to create a suitable platf
 
 The cookbook will automatically install this dev-lxc tool.
 
+## Upgrade dev-lxc gem
+
+To upgrade the dev-lxc gem at any time you can run `gem uninstall -x dev-lxc` inside
+the Vagrant VM and then reprovision the VM using `vagrant provision`.
+
 ## Usage
 
 ### Base Servers
