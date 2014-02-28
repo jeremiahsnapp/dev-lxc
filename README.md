@@ -100,7 +100,6 @@ The following command generates sample config files for various cluster topologi
     topology: tier
     api_fqdn: chef-tier.lxc
     mount:
-      - /oc oc
       - /dev-shared dev-shared
     package:
       server: /dev-shared/chef-packages/ec/private-chef_11.1.1-1.ubuntu.12.04_amd64.deb
