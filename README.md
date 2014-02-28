@@ -15,7 +15,7 @@ cluster builds for demo purposes, as well as general experimentation and explora
 3. Dnsmasq - DHCP networking and DNS resolution
 4. Base platforms - Containers that are built to resemble a traditional server
 5. ruby-lxc - Ruby bindings for LXC
-6. YAML - Simple, customizable definition of clusters
+6. YAML - Simple, customizable definition of clusters; No more setting ENV variables
 7. Build process closely models the docs instructions
 
 Its containers, standard init, networking and build process are designed to be similar
