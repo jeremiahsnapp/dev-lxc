@@ -46,7 +46,7 @@ module DevLXC
     def abspath(rootfs_path)
       abspath = Array.new
       chef_servers.each { |cs| abspath << cs.abspath(rootfs_path) }
-      abspath.delete_if { |abspath| abspath.nil? }
+      abspath.compact
     end
 
     def run_command(command)
