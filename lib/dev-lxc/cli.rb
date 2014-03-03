@@ -8,10 +8,7 @@ module DevLXC::CLI
       def get_cluster(config_option)
         config = "dev-lxc.yaml" if File.exists?("dev-lxc.yaml")
         config = config_option unless config_option.nil?
-        if config.nil?
-          say("Error: A cluster config file must be provided", :red)
-          exit 1
-        end
+        raise "A cluster config file must be provided" if config.nil?
         ::DevLXC::ChefCluster.new(YAML.load(IO.read(config)))
       end
     }
@@ -73,10 +70,7 @@ module DevLXC::CLI
       def get_server(name, config_option)
         config = "dev-lxc.yaml" if File.exists?("dev-lxc.yaml")
         config = config_option unless config_option.nil?
-        if config.nil?
-          say("Error: A cluster config file must be provided", :red)
-          exit 1
-        end
+        raise "A cluster config file must be provided" if config.nil?
         ::DevLXC::ChefServer.new(name, YAML.load(IO.read(config)))
       end
     }

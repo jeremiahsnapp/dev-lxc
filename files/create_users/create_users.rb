@@ -42,7 +42,7 @@ class PiabHelper
         return Chef::JSONCompat.from_json(IO.read(path))[key]
       end
     end
-    raise "no existing config found"
+    raise "No existing config found"
   end
 
 end

@@ -1,10 +1,7 @@
 module DevLXC
   class Container < LXC::Container
     def start
-      unless self.defined?
-        puts "Error: container #{self.name} does not exist."
-        exit 1
-      end
+      raise "Container #{self.name} does not exist." unless self.defined?
       puts "Starting container #{self.name}"
       super
       wait(:running, 3)
@@ -15,10 +12,7 @@ module DevLXC
         break unless ips.empty?
         sleep 1
       end
-      if ips.empty?
-        puts "Error: Container #{self.name} network is not available."
-        exit 1
-      end
+      raise "Container #{self.name} network is not available." if ips.empty?
     end
 
     def stop
@@ -35,10 +29,7 @@ module DevLXC
     end
 
     def run_command(command)
-      unless running?
-        puts "Error: Container #{self.name} must be running first"
-        exit 1
-      end
+      raise "Container #{self.name} must be running first" unless running?
       attach({:wait => true, :stdin => STDIN, :stdout => STDOUT, :stderr => STDERR}) do
         LXC.run_command(command)
       end

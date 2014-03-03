@@ -7,8 +7,7 @@ module DevLXC
 
     def initialize(name, cluster_config)
       unless cluster_config["servers"].keys.include?(name)
-        puts "Error: Server #{name} is not defined in the cluster config"
-        exit 1
+        raise "Server #{name} is not defined in the cluster config"
       end
       cluster = DevLXC::ChefCluster.new(cluster_config)
       @server = DevLXC::Container.new(name)
@@ -108,8 +107,7 @@ module DevLXC
       else
         puts "Creating container #{@server.name}"
         unless %w(open-source standalone).include?(@role) || @server.name == @bootstrap_backend || DevLXC::Container.new(@bootstrap_backend).defined?
-          puts "Error: The bootstrap backend server must be created first."
-          exit 1
+          raise "The bootstrap backend server must be created first."
         end
         base_server = create_base_server
         puts "Cloning container #{base_server.name} into container #{@server.name}"
@@ -119,10 +117,7 @@ module DevLXC
         @server.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
         @server.save_config
         hwaddr = @server.config_item("lxc.network.0.hwaddr")
-        if hwaddr.empty?
-          puts "Error: #{@server.name} needs to have an lxc.network.hwaddr entry"
-          exit 1
-        end
+        raise "#{@server.name} needs to have an lxc.network.hwaddr entry" if hwaddr.empty?
         DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
         DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress) if %w(open-source standalone frontend).include?(@role)
         @server.start
