@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
 require 'dev-lxc/cli'
 
+raise "Must run as root" unless Process.uid == 0
+
 DevLXC::CLI::DevLXC.start
