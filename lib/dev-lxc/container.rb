@@ -28,6 +28,17 @@ module DevLXC
       super
     end
 
+    def sync_mounts(mounts)
+      preserved_mounts = self.config_item("lxc.mount.entry").delete_if { |m| m.end_with?("## dev-lxc ##") }
+      self.clear_config_item('lxc.mount.entries')
+      self.set_config_item("lxc.mount.entry", preserved_mounts)
+      mounts.each do |mount|
+        puts "Adding mount entry #{mount}"
+        self.set_config_item("lxc.mount.entry", "#{mount} none bind,optional,create=dir 0 0     ## dev-lxc ##")
+      end
+      self.save_config
+    end
+
     def run_command(command)
       raise "Container #{self.name} must be running first" unless running?
       attach({:wait => true, :stdin => STDIN, :stdout => STDOUT, :stderr => STDERR}) do

@@ -63,6 +63,7 @@ module DevLXC
       hwaddr = @server.config_item("lxc.network.0.hwaddr")
       DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
       DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress) if %w(open-source standalone frontend).include?(@role)
+      @server.sync_mounts(@mounts)
       @server.start
     end
 
@@ -120,6 +121,7 @@ module DevLXC
         raise "#{@server.name} needs to have an lxc.network.hwaddr entry" if hwaddr.empty?
         DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
         DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress) if %w(open-source standalone frontend).include?(@role)
+        @server.sync_mounts(@mounts)
         @server.start
         configure_server unless @packages["server"].nil?
         create_users if %w(standalone bootstrap_backend).include?(@role)
@@ -155,11 +157,7 @@ module DevLXC
         FileUtils.mv("#{base_server.config_item('lxc.rootfs')}/etc/init.d/procps",
                      "#{base_server.config_item('lxc.rootfs')}/etc/init.d/procps.orig")
       end
-      @mounts.each do |mount|
-        puts "Adding mount entry #{mount}"
-        base_server.set_config_item("lxc.mount.entry", "#{mount} none bind,create=dir 0 0")
-      end
-      base_server.save_config
+      base_server.sync_mounts(@mounts)
       base_server.start
       base_server.install_package(@packages["server"]) unless @packages["server"].nil?
       base_server.install_package(@packages["reporting"]) unless @packages["reporting"].nil?
