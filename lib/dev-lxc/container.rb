@@ -33,6 +33,7 @@ module DevLXC
       self.clear_config_item('lxc.mount.entries')
       self.set_config_item("lxc.mount.entry", preserved_mounts)
       mounts.each do |mount|
+        raise "Mount source #{mount.split.first} does not exist." unless File.exists?(mount.split.first)
         puts "Adding mount entry #{mount}"
         self.set_config_item("lxc.mount.entry", "#{mount} none bind,optional,create=dir 0 0     ## dev-lxc ##")
       end
