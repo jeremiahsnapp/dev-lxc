@@ -172,17 +172,17 @@ module DevLXC
         puts "Creating /etc/chef-server/chef-server.rb"
         FileUtils.mkdir("#{@server.config_item('lxc.rootfs')}/etc/chef-server")
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/chef-server/chef-server.rb", @chef_server_config)
-        ChefServer.run_ctl(@server.name, "chef-server", "reconfigure")
+        run_ctl("chef-server", "reconfigure")
       when "standalone", "bootstrap_backend"
         puts "Creating /etc/opscode/private-chef.rb"
         FileUtils.mkdir("#{@server.config_item('lxc.rootfs')}/etc/opscode")
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", @chef_server_config)
-        ChefServer.run_ctl(@server.name, "private-chef", "reconfigure")
+        run_ctl("private-chef", "reconfigure")
       when "secondary_backend", "frontend"
         puts "Copying /etc/opscode from bootstrap backend"
         FileUtils.cp_r("#{LXC::Container.new(@bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode",
                        "#{@server.config_item('lxc.rootfs')}/etc")
-        ChefServer.run_ctl(@server.name, "private-chef", "reconfigure")
+        run_ctl("private-chef", "reconfigure")
       end
     end
 
@@ -192,29 +192,29 @@ module DevLXC
         FileUtils.cp_r("#{LXC::Container.new(@bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-reporting",
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
-      ChefServer.run_ctl(@server.name, "private-chef", "reconfigure")
-      ChefServer.run_ctl(@server.name, "opscode-reporting", "reconfigure")
+      run_ctl("private-chef", "reconfigure")
+      run_ctl("opscode-reporting", "reconfigure")
     end
 
     def configure_push_jobs_server
-      ChefServer.run_ctl(@server.name, "opscode-push-jobs-server", "reconfigure")
+      run_ctl("opscode-push-jobs-server", "reconfigure")
       if %w(bootstrap_backend secondary_backend).include?(@role)
-        ChefServer.run_ctl(@server.name, "private-chef", "reconfigure")
+        run_ctl("private-chef", "reconfigure")
       end
-      ChefServer.run_ctl(@server.name, "private-chef", "restart opscode-pushy-server")
+      run_ctl("private-chef", "restart opscode-pushy-server")
     end
 
     def configure_manage
       puts "Disabling old opscode-webui in /etc/opscode/private-chef.rb"
       DevLXC.search_file_delete_line("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", /opscode_webui[.enable.]/)
       DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", "\nopscode_webui['enable'] = false\n")
-      ChefServer.run_ctl(@server.name, "private-chef", "reconfigure")
-      ChefServer.run_ctl(@server.name, "opscode-manage", "reconfigure")
+      run_ctl("private-chef", "reconfigure")
+      run_ctl("opscode-manage", "reconfigure")
     end
 
-    def self.run_ctl(server_name, component, subcommand)
-      puts "Running `#{component}-ctl #{subcommand}` in #{server_name}"
-      DevLXC::Container.new(server_name).run_command("#{component}-ctl #{subcommand}")
+    def run_ctl(component, subcommand)
+      puts "Running `#{component}-ctl #{subcommand}` in #{@server.name}"
+      @server.run_command("#{component}-ctl #{subcommand}")
     end
 
     def create_users
