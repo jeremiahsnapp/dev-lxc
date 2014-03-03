@@ -6,13 +6,13 @@ module DevLXC
     attr_reader :base_platform, :base_server_name
 
     def initialize(name, cluster_config)
-      unless cluster_config["server"].keys.include?(name)
+      unless cluster_config["servers"].keys.include?(name)
         puts "Error: Server #{name} is not defined in the cluster config"
         exit 1
       end
       cluster = DevLXC::ChefCluster.new(cluster_config)
       @server = DevLXC::Container.new(name)
-      @config = cluster_config["server"][@server.name]
+      @config = cluster_config["servers"][@server.name]
       @ipaddress = @config["ipaddress"]
       case cluster.topology
       when "open-source", "standalone"
@@ -22,12 +22,12 @@ module DevLXC
         @role = "secondary_backend" if @server.name == cluster.secondary_backend
         @role = "frontend" if cluster.frontends.include?(@server.name)
       end
-      @mounts = cluster_config["mount"]
+      @mounts = cluster_config["mounts"]
       @bootstrap_backend = cluster.bootstrap_backend
       @chef_server_config = cluster.chef_server_config
       @api_fqdn = cluster.api_fqdn
       @base_platform = cluster_config["base_platform"]
-      @packages = cluster_config["package"]
+      @packages = cluster_config["packages"]
 
       @base_server_name = @base_platform
       @base_server_name += "-ec-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["server"].to_s.match(/private-chef[_-]((\d+\.?){3,})-/)
