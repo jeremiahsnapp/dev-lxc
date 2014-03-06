@@ -74,41 +74,70 @@ the Vagrant VM and then reprovision the VM using `vagrant provision`.
 
 ## Usage
 
+### Base Containers Explained
 
-### Shorter Commands are Faster (to type that is :)
+One of the key things this tool uses is the concept of "base" containers.
 
-The root user's `~/.bashrc` file has aliased `dl` to `dev-lxc` for ease of use but for most
-instructions in this README I will use `dev-lxc`.
+`dev-lxc` creates containers with "b-" prepended to the name to distinguish it as
+a base container.
 
-You only have to type enough of a `dev-lxc` subcommand to make it unique.
+Base containers are then snapshot cloned using the btrfs filesystem to provide very
+quick, lightweight duplicates of the base container that are either used to build
+another base container or a container that will actually be run.
 
-The following commands are equivalent:
+During a cluster build process the base containers that get created fall into three categories.
 
-    dev-lxc cluster init tier
-	dl cl i
+1. Platform
 
-    dev-lxc cluster start
-	dl cl start
+    The platform base container is the first to get created.
 
-    dev-lxc cluster destroy
-	dl cl d
+    It is just the chosen OS platform and version (e.g. b-ubuntu-1204). A typical LXC container
+	has minimal packages installed so `dev-lxc` makes sure that the same packages used in Chef's
+	[bento boxes](https://github.com/opscode/bento) are installed to provide a more typical
+	server environment.	A few additional packages are also installed.
 
-### Base Servers
+    Once this platform base container is created there is rarely a need to delete it
+	or recreate it.
 
-One of the key things this tool uses is the concept of "base" servers.
-It creates servers with "b-" prepended to the name to signify it as a base server.
-Base servers are then snapshot cloned using the btrfs filesystem to provide very
-quick, lightweight duplicates of the base server that are either used to build
-another base server or a usable server.
+2. Shared
 
-The initial creation of base servers for the various platforms can take awhile so
-let's go ahead and start creating an Ubuntu 12.04 base server now.
+    The shared base container is the second to get created.
 
-    dev-lxc create b-ubuntu-1204
+    Common Chef packages such as Chef server, opscode-reporting and opscode-push-jobs-server are
+	installed using `dpkg` or `rpm`.
 
-You can see a menu of base servers this tool can create by using the following command.
+    Note the manage package will not be installed at this point since it is not common to all
+	servers (i.e. it does not get installed on backend servers).
+
+    Since no configuration actually happens yet there is rarely a need to delete this container.
+	If another cluster is configured to use the same packages that are installed in this container
+	then time is saved by just cloning this container for the new cluster to use.
+
+3. Unique
+
+    The unique base container is the last to get created.
+
+    Each unique Chef server (e.g. standalone, backend or frontend) is created.
+
+    * The specified hostname is assigned.
+	* dnsmasq is configured to reserve the specified IP address for the container's MAC address.
+	* A DNS entry is created in dnsmasq if appropriate.
+	* All installed Chef packages are configured.
+	* The opscode-manage package is installed and configured if specified.
+
+### Using `dev-lxc` to manually create a platform base container
+
+Platform base containers can be used for purposes other than building clusters. For example, they can
+be used as Chef nodes for testing purposes.
+
+You can see a menu of platform base containers this tool can create by using the following command.
 
     dev-lxc create
+
+The initial creation of platform base containers can take awhile so let's go ahead and start creating
+an Ubuntu 12.04 base container now.
+
+    dev-lxc create b-ubuntu-1204
 
 ### Cluster Config Files
 
@@ -201,6 +230,24 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 	
     Use unique IP's from that range when configuring clusters.
    
+### Shorter Commands are Faster (to type that is :)
+
+The root user's `~/.bashrc` file has aliased `dl` to `dev-lxc` for ease of use but for most
+instructions in this README I will use `dev-lxc`.
+
+You only have to type enough of a `dev-lxc` subcommand to make it unique.
+
+The following commands are equivalent:
+
+    dev-lxc cluster init standalone
+	dl cl i standalone
+
+    dev-lxc cluster start
+	dl cl start
+
+    dev-lxc cluster destroy
+	dl cl d
+
 ### Create and Manage a Cluster
 
 The following instructions will use a tier cluster for demonstration purposes.
