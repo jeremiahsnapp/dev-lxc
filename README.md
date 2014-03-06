@@ -72,7 +72,7 @@ VM directory into each container.
 To upgrade the dev-lxc gem at any time you can run `gem uninstall -x dev-lxc` inside
 the Vagrant VM and then reprovision the VM using `vagrant provision`.
 
-## Usage
+## Background
 
 ### Base Containers Explained
 
@@ -125,7 +125,7 @@ During a cluster build process the base containers that get created fall into th
 	* All installed Chef packages are configured.
 	* The opscode-manage package is installed and configured if specified.
 
-### Using `dev-lxc` to manually create a platform base container
+#### Using `dev-lxc` to manually create a platform base container
 
 Platform base containers can be used for purposes other than building clusters. For example, they can
 be used as Chef nodes for testing purposes.
@@ -229,7 +229,9 @@ more clusters you have to maintain uniqueness across the YAML config files for t
     The `dev-lxc-platform` creates the IP range 10.0.3.150 - 254 for DHCP reserved IP's.
 	
     Use unique IP's from that range when configuring clusters.
-   
+
+## Usage
+
 ### Shorter Commands are Faster (to type that is :)
 
 The root user's `~/.bashrc` file has aliased `dl` to `dev-lxc` for ease of use but for most
