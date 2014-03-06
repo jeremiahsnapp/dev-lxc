@@ -57,11 +57,15 @@ module DevLXC::CLI
 
     desc "destroy", "Destroy a cluster's Chef servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yaml will be used by default"
-    option :base, :aliases => "-b", :type => :boolean, :desc => "Destroy the cluster's base containers also"
+    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the cluster's unique base containers"
+    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the cluster's shared base container"
+    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the cluster's platform base container"
     def destroy
       cluster = get_cluster(options[:config])
       cluster.destroy
-      cluster.destroy_base_containers if options[:base]
+      cluster.destroy_base_container(:unique) if options[:unique]
+      cluster.destroy_base_container(:shared) if options[:shared]
+      cluster.destroy_base_container(:platform) if options[:platform]
     end
   end
 
@@ -107,11 +111,15 @@ module DevLXC::CLI
 
     desc "destroy [NAME]", "Destroy a cluster's Chef server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yaml will be used by default"
-    option :base, :aliases => "-b", :type => :boolean, :desc => "Destroy the server's base containers also"
+    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the server's unique base container"
+    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the server's shared base container"
+    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the server's platform base container"
     def destroy(name)
       server = get_server(name, options[:config])
       server.destroy
-      server.destroy_base_containers if options[:base]
+      server.destroy_base_container(:unique) if options[:unique]
+      server.destroy_base_container(:shared) if options[:shared]
+      server.destroy_base_container(:platform) if options[:platform]
     end
   end
 

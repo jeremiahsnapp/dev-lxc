@@ -88,10 +88,15 @@ module DevLXC
       DevLXC.reload_dnsmasq
     end
 
-    def destroy_base_containers
-      DevLXC::Container.new("b-#{@server.name}").destroy
-      DevLXC::Container.new(@base_server_name).destroy
-      DevLXC::Container.new(@base_platform).destroy
+    def destroy_base_container(type)
+      case type
+      when :unique
+        DevLXC::Container.new("b-#{@server.name}").destroy
+      when :shared
+        DevLXC::Container.new(@base_server_name).destroy
+      when :platform
+        DevLXC::Container.new(@base_platform).destroy
+      end
     end
 
     def create
