@@ -29,11 +29,7 @@ module DevLXC
     end
 
     def sync_mounts(mounts)
-      preserved_mounts = self.config_item("lxc.mount.entry")
-      # for some reason config_item("lxc.mount.entry") returns a String instead of an Array
-      # ref: https://github.com/lxc/ruby-lxc/issues/12
-      preserved_mounts = preserved_mounts.split("\n") if preserved_mounts.is_a?(String)
-      preserved_mounts.delete_if { |m| m.end_with?("## dev-lxc ##") }
+      preserved_mounts = self.config_item("lxc.mount.entry").delete_if { |m| m.end_with?("## dev-lxc ##") }
       self.clear_config_item('lxc.mount.entries')
       self.set_config_item("lxc.mount.entry", preserved_mounts)
       mounts.each do |mount|
