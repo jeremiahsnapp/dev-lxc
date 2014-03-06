@@ -42,6 +42,13 @@ Please follow the dev-lxc-platform usage instructions to create a suitable platf
 
 The cookbook will automatically install this dev-lxc tool.
 
+### Use root
+
+Once you login to the Vagrant VM you should run `sudo -i` to login as the root user.
+
+Consider using `byobu` or `tmux` for a terminal multiplexer as `dev-lxc-platform` README
+describes.
+
 ### Mounts and Packages (batteries not included)
 
 As described below `dev-lxc` uses a YAML config file for each cluster.
