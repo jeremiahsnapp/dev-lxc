@@ -67,12 +67,11 @@ the Vagrant VM and then reprovision the VM using `vagrant provision`.
 
 ## Usage
 
+
 ### Shorter Commands are Faster (to type that is :)
 
-I like to create an alias for `dev-lxc` for ease of use but for the purpose of these
-instructions I will use `dev-lxc`.
-
-	echo 'alias dl=dev-lxc' >> ~/.bashrc && source ~/.bashrc
+The root user's `~/.bashrc` file has aliased `dl` to `dev-lxc` for ease of use but for most
+instructions in this README I will use `dev-lxc`.
 
 You only have to type enough of a `dev-lxc` subcommand to make it unique.
 
