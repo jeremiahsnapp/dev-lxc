@@ -1,3 +1,6 @@
+# Authors
+# Seth Chisamore
+# Seth Falcon
 
 # OPC config data
 # TODO - read this in from /etc/opscode/chef-server-running.json
