@@ -42,6 +42,24 @@ Please follow the dev-lxc-platform usage instructions to create a suitable platf
 
 The cookbook will automatically install this dev-lxc tool.
 
+### Mounts and Packages (batteries not included)
+
+As described below `dev-lxc` uses a YAML config file for each cluster.
+
+This config file describes what directories get mounted from the Vagrant VM host into
+each container. You need to make sure that you configure the mount entries to be
+appropriate for your environment.
+
+The same goes for the paths to each package. The paths that are provided in the default
+configs are just examples.  You need to make sure that you have each package you want to
+use downloaded to appropriate directories that will be available to the container when
+it is started.
+
+I recommend downloading the packages to a directory on your workstation.
+Then configure the `dev-lxc-platform` `Vagrantfile` to mount that directory in the
+Vagrant VM. Finally, configure the cluster's YAML config mount entries to mount the Vagrant
+VM directory into each container.
+
 ## Upgrade dev-lxc gem
 
 To upgrade the dev-lxc gem at any time you can run `gem uninstall -x dev-lxc` inside
