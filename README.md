@@ -141,7 +141,7 @@ Of course, you can also just use the standard LXC commands to destroy any contai
 
     lxc-destroy -n [NAME]
 
-#### Using `dev-lxc` to manually create a platform base container
+#### Manually Create a Platform Base Container
 
 Platform base containers can be used for purposes other than building clusters. For example, they can
 be used as Chef nodes for testing purposes.
@@ -314,10 +314,10 @@ to run `private-chef-ctl reconfigure`.
 
     dev-lxc cluster run_command 'private-chef-ctl reconfigure'
 
-Use the following command to destroy the cluster's servers and also destroy their corresponding
-base servers so you can build them from scratch.
+Use the following command to destroy the cluster's servers and also destroy their unique and shared
+base containers so you can build them from scratch.
 
-    dev-lxc cluster destroy -b
+    dev-lxc cluster destroy -u -s
 
 You can also run most of these commands against individual servers by using the server subcommand.
 
