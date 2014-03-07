@@ -74,7 +74,7 @@ the Vagrant VM and then reprovision the VM using `vagrant provision`.
 
 ## Background
 
-### Base Containers Explained
+### Base Containers
 
 One of the key things this tool uses is the concept of "base" containers.
 
@@ -124,6 +124,22 @@ During a cluster build process the base containers that get created fall into th
 	* A DNS entry is created in dnsmasq if appropriate.
 	* All installed Chef packages are configured.
 	* The opscode-manage package is installed and configured if specified.
+
+#### Destroying Base Containers
+
+When using `dev-lxc cluster destroy` to destroy an entire Chef cluster or `dev-lxc server destroy [NAME]`
+to destroy a single Chef server you have the option to also destroy any or all of the three types
+of base containers associated with the cluster or server.
+
+Either of the following commands will list the options available.
+
+    dev-lxc cluster help destroy
+
+    dev-lxc server help destroy
+
+Of course, you can also just use the standard LXC commands to destroy any container.
+
+    lxc-destroy -n [NAME]
 
 #### Using `dev-lxc` to manually create a platform base container
 
