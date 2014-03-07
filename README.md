@@ -11,19 +11,19 @@ cluster builds for demo purposes, as well as general experimentation and explora
 ### Features
 
 1. LXC 1.0 Containers - Resource efficient servers with fast start/stop times and standard init
-2. Btrfs - Storage efficient container backend provides fast container cloning
+2. Btrfs - Efficient storage backend provides fast, lightweight container cloning
 3. Dnsmasq - DHCP networking and DNS resolution
 4. Base platforms - Containers that are built to resemble a traditional server
-5. ruby-lxc - Ruby bindings for LXC
+5. ruby-lxc - Ruby bindings for liblxc
 6. YAML - Simple, customizable definition of clusters; No more setting ENV variables
-7. Build process closely models the docs instructions
+7. Build process closely models online installation documentation
 
 Its containers, standard init, networking and build process are designed to be similar
-to what you would build if you follow the product installation documentation so the end
+to what you would build if you follow the online installation documentation so the end
 result is a cluster that is relatively similar to a more traditionally built cluster.
 
-The Btrfs backed clones provides a quick clean slate which is so helpful especially
-for experimenting and troubleshooting. Or it can be used to build a customized cluster
+The Btrfs backed clones provide a quick clean slate which is helpful especially for
+experimenting and troubleshooting. Or it can be used to build a customized cluster
 for demo purposes and be able to bring it up quickly and reliably.
 
 While most of the plumbing is already in place for an HA cluster it actually can't be
@@ -35,12 +35,12 @@ If you aren't familiar with using containers please read this introduction.
 
 ## Requirements
 
-The dev-lxc tool is designed to be used in platform built by the
+The `dev-lxc` tool is designed to be used in a platform built by the
 [dev-lxc-platform](https://github.com/jeremiahsnapp/dev-lxc-platform) cookbook.
 
 Please follow the dev-lxc-platform usage instructions to create a suitable platform.
 
-The cookbook will automatically install this dev-lxc tool.
+The cookbook will automatically install this `dev-lxc` tool.
 
 ### Use root
 
@@ -57,20 +57,19 @@ This config file describes what directories get mounted from the Vagrant VM host
 each container. You need to make sure that you configure the mount entries to be
 appropriate for your environment.
 
-The same goes for the paths to each package. The paths that are provided in the default
+The same goes for the paths to each Chef package. The paths that are provided in the default
 configs are just examples.  You need to make sure that you have each package you want to
 use downloaded to appropriate directories that will be available to the container when
 it is started.
 
 I recommend downloading the packages to a directory on your workstation.
 Then configure the `dev-lxc-platform` `Vagrantfile` to mount that directory in the
-Vagrant VM. Finally, configure the cluster's YAML config mount entries to mount the Vagrant
+Vagrant VM. Finally, configure the cluster's mount entries to mount the Vagrant
 VM directory into each container.
 
-## Upgrade dev-lxc gem
+## Update `dev-lxc` gem
 
-To upgrade the dev-lxc gem at any time you can run `gem uninstall -x dev-lxc` inside
-the Vagrant VM and then reprovision the VM using `vagrant provision`.
+Run `gem update dev-lxc` inside the Vagrant VM to ensure you have the latest version.
 
 ## Background
 
@@ -81,8 +80,8 @@ One of the key things this tool uses is the concept of "base" containers.
 `dev-lxc` creates containers with "b-" prepended to the name to distinguish it as
 a base container.
 
-Base containers are then snapshot cloned using the btrfs filesystem to provide very
-quick, lightweight duplicates of the base container that are either used to build
+Base containers are then snapshot cloned using the btrfs filesystem to very quickly
+provide lightweight duplicates of the base container that are either used to build
 another base container or a container that will actually be run.
 
 During a cluster build process the base containers that get created fall into three categories.
@@ -91,31 +90,39 @@ During a cluster build process the base containers that get created fall into th
 
     The platform base container is the first to get created.
 
-    It is just the chosen OS platform and version (e.g. b-ubuntu-1204). A typical LXC container
-	has minimal packages installed so `dev-lxc` makes sure that the same packages used in Chef's
-	[bento boxes](https://github.com/opscode/bento) are installed to provide a more typical
-	server environment.	A few additional packages are also installed.
+    DevLXC#create_base_platform controls the creation of a platform base container.
 
-    Once this platform base container is created there is rarely a need to delete it
-	or recreate it.
+    This container provides the chosen OS platform and version (e.g. b-ubuntu-1204).
+	A typical LXC container has minimal packages installed so `dev-lxc` makes sure that the
+	same packages used in Chef's [bento boxes](https://github.com/opscode/bento) are
+	installed to provide a more typical server environment.
+	A few additional packages are also installed.
+
+    Once this platform base container is created there is rarely a need to delete it.
 
 2. Shared
 
     The shared base container is the second to get created.
 
-    Common Chef packages such as Chef server, opscode-reporting and opscode-push-jobs-server are
-	installed using `dpkg` or `rpm`.
+    DevLXC::ChefServer#create_base_server controls the creation of a shared base container.
+
+    Chef packages that are common to all servers in a Chef cluster, such as Chef server,
+	opscode-reporting and opscode-push-jobs-server are installed using `dpkg` or `rpm`.
 
     Note the manage package will not be installed at this point since it is not common to all
 	servers (i.e. it does not get installed on backend servers).
 
+    The name of this base container is built from the names and versions of the Chef packages that
+	get installed which makes this base container easy to be reused by  another cluster that is
+	configured to use the same Chef packages.
+
     Since no configuration actually happens yet there is rarely a need to delete this container.
-	If another cluster is configured to use the same packages that are installed in this container
-	then time is saved by just cloning this container for the new cluster to use.
 
 3. Unique
 
     The unique base container is the last to get created.
+
+    DevLXC::ChefServer#create controls the creation of a unique base container.
 
     Each unique Chef server (e.g. standalone, backend or frontend) is created.
 
@@ -123,7 +130,12 @@ During a cluster build process the base containers that get created fall into th
 	* dnsmasq is configured to reserve the specified IP address for the container's MAC address.
 	* A DNS entry is created in dnsmasq if appropriate.
 	* All installed Chef packages are configured.
+	* Test users and orgs are created.
 	* The opscode-manage package is installed and configured if specified.
+
+    After each server is fully configured a snapshot clone of it is made resulting in the server's
+	unique base container. These unique base containers make it very easy to quickly recreate
+	a Chef cluster from a clean starting point.
 
 #### Destroying Base Containers
 
@@ -203,7 +215,7 @@ Make sure the mounts and packages represent paths that are available in your env
 By default, `dev-lxc` looks for a `dev-lxc.yaml` file in the present working directory.
 You can also specify a particular config file as an option for most dev-lxc commands.
 
-I use the following to avoid specifying each cluster's config file while managing multiple clusters.
+I use the following strategy to avoid specifying each cluster's config file while managing multiple clusters.
 
 	mkdir -p ~/clusters/{clusterA,clusterB}
 	dev-lxc cluster init tier > ~/clusters/clusterA/dev-lxc.yaml
