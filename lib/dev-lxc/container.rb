@@ -48,7 +48,7 @@ module DevLXC
     end
 
     def install_package(package_path)
-      raise "File #{package_path} does not exist in container #{self.name}" unless run_command("test -e #{package_path}")
+      raise "File #{package_path} does not exist in container #{self.name}" unless run_command("test -e #{package_path}") == 0
       puts "Installing #{package_path} in container #{self.name}"
       case File.extname(package_path)
       when ".deb"
