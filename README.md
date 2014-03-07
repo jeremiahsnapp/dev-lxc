@@ -90,7 +90,7 @@ During a cluster build process the base containers that get created fall into th
 
     The platform base container is the first to get created.
 
-    DevLXC#create_base_platform controls the creation of a platform base container.
+    `DevLXC#create_base_platform` controls the creation of a platform base container.
 
     This container provides the chosen OS platform and version (e.g. b-ubuntu-1204).
 	A typical LXC container has minimal packages installed so `dev-lxc` makes sure that the
@@ -104,7 +104,7 @@ During a cluster build process the base containers that get created fall into th
 
     The shared base container is the second to get created.
 
-    DevLXC::ChefServer#create_base_server controls the creation of a shared base container.
+    `DevLXC::ChefServer#create_base_server` controls the creation of a shared base container.
 
     Chef packages that are common to all servers in a Chef cluster, such as Chef server,
 	opscode-reporting and opscode-push-jobs-server are installed using `dpkg` or `rpm`.
@@ -122,7 +122,7 @@ During a cluster build process the base containers that get created fall into th
 
     The unique base container is the last to get created.
 
-    DevLXC::ChefServer#create controls the creation of a unique base container.
+    `DevLXC::ChefServer#create` controls the creation of a unique base container.
 
     Each unique Chef server (e.g. standalone, backend or frontend) is created.
 
