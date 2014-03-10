@@ -36,7 +36,12 @@ module DevLXC
     when "b-ubuntu-1204"
       base_platform.run_command("apt-get update")
       base_platform.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree")
-    when "b-centos-5", "b-centos-6"
+    when "b-centos-5"
+      # downgrade openssl temporarily to overcome an install bug
+      # reference: http://www.hack.net.br/blog/2014/02/12/openssl-conflicts-with-file-from-package-openssl/
+      base_platform.run_command("yum downgrade -y openssl")
+      base_platform.run_command("yum install -y @base @core vim-enhanced emacs-nox tree")
+    when "b-centos-6"
       base_platform.run_command("yum install -y @base @core vim-enhanced emacs-nox tree")
     end
     base_platform.stop
