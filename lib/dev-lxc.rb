@@ -73,7 +73,7 @@ module DevLXC
 
   def self.append_line_to_file(file_name, line)
     content = IO.readlines(file_name)
-    content[-1] = content[-1].chomp + "\n"
+    content[-1] = content[-1].chomp + "\n" unless content.empty?
     content << line
     IO.write(file_name, content.join)
   end
