@@ -162,6 +162,11 @@ module DevLXC
         FileUtils.mv("#{base_server.config_item('lxc.rootfs')}/etc/init.d/procps",
                      "#{base_server.config_item('lxc.rootfs')}/etc/init.d/procps.orig")
       end
+      # TODO when LXC 1.0.2 is released the following test can be done using #config_item("lxc.mount.auto")
+      unless IO.readlines(base_server.config_file_name).select { |line| line.start_with?("lxc.mount.auto") }.empty?
+        base_server.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
+        base_server.save_config
+      end
       base_server.sync_mounts(@mounts)
       base_server.start
       base_server.install_package(@packages["server"]) unless @packages["server"].nil?
