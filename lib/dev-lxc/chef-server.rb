@@ -155,12 +155,13 @@ module DevLXC
       base_platform.clone(base_server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
       base_server = DevLXC::Container.new(base_server.name)
 
-      # Rename procps in Ubuntu platforms because Enterprise Chef server < 11.0.0
-      # postgres recipe will use it even though it does not work in an LXC container
-      @packages["server"].to_s.match(/private-chef[_-](\d+)\.(\d+\.?){2,}-/)
-      if base_platform.name.include?("ubuntu") && Regexp.last_match[1].to_i < 11
-        FileUtils.mv("#{base_server.config_item('lxc.rootfs')}/etc/init.d/procps",
-                     "#{base_server.config_item('lxc.rootfs')}/etc/init.d/procps.orig")
+      # Disable certain sysctl.d files in Ubuntu 10.04, they cause `start procps` to fail
+      # Enterprise Chef server's postgresql recipe expects to be able to `start procps`
+      if base_platform.name == "b-ubuntu-1004"
+        if File.exist?("#{base_server.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf")
+          FileUtils.mv("#{base_server.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf",
+                       "#{base_server.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
+        end
       end
       # TODO when LXC 1.0.2 is released the following test can be done using #config_item("lxc.mount.auto")
       unless IO.readlines(base_server.config_file_name).select { |line| line.start_with?("lxc.mount.auto") }.empty?

@@ -38,6 +38,11 @@ module DevLXC
     puts "Installing packages in container #{base_platform.name}"
     case base_platform.name
     when "b-ubuntu-1004"
+      # Disable certain sysctl.d files in Ubuntu 10.04, they cause `start procps` to fail
+      if File.exist?("#{base_platform.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf")
+        FileUtils.mv("#{base_platform.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf",
+                     "#{base_platform.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
+      end
       base_platform.run_command("apt-get update")
       base_platform.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox curl tree")
     when "b-ubuntu-1204"
