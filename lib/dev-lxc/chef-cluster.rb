@@ -83,10 +83,6 @@ module DevLXC
 
     def chef_server_config
       chef_server_config = %Q(api_fqdn "#{@api_fqdn}"\n)
-      @cluster_config["packages"]["server"].to_s.match(/(private-chef|chef-server)[_-](\d+)\.(\d+\.?){2,}-/)
-      if Regexp.last_match[2].to_i >= 11
-        chef_server_config += %Q(bookshelf["vip"] = "#{@api_fqdn}"\n)
-      end
       if %w(tier ha).include?(@topology)
         chef_server_config += %Q(
 topology "#{@topology}"
