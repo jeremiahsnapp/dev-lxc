@@ -181,12 +181,12 @@ module DevLXC
       case @role
       when "open-source"
         puts "Creating /etc/chef-server/chef-server.rb"
-        FileUtils.mkdir("#{@server.config_item('lxc.rootfs')}/etc/chef-server")
+        FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/chef-server")
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/chef-server/chef-server.rb", @chef_server_config)
         run_ctl("chef-server", "reconfigure")
       when "standalone", "bootstrap_backend"
         puts "Creating /etc/opscode/private-chef.rb"
-        FileUtils.mkdir("#{@server.config_item('lxc.rootfs')}/etc/opscode")
+        FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/opscode")
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", @chef_server_config)
         run_ctl("private-chef", "reconfigure")
       when "secondary_backend", "frontend"
