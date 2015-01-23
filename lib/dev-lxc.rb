@@ -18,6 +18,8 @@ module DevLXC
       base_platform.create("download", "btrfs", 0, ["-d", "ubuntu", "-r", "lucid", "-a", "amd64"])
     when "b-ubuntu-1204"
       base_platform.create("download", "btrfs", 0, ["-d", "ubuntu", "-r", "precise", "-a", "amd64"])
+    when "b-ubuntu-1404"
+      base_platform.create("download", "btrfs", 0, ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"])
     when "b-centos-5"
       base_platform.create("centos", "btrfs", 0, ["-R", "5"])
     when "b-centos-6"
@@ -45,7 +47,7 @@ module DevLXC
       end
       base_platform.run_command("apt-get update")
       base_platform.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox curl tree")
-    when "b-ubuntu-1204"
+    when "b-ubuntu-1204", "b-ubuntu-1404"
       base_platform.run_command("apt-get update")
       base_platform.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree")
     when "b-centos-5"
