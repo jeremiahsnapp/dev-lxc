@@ -28,9 +28,24 @@ module DevLXC
       @base_platform = cluster_config["base_platform"]
       @packages = cluster_config["packages"]
 
+      if File.basename(@packages["server"]).match(/^(\w+-\w+.*)[_-]((?:\d+\.?){3,})-/)
+        @chef_server_type = Regexp.last_match[1]
+        @chef_server_version = Regexp.last_match[2].gsub(".", "-")
+      end
+
       @base_server_name = @base_platform
-      @base_server_name += "-ec-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["server"].to_s.match(/private-chef[_-]((\d+\.?){3,})-/)
-      @base_server_name += "-osc-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["server"].to_s.match(/chef-server[_-]((\d+\.?){3,})-/)
+      case @chef_server_type
+      when 'chef-server-core'
+        @base_server_name += '-cs'
+        @server_ctl = 'chef-server'
+      when 'private-chef'
+        @base_server_name += '-cs'
+        @server_ctl = 'private-chef'
+      when 'chef-server'
+        @base_server_name += '-osc'
+        @server_ctl = 'chef-server'
+      end
+      @base_server_name += "-#{@chef_server_version}"
       @base_server_name += "-reporting-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["reporting"].to_s.match(/[_-]((\d+\.?){3,})-/)
       @base_server_name += "-pushy-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["push-jobs-server"].to_s.match(/[_-]((\d+\.?){3,})-/)
     end
@@ -129,7 +144,7 @@ module DevLXC
         @server.sync_mounts(@mounts)
         @server.start
         configure_server unless @packages["server"].nil?
-        create_users if %w(standalone bootstrap_backend).include?(@role)
+        create_users if (%w(standalone bootstrap_backend).include?(@role) && (@chef_server_type != 'chef-server-core'))
         if %w(standalone bootstrap_backend secondary_backend frontend).include?(@role)
           configure_reporting unless @packages["reporting"].nil?
           configure_push_jobs_server unless @packages["push-jobs-server"].nil?
@@ -183,17 +198,24 @@ module DevLXC
         puts "Creating /etc/chef-server/chef-server.rb"
         FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/chef-server")
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/chef-server/chef-server.rb", @chef_server_config)
-        run_ctl("chef-server", "reconfigure")
+        run_ctl(@server_ctl, "reconfigure")
       when "standalone", "bootstrap_backend"
-        puts "Creating /etc/opscode/private-chef.rb"
-        FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/opscode")
-        IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", @chef_server_config)
-        run_ctl("private-chef", "reconfigure")
+        case @chef_server_type
+        when 'private-chef'
+          puts "Creating /etc/opscode/private-chef.rb"
+          FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/opscode")
+          IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", @chef_server_config)
+        when 'chef-server-core'
+          puts "Creating /etc/opscode/chef-server.rb"
+          FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/opscode")
+          IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb", @chef_server_config)
+        end
+        run_ctl(@server_ctl, "reconfigure")
       when "secondary_backend", "frontend"
         puts "Copying /etc/opscode from bootstrap backend"
         FileUtils.cp_r("#{LXC::Container.new(@bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode",
                        "#{@server.config_item('lxc.rootfs')}/etc")
-        run_ctl("private-chef", "reconfigure")
+        run_ctl(@server_ctl, "reconfigure")
       end
     end
 
@@ -203,23 +225,25 @@ module DevLXC
         FileUtils.cp_r("#{LXC::Container.new(@bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-reporting",
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
-      run_ctl("private-chef", "reconfigure")
+      run_ctl(@server_ctl, "reconfigure")
       run_ctl("opscode-reporting", "reconfigure")
     end
 
     def configure_push_jobs_server
       run_ctl("opscode-push-jobs-server", "reconfigure")
       if %w(bootstrap_backend secondary_backend).include?(@role)
-        run_ctl("private-chef", "reconfigure")
+        run_ctl(@server_ctl, "reconfigure")
       end
-      run_ctl("private-chef", "restart opscode-pushy-server")
+      run_ctl(@server_ctl, "restart opscode-pushy-server")
     end
 
     def configure_manage
-      puts "Disabling old opscode-webui in /etc/opscode/private-chef.rb"
-      DevLXC.search_file_delete_line("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", /opscode_webui[.enable.]/)
-      DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", "\nopscode_webui['enable'] = false\n")
-      run_ctl("private-chef", "reconfigure")
+      if @chef_server_type == 'private-chef'
+        puts "Disabling old opscode-webui in /etc/opscode/private-chef.rb"
+        DevLXC.search_file_delete_line("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", /opscode_webui[.enable.]/)
+        DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", "\nopscode_webui['enable'] = false\n")
+        run_ctl(@server_ctl, "reconfigure")
+      end
       run_ctl("opscode-manage", "reconfigure")
     end
 
