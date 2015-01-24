@@ -39,7 +39,7 @@ module DevLXC
         @base_server_name += '-cs'
         @server_ctl = 'chef-server'
       when 'private-chef'
-        @base_server_name += '-cs'
+        @base_server_name += '-ec'
         @server_ctl = 'private-chef'
       when 'chef-server'
         @base_server_name += '-osc'
