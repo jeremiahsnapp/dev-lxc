@@ -297,8 +297,11 @@ creation of the cluster's servers is very quick.
 
 [https://chef-tier.lxc](https://chef-tier.lxc) resolves to the frontend.
 
-Ponyville and wonderbolts orgs, users, knife.rb and keys are automatically created in
-the bootstrap backend server in /srv/piab/users for testing purposes.
+A test org and user and knife.rb and keys are automatically created in
+the bootstrap backend server in /root/chef-repo/.chef for testing purposes.
+The `knife-opc` plugin is installed in the embedded ruby environment of the
+Private Chef and Enterprise Chef server to facilitate the creation of the test
+org and user.
 
 Show the status of the cluster.
 

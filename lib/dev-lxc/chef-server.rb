@@ -144,7 +144,7 @@ module DevLXC
         @server.sync_mounts(@mounts)
         @server.start
         configure_server unless @packages["server"].nil?
-        create_users if (%w(standalone bootstrap_backend).include?(@role) && (@chef_server_type != 'chef-server-core'))
+        create_users if %w(standalone bootstrap_backend).include?(@role)
         if %w(standalone bootstrap_backend secondary_backend frontend).include?(@role)
           configure_reporting unless @packages["reporting"].nil?
           configure_push_jobs_server unless @packages["push-jobs-server"].nil?
@@ -253,17 +253,34 @@ module DevLXC
     end
 
     def create_users
-      puts "Creating users, keys and knife config files"
-      FileUtils.mkdir_p(["#{@server.config_item('lxc.rootfs')}/cookbooks/create_users/recipes",
-                         "#{@server.config_item('lxc.rootfs')}/cookbooks/create_users/templates/default",
-                        "#{@server.config_item('lxc.rootfs')}/cookbooks/create_users/libraries"])
-      FileUtils.cp("#{File.dirname(__FILE__)}/../../files/create_users/default.rb", "#{@server.config_item('lxc.rootfs')}/cookbooks/create_users/recipes")
-      DevLXC.search_file_replace("#{@server.config_item('lxc.rootfs')}/cookbooks/create_users/recipes/default.rb", /chef\.lxc/, @api_fqdn)
-      FileUtils.cp("#{File.dirname(__FILE__)}/../../files/create_users/knife.rb.erb", "#{@server.config_item('lxc.rootfs')}/cookbooks/create_users/templates/default")
-      FileUtils.cp("#{File.dirname(__FILE__)}/../../files/create_users/create_users.rb", "#{@server.config_item('lxc.rootfs')}/cookbooks/create_users/libraries")
-      IO.write("#{@server.config_item('lxc.rootfs')}/cookbooks/solo.rb", "cookbook_path '/cookbooks'")
-      @server.run_command("/opt/opscode/embedded/bin/chef-solo -c /cookbooks/solo.rb -o create_users -l info")
-      FileUtils.rm_r("#{@server.config_item('lxc.rootfs')}/cookbooks")
+      puts "Creating org, user, keys and knife.rb in /root/chef-repo/.chef"
+      FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef")
+      knife_rb = "chef_server_url 'https://127.0.0.1/organizations/ponyville'\n"
+      knife_rb += "node_name 'rainbowdash'\n"
+      knife_rb += "client_key 'rainbowdash.pem'\n"
+      knife_rb += "knife[:chef_repo_path] = Dir.pwd\n"
+      IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/knife.rb", knife_rb)
+      case @chef_server_type
+      when 'private-chef'
+        # give time for all services to come up completely
+        sleep 60
+        pivotal_rb = "chef_server_root 'https://127.0.0.1/'\n"
+        pivotal_rb += "chef_server_url 'https://127.0.0.1/'\n"
+        pivotal_rb += "node_name 'pivotal'\n"
+        pivotal_rb += "client_key '/etc/opscode/pivotal.pem'\n"
+        pivotal_rb += "knife[:chef_repo_path] = Dir.pwd\n"
+        IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/pivotal.rb", pivotal_rb)
+        @server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc org create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc user create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem -c /root/chef-repo/.chef/pivotal.rb")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc org user add ponyville rainbowdash --admin")
+      when 'chef-server-core'
+        # give time for all services to come up completely
+        sleep 10
+        run_ctl(@server_ctl, "org-create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem")
+        run_ctl(@server_ctl, "user-create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem")
+        run_ctl(@server_ctl, "org-user-add ponyville rainbowdash --admin")
+      end
     end
   end
 end
