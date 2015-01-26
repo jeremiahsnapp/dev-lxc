@@ -126,7 +126,7 @@ module DevLXC::CLI
   class DevLXC < Thor
     desc "create [BASE_PLATFORM]", "Create a base platform"
     def create(base_platform=nil)
-      base_platforms = %w(b-ubuntu-1004 b-ubuntu-1204 b-centos-5 b-centos-6)
+      base_platforms = %w(b-ubuntu-1004 b-ubuntu-1204 b-ubuntu-1404 b-centos-5 b-centos-6)
       if base_platform.nil? || ! base_platforms.include?(base_platform)
         base_platforms_with_index = base_platforms.map.with_index{ |a, i| [i+1, *a]}
         print_table base_platforms_with_index
