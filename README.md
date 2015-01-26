@@ -92,7 +92,7 @@ During a cluster build process the base containers that get created fall into th
 
     `DevLXC#create_base_platform` controls the creation of a platform base container.
 
-    This container provides the chosen OS platform and version (e.g. b-ubuntu-1204).
+    This container provides the chosen OS platform and version (e.g. b-ubuntu-1404).
 	A typical LXC container has minimal packages installed so `dev-lxc` makes sure that the
 	same packages used in Chef's [bento boxes](https://github.com/opscode/bento) are
 	installed to provide a more typical server environment.
@@ -165,7 +165,7 @@ You can see a menu of platform base containers this tool can create by using the
 The initial creation of platform base containers can take awhile so let's go ahead and start creating
 an Ubuntu 12.04 base container now.
 
-    dev-lxc create b-ubuntu-1204
+    dev-lxc create b-ubuntu-1404
 
 ### Cluster Config Files
 
@@ -177,16 +177,16 @@ The following command generates sample config files for various cluster topologi
 
 `dev-lxc cluster init tier` generates the following file:
 
-    base_platform: b-ubuntu-1204
+    base_platform: b-ubuntu-1404
     topology: tier
     api_fqdn: chef-tier.lxc
     mounts:
       - /dev-shared dev-shared
     packages:
-      server: /dev-shared/chef-packages/ec/private-chef_11.1.2-1.ubuntu.12.04_amd64.deb
-    #  reporting: /dev-shared/chef-packages/ec/reporting/opscode-reporting_1.1.0-1.ubuntu.12.04_amd64.deb
-    #  push-jobs-server: /dev-shared/chef-packages/ec/push-jobs-server/opscode-push-jobs-server_1.1.0-1.ubuntu.12.04_amd64.deb
-    #  manage: /dev-shared/chef-packages/ec/manage/opscode-manage_1.1.1-1.ubuntu.12.04_amd64.deb
+      server: /dev-shared/chef-packages/cs/chef-server-core_12.0.1-1_amd64.deb
+#      reporting: /dev-shared/chef-packages/cs/reporting/opscode-reporting_1.2.3-1_amd64.deb
+#      push-jobs-server: /dev-shared/chef-packages/cs/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
+#      manage: /dev-shared/chef-packages/cs/manage/opscode-manage_1.6.2-1_amd64.deb
     servers:
       be-tier.lxc:
         role: backend
