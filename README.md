@@ -184,9 +184,9 @@ The following command generates sample config files for various cluster topologi
       - /dev-shared dev-shared
     packages:
       server: /dev-shared/chef-packages/cs/chef-server-core_12.0.1-1_amd64.deb
-#      reporting: /dev-shared/chef-packages/cs/reporting/opscode-reporting_1.2.3-1_amd64.deb
-#      push-jobs-server: /dev-shared/chef-packages/cs/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
-#      manage: /dev-shared/chef-packages/cs/manage/opscode-manage_1.6.2-1_amd64.deb
+    #  reporting: /dev-shared/chef-packages/cs/reporting/opscode-reporting_1.2.3-1_amd64.deb
+    #  push-jobs-server: /dev-shared/chef-packages/cs/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
+    #  manage: /dev-shared/chef-packages/cs/manage/opscode-manage_1.6.2-1_amd64.deb
     servers:
       be-tier.lxc:
         role: backend
