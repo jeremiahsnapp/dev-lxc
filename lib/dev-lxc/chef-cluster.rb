@@ -67,17 +67,17 @@ module DevLXC
       puts "Destroying cluster"
       chef_servers.reverse_each { |cs| cs.destroy }
     end
-    
-    def destroy_base_container(type)
+
+    def destroy_container(type)
       case type
       when :unique
         @servers.keys.each do |server_name|
-          DevLXC::ChefServer.new(server_name, @cluster_config).destroy_base_container(:unique)
+          DevLXC::ChefServer.new(server_name, @cluster_config).destroy_container(:unique)
         end
       when :shared
-        DevLXC::ChefServer.new(@servers.keys.first, @cluster_config).destroy_base_container(:shared)
+        DevLXC::ChefServer.new(@servers.keys.first, @cluster_config).destroy_container(:shared)
       when :platform
-        DevLXC::ChefServer.new(@servers.keys.first, @cluster_config).destroy_base_container(:platform)
+        DevLXC::ChefServer.new(@servers.keys.first, @cluster_config).destroy_container(:platform)
       end
     end
 

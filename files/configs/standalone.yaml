@@ -1,4 +1,4 @@
-base_platform: b-ubuntu-1404
+platform_container: p-ubuntu-1404
 topology: standalone
 api_fqdn: chef-standalone.lxc
 mounts:

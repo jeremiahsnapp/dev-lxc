@@ -3,7 +3,7 @@ require "dev-lxc/chef-cluster"
 
 module DevLXC
   class ChefServer
-    attr_reader :base_platform, :base_server_name
+    attr_reader :platform_container_name, :shared_container_name
 
     def initialize(name, cluster_config)
       unless cluster_config["servers"].keys.include?(name)
@@ -25,7 +25,7 @@ module DevLXC
       @bootstrap_backend = cluster.bootstrap_backend
       @chef_server_config = cluster.chef_server_config
       @api_fqdn = cluster.api_fqdn
-      @base_platform = cluster_config["base_platform"]
+      @platform_container_name = cluster_config["platform_container"]
       @packages = cluster_config["packages"]
 
       if File.basename(@packages["server"]).match(/^(\w+-\w+.*)[_-]((?:\d+\.?){3,})-/)
@@ -33,21 +33,21 @@ module DevLXC
         @chef_server_version = Regexp.last_match[2].gsub(".", "-")
       end
 
-      @base_server_name = @base_platform
+      @shared_container_name = "s#{@platform_container_name[1..-1]}"
       case @chef_server_type
       when 'chef-server-core'
-        @base_server_name += '-cs'
+        @shared_container_name += '-cs'
         @server_ctl = 'chef-server'
       when 'private-chef'
-        @base_server_name += '-ec'
+        @shared_container_name += '-ec'
         @server_ctl = 'private-chef'
       when 'chef-server'
-        @base_server_name += '-osc'
+        @shared_container_name += '-osc'
         @server_ctl = 'chef-server'
       end
-      @base_server_name += "-#{@chef_server_version}"
-      @base_server_name += "-reporting-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["reporting"].to_s.match(/[_-]((\d+\.?){3,})-/)
-      @base_server_name += "-pushy-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["push-jobs-server"].to_s.match(/[_-]((\d+\.?){3,})-/)
+      @shared_container_name += "-#{@chef_server_version}"
+      @shared_container_name += "-reporting-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["reporting"].to_s.match(/[_-]((\d+\.?){3,})-/)
+      @shared_container_name += "-pushy-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["push-jobs-server"].to_s.match(/[_-]((\d+\.?){3,})-/)
     end
 
     def status
@@ -103,14 +103,14 @@ module DevLXC
       DevLXC.reload_dnsmasq
     end
 
-    def destroy_base_container(type)
+    def destroy_container(type)
       case type
       when :unique
-        DevLXC::Container.new("b-#{@server.name}").destroy
+        DevLXC::Container.new("u-#{@server.name}").destroy
       when :shared
-        DevLXC::Container.new(@base_server_name).destroy
+        DevLXC::Container.new(@shared_container_name).destroy
       when :platform
-        DevLXC::Container.new(@base_platform).destroy
+        DevLXC::Container.new(@platform_container_name).destroy
       end
     end
 
@@ -119,10 +119,10 @@ module DevLXC
         puts "Using existing container #{@server.name}"
         return
       end
-      server_clone = DevLXC::Container.new("b-#{@server.name}")
-      if server_clone.defined?
-        puts "Cloning container #{server_clone.name} into container #{@server.name}"
-        server_clone.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+      unique_container = DevLXC::Container.new("u-#{@server.name}")
+      if unique_container.defined?
+        puts "Cloning shared container #{unique_container.name} into container #{@server.name}"
+        unique_container.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
         @server = DevLXC::Container.new(@server.name)
         return
       else
@@ -130,9 +130,9 @@ module DevLXC
         unless %w(open-source standalone).include?(@role) || @server.name == @bootstrap_backend || DevLXC::Container.new(@bootstrap_backend).defined?
           raise "The bootstrap backend server must be created first."
         end
-        base_server = create_base_server
-        puts "Cloning container #{base_server.name} into container #{@server.name}"
-        base_server.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
+        shared_container = create_shared_container
+        puts "Cloning shared container #{shared_container.name} into container #{@server.name}"
+        shared_container.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         @server = DevLXC::Container.new(@server.name)
         puts "Adding lxc.hook.post-stop hook"
         @server.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
@@ -154,42 +154,42 @@ module DevLXC
           configure_manage
         end
         @server.stop
-        puts "Cloning container #{@server.name} into b-#{@server.name}"
-        @server.clone("b-#{@server.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+        puts "Cloning container #{@server.name} into unique container #{unique_container.name}"
+        @server.clone("#{unique_container.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
       end
     end
 
-    def create_base_server
-      base_server = DevLXC::Container.new(@base_server_name)
-      if base_server.defined?
-        puts "Using existing container #{base_server.name}"
-        return base_server
+    def create_shared_container
+      shared_container = DevLXC::Container.new(@shared_container_name)
+      if shared_container.defined?
+        puts "Using existing shared container #{shared_container.name}"
+        return shared_container
       end
-      base_platform = DevLXC.create_base_platform(@base_platform)
-      puts "Cloning container #{base_platform.name} into container #{base_server.name}"
-      base_platform.clone(base_server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
-      base_server = DevLXC::Container.new(base_server.name)
+      platform_container = DevLXC.create_platform_container(@platform_container_name)
+      puts "Cloning platform container #{platform_container.name} into shared container #{shared_container.name}"
+      platform_container.clone(shared_container.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
+      shared_container = DevLXC::Container.new(shared_container.name)
 
       # Disable certain sysctl.d files in Ubuntu 10.04, they cause `start procps` to fail
       # Enterprise Chef server's postgresql recipe expects to be able to `start procps`
-      if base_platform.name == "b-ubuntu-1004"
-        if File.exist?("#{base_server.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf")
-          FileUtils.mv("#{base_server.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf",
-                       "#{base_server.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
+      if platform_container.name == "p-ubuntu-1004"
+        if File.exist?("#{shared_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf")
+          FileUtils.mv("#{shared_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf",
+                       "#{shared_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
         end
       end
       # TODO when LXC 1.0.2 is released the following test can be done using #config_item("lxc.mount.auto")
-      unless IO.readlines(base_server.config_file_name).select { |line| line.start_with?("lxc.mount.auto") }.empty?
-        base_server.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
-        base_server.save_config
+      unless IO.readlines(shared_container.config_file_name).select { |line| line.start_with?("lxc.mount.auto") }.empty?
+        shared_container.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
+        shared_container.save_config
       end
-      base_server.sync_mounts(@mounts)
-      base_server.start
-      base_server.install_package(@packages["server"]) unless @packages["server"].nil?
-      base_server.install_package(@packages["reporting"]) unless @packages["reporting"].nil?
-      base_server.install_package(@packages["push-jobs-server"]) unless @packages["push-jobs-server"].nil?
-      base_server.stop
-      return base_server
+      shared_container.sync_mounts(@mounts)
+      shared_container.start
+      shared_container.install_package(@packages["server"]) unless @packages["server"].nil?
+      shared_container.install_package(@packages["reporting"]) unless @packages["reporting"].nil?
+      shared_container.install_package(@packages["push-jobs-server"]) unless @packages["push-jobs-server"].nil?
+      shared_container.stop
+      return shared_container
     end
 
     def configure_server

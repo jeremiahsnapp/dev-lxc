@@ -57,15 +57,15 @@ module DevLXC::CLI
 
     desc "destroy", "Destroy a cluster's Chef servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yaml will be used by default"
-    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the cluster's unique base containers"
-    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the cluster's shared base container"
-    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the cluster's platform base container"
+    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the cluster's unique containers"
+    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the cluster's shared container"
+    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the cluster's platform container"
     def destroy
       cluster = get_cluster(options[:config])
       cluster.destroy
-      cluster.destroy_base_container(:unique) if options[:unique]
-      cluster.destroy_base_container(:shared) if options[:shared]
-      cluster.destroy_base_container(:platform) if options[:platform]
+      cluster.destroy_container(:unique) if options[:unique]
+      cluster.destroy_container(:shared) if options[:shared]
+      cluster.destroy_container(:platform) if options[:platform]
     end
   end
 
@@ -111,35 +111,35 @@ module DevLXC::CLI
 
     desc "destroy [NAME]", "Destroy a cluster's Chef server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yaml will be used by default"
-    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the server's unique base container"
-    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the server's shared base container"
-    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the server's platform base container"
+    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the server's unique container"
+    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the server's shared container"
+    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the server's platform container"
     def destroy(name)
       server = get_server(name, options[:config])
       server.destroy
-      server.destroy_base_container(:unique) if options[:unique]
-      server.destroy_base_container(:shared) if options[:shared]
-      server.destroy_base_container(:platform) if options[:platform]
+      server.destroy_container(:unique) if options[:unique]
+      server.destroy_container(:shared) if options[:shared]
+      server.destroy_container(:platform) if options[:platform]
     end
   end
 
   class DevLXC < Thor
-    desc "create [BASE_PLATFORM]", "Create a base platform"
-    def create(base_platform=nil)
-      base_platforms = %w(b-ubuntu-1004 b-ubuntu-1204 b-ubuntu-1404 b-centos-5 b-centos-6)
-      if base_platform.nil? || ! base_platforms.include?(base_platform)
-        base_platforms_with_index = base_platforms.map.with_index{ |a, i| [i+1, *a]}
-        print_table base_platforms_with_index
-        selection = ask("Which base platform do you want to create?", :limited_to => base_platforms_with_index.map{|c| c[0].to_s})
-        base_platform = base_platforms[selection.to_i - 1]
+    desc "create [PLATFORM_CONTAINER_NAME]", "Create a platform container"
+    def create(platform_container_name=nil)
+      platform_container_names = %w(p-ubuntu-1004 p-ubuntu-1204 p-ubuntu-1404 p-centos-5 p-centos-6)
+      if platform_container_name.nil? || ! platform_container_names.include?(platform_container_name)
+        platform_container_names_with_index = platform_container_names.map.with_index{ |a, i| [i+1, *a]}
+        print_table platform_container_names_with_index
+        selection = ask("Which platform container do you want to create?", :limited_to => platform_container_names_with_index.map{|c| c[0].to_s})
+        platform_container_name = platform_container_names[selection.to_i - 1]
       end
-      ::DevLXC.create_base_platform(base_platform)
+      ::DevLXC.create_platform_container(platform_container_name)
     end
 
-    desc "cluster SUBCOMMAND ...ARGS", "manage Chef cluster"
+    desc "cluster SUBCOMMAND ...ARGS", "Manage Chef cluster"
     subcommand "cluster", Cluster
 
-    desc "server SUBCOMMAND ...ARGS", "manage Chef server"
+    desc "server SUBCOMMAND ...ARGS", "Manage Chef server"
     subcommand "server", Server
   end
 end
