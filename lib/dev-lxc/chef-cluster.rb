@@ -2,19 +2,16 @@ require "dev-lxc/chef-server"
 
 module DevLXC
   class ChefCluster
-    attr_reader :api_fqdn, :topology, :bootstrap_backend, :secondary_backend, :frontends
+    attr_reader :api_fqdn, :topology, :bootstrap_backend, :frontends
 
     def initialize(cluster_config)
       @cluster_config = cluster_config
       @api_fqdn = @cluster_config["api_fqdn"]
       @topology = @cluster_config["topology"]
       @servers = @cluster_config["servers"]
-      if %w(tier ha).include?(@topology)
+      if @topology == 'tier'
         @bootstrap_backend = @servers.select {|k,v| v["role"] == "backend" && v["bootstrap"] == true}.first.first
         @frontends = @servers.select {|k,v| v["role"] == "frontend"}.keys
-      end
-      if @topology == "ha"
-        @secondary_backend = @servers.select {|k,v| v["role"] == "backend" && v["bootstrap"] == nil}.first.first
       end
     end
 
@@ -25,12 +22,6 @@ module DevLXC
         chef_servers << ChefServer.new(@servers.keys.first, @cluster_config)
       when "tier"
         chef_servers << ChefServer.new(@bootstrap_backend, @cluster_config)
-        @frontends.each do |frontend_name|
-          chef_servers << ChefServer.new(frontend_name, @cluster_config)
-        end
-      when "ha"
-        chef_servers << ChefServer.new(@bootstrap_backend, @cluster_config)
-        chef_servers << ChefServer.new(@secondary_backend, @cluster_config)
         @frontends.each do |frontend_name|
           chef_servers << ChefServer.new(frontend_name, @cluster_config)
         end
@@ -83,38 +74,18 @@ module DevLXC
 
     def chef_server_config
       chef_server_config = %Q(api_fqdn "#{@api_fqdn}"\n)
-      if %w(tier ha).include?(@topology)
+      if @topology == 'tier'
         chef_server_config += %Q(
 topology "#{@topology}"
 
 server "#{@bootstrap_backend}",
   :ipaddress => "#{@servers[@bootstrap_backend]["ipaddress"]}",
   :role => "backend",
-  :bootstrap => true)
-
-        case @topology
-        when "tier"
-          chef_server_config += %Q(
+  :bootstrap => true
 
 backend_vip "#{@bootstrap_backend}",
   :ipaddress => "#{@servers[@bootstrap_backend]["ipaddress"]}"
 )
-        when "ha"
-          backend_vip_name = config["backend_vip"].keys.first
-          chef_server_config += %Q(,
-  :cluster_ipaddress => "#{@servers[@bootstrap_backend]["cluster_ipaddress"]}"
-
-server "#{@secondary_backend}",
-  :ipaddress => "#{@servers[@secondary_backend]["ipaddress"]}",
-  :role => "backend",
-  :cluster_ipaddress => "#{@servers[@secondary_backend]["cluster_ipaddress"]}
-
-backend_vip "#{backend_vip_name}",
-  :ipaddress => "#{config["backend_vip"][backend_vip_name]["ipaddress"]}",
-  :device => "#{config["backend_vip"][backend_vip_name]["device"]}",
-  :heartbeat_device => "#{config["backend_vip"][backend_vip_name]["heartbeat_device"]}"
-)
-        end
         @frontends.each do |frontend_name|
           chef_server_config += %Q(
 server "#{frontend_name}",

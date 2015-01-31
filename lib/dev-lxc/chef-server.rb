@@ -16,9 +16,8 @@ module DevLXC
       case cluster.topology
       when "open-source", "standalone"
         @role = cluster.topology
-      when "tier", "ha"
+      when "tier"
         @role = "bootstrap_backend" if @server.name == cluster.bootstrap_backend
-        @role = "secondary_backend" if @server.name == cluster.secondary_backend
         @role = "frontend" if cluster.frontends.include?(@server.name)
       end
       @mounts = cluster_config["mounts"]
@@ -145,7 +144,7 @@ module DevLXC
         @server.start
         configure_server unless @packages["server"].nil?
         create_users if %w(standalone bootstrap_backend).include?(@role)
-        if %w(standalone bootstrap_backend secondary_backend frontend).include?(@role)
+        if %w(standalone bootstrap_backend frontend).include?(@role)
           configure_reporting unless @packages["reporting"].nil?
           configure_push_jobs_server unless @packages["push-jobs-server"].nil?
         end
@@ -211,7 +210,7 @@ module DevLXC
           IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb", @chef_server_config)
         end
         run_ctl(@server_ctl, "reconfigure")
-      when "secondary_backend", "frontend"
+      when "frontend"
         puts "Copying /etc/opscode from bootstrap backend"
         FileUtils.cp_r("#{LXC::Container.new(@bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode",
                        "#{@server.config_item('lxc.rootfs')}/etc")
@@ -220,7 +219,7 @@ module DevLXC
     end
 
     def configure_reporting
-      if %w(secondary_backend frontend).include?(@role)
+      if @role == 'frontend'
         puts "Copying /etc/opscode-reporting from bootstrap backend"
         FileUtils.cp_r("#{LXC::Container.new(@bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-reporting",
                        "#{@server.config_item('lxc.rootfs')}/etc")
@@ -231,10 +230,7 @@ module DevLXC
 
     def configure_push_jobs_server
       run_ctl("opscode-push-jobs-server", "reconfigure")
-      if %w(bootstrap_backend secondary_backend).include?(@role)
-        run_ctl(@server_ctl, "reconfigure")
-      end
-      run_ctl(@server_ctl, "restart opscode-pushy-server")
+      run_ctl(@server_ctl, "reconfigure")
     end
 
     def configure_manage
