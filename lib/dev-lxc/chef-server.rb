@@ -177,8 +177,7 @@ module DevLXC
                        "#{shared_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
         end
       end
-      # TODO when LXC 1.0.2 is released the following test can be done using #config_item("lxc.mount.auto")
-      unless IO.readlines(shared_container.config_file_name).select { |line| line.start_with?("lxc.mount.auto") }.empty?
+      unless shared_container.config_item("lxc.mount.auto").empty?
         shared_container.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
         shared_container.save_config
       end

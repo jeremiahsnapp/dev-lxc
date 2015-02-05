@@ -25,11 +25,7 @@ module DevLXC
     when "p-centos-6"
       platform_container.create("download", "btrfs", 0, ["-d", "centos", "-r", "6", "-a", "amd64"])
     end
-    # TODO when LXC 1.0.2 is released and the following test is replaced with #config_item("lxc.mount.auto")
-    # then this #save_config can be removed
-    platform_container.save_config
-    # TODO when LXC 1.0.2 is released the following test can be done using #config_item("lxc.mount.auto")
-    unless IO.readlines(platform_container.config_file_name).select { |line| line.start_with?("lxc.mount.auto") }.empty?
+    unless platform_container.config_item("lxc.mount.auto").empty?
       platform_container.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
     end
     hwaddr = '00:16:3e:' + Digest::SHA1.hexdigest(Time.now.to_s).slice(0..5).unpack('a2a2a2').join(':')
