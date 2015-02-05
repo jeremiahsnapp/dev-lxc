@@ -37,6 +37,12 @@ module DevLXC::CLI
       puts get_cluster(options[:config]).abspath(rootfs_path).join(" ")
     end
 
+    desc "chef-repo", "Creates a chef-repo in the current directory using files from the cluster's backend /root/chef-repo"
+    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yaml will be used by default"
+    def chef_repo
+      get_cluster(options[:config]).chef_repo
+    end
+
     desc "run_command [COMMAND]", "Runs a command in each Chef server in a cluster"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yaml will be used by default"
     def run_command(command)

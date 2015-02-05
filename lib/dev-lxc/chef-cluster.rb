@@ -40,6 +40,44 @@ module DevLXC
       abspath.compact
     end
 
+    def chef_repo
+      case @topology
+      when "open-source"
+        puts "Unable to create a chef-repo for an Open Source Chef Server"
+        exit 1
+      when "standalone"
+        chef_server = ChefServer.new(@servers.keys.first, @cluster_config)
+      when "tier"
+        chef_server = ChefServer.new(@bootstrap_backend, @cluster_config)
+      end
+      if ! chef_server.server.defined?
+        puts "The '#{chef_server.server.name}' Chef Server does not exist. Please create it first."
+        exit 1
+      end
+      puts "Creating chef-repo with pem files and knife.rb in the current directory"
+      FileUtils.mkdir_p("./chef-repo/.chef")
+      knife_rb = %Q(
+current_dir = File.dirname(__FILE__)
+
+chef_server_url "https://#{api_fqdn}/organizations/ponyville"
+
+node_name "rainbowdash"
+client_key "\#{current_dir}/rainbowdash.pem"
+
+validation_client_name "ponyville-validator"
+validation_key "\#{current_dir}/ponyville-validator.pem"
+
+cookbook_path Dir.pwd + "/cookbooks"
+knife[:chef_repo_path] = Dir.pwd
+)
+      IO.write("./chef-repo/.chef/knife.rb", knife_rb)
+      if Dir.glob("#{chef_server.abspath('/root/chef-repo/.chef')}/*.pem").empty?
+        puts "The pem files can not be copied because they do not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
+      else
+        FileUtils.cp( Dir.glob("#{chef_server.abspath('/root/chef-repo/.chef')}/*.pem"), "./chef-repo/.chef" )
+      end
+    end
+
     def run_command(command)
       chef_servers.each { |cs| cs.run_command(command) }
     end
