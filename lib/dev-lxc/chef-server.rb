@@ -250,20 +250,34 @@ module DevLXC
     def create_users
       puts "Creating org, user, keys and knife.rb in /root/chef-repo/.chef"
       FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef")
-      knife_rb = "chef_server_url 'https://127.0.0.1/organizations/ponyville'\n"
-      knife_rb += "node_name 'rainbowdash'\n"
-      knife_rb += "client_key 'rainbowdash.pem'\n"
-      knife_rb += "knife[:chef_repo_path] = Dir.pwd\n"
+      knife_rb = %Q(
+current_dir = File.dirname(__FILE__)
+
+chef_server_url "https://127.0.0.1/organizations/ponyville"
+
+node_name "rainbowdash"
+client_key "\#{current_dir}/rainbowdash.pem"
+
+validation_client_name "ponyville-validator"
+validation_key "\#{current_dir}/ponyville-validator.pem"
+
+cookbook_path Dir.pwd + "/cookbooks"
+knife[:chef_repo_path] = Dir.pwd
+)
       IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/knife.rb", knife_rb)
       case @chef_server_type
       when 'private-chef'
         # give time for all services to come up completely
         sleep 60
-        pivotal_rb = "chef_server_root 'https://127.0.0.1/'\n"
-        pivotal_rb += "chef_server_url 'https://127.0.0.1/'\n"
-        pivotal_rb += "node_name 'pivotal'\n"
-        pivotal_rb += "client_key '/etc/opscode/pivotal.pem'\n"
-        pivotal_rb += "knife[:chef_repo_path] = Dir.pwd\n"
+        pivotal_rb = %Q(
+chef_server_root "https://127.0.0.1/"
+chef_server_url "https://127.0.0.1/"
+
+node_name "pivotal"
+client_key "/etc/opscode/pivotal.pem"
+
+knife[:chef_repo_path] = Dir.pwd
+)
         IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/pivotal.rb", pivotal_rb)
         @server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc")
         @server.run_command("/opt/opscode/embedded/bin/knife opc org create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
