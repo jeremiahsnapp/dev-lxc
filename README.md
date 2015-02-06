@@ -13,7 +13,7 @@ cluster builds for demo purposes, as well as general experimentation and explora
 1. LXC 1.0 Containers - Resource efficient servers with fast start/stop times and standard init
 2. Btrfs - Efficient storage backend provides fast, lightweight container cloning
 3. Dnsmasq - DHCP networking and DNS resolution
-4. Base platforms - Containers that are built to resemble a traditional server
+4. Base containers - Containers that are built to resemble a traditional server
 5. ruby-lxc - Ruby bindings for liblxc
 6. YAML - Simple, customizable definition of clusters; No more setting ENV variables
 7. Build process closely models online installation documentation
@@ -77,32 +77,34 @@ Run `gem update dev-lxc` inside the Vagrant VM to ensure you have the latest ver
 
 One of the key things this tool uses is the concept of "base" containers.
 
-`dev-lxc` creates containers with "b-" prepended to the name to distinguish it as
-a base container.
+`dev-lxc` creates base containers with a "p-", "s-" or "u-" prefix on the name to distinguish it as
+a "platform", "shared" or "unique" base container.
 
 Base containers are then snapshot cloned using the btrfs filesystem to very quickly
-provide lightweight duplicates of the base container that are either used to build
+provide a lightweight duplicate of the base container. This clone is either used to build
 another base container or a container that will actually be run.
 
 During a cluster build process the base containers that get created fall into three categories.
 
 1. Platform
 
-    The platform base container is the first to get created.
+    The platform base container is the first to get created and is identified by the
+	"p-" prefix on the container name.
 
     `DevLXC#create_base_platform` controls the creation of a platform base container.
 
-    This container provides the chosen OS platform and version (e.g. b-ubuntu-1404).
+    This container provides the chosen OS platform and version (e.g. p-ubuntu-1404).
 	A typical LXC container has minimal packages installed so `dev-lxc` makes sure that the
 	same packages used in Chef's [bento boxes](https://github.com/opscode/bento) are
 	installed to provide a more typical server environment.
 	A few additional packages are also installed.
 
-    Once this platform base container is created there is rarely a need to delete it.
+    *Once this platform base container is created there is rarely a need to delete it.*
 
 2. Shared
 
-    The shared base container is the second to get created.
+    The shared base container is the second to get created and is identified by the
+	"s-" prefix on the container name.
 
     `DevLXC::ChefServer#create_base_server` controls the creation of a shared base container.
 
@@ -113,14 +115,15 @@ During a cluster build process the base containers that get created fall into th
 	servers (i.e. it does not get installed on backend servers).
 
     The name of this base container is built from the names and versions of the Chef packages that
-	get installed which makes this base container easy to be reused by  another cluster that is
+	get installed which makes this base container easy to be reused by another cluster that is
 	configured to use the same Chef packages.
 
-    Since no configuration actually happens yet there is rarely a need to delete this container.
+    *Since no configuration actually happens yet there is rarely a need to delete this container.*
 
 3. Unique
 
-    The unique base container is the last to get created.
+    The unique base container is the last to get created and is identified by the
+	"u-" prefix on the container name.
 
     `DevLXC::ChefServer#create` controls the creation of a unique base container.
 
@@ -165,7 +168,7 @@ You can see a menu of platform base containers this tool can create by using the
 The initial creation of platform base containers can take awhile so let's go ahead and start creating
 an Ubuntu 12.04 base container now.
 
-    dev-lxc create b-ubuntu-1404
+    dev-lxc create p-ubuntu-1404
 
 ### Cluster Config Files
 
@@ -177,16 +180,16 @@ The following command generates sample config files for various cluster topologi
 
 `dev-lxc cluster init tier` generates the following file:
 
-    base_platform: b-ubuntu-1404
+    platform_container: p-ubuntu-1404
     topology: tier
     api_fqdn: chef-tier.lxc
     mounts:
       - /dev-shared dev-shared
     packages:
-      server: /dev-shared/chef-packages/cs/chef-server-core_12.0.1-1_amd64.deb
-    #  reporting: /dev-shared/chef-packages/cs/reporting/opscode-reporting_1.2.3-1_amd64.deb
-    #  push-jobs-server: /dev-shared/chef-packages/cs/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
-    #  manage: /dev-shared/chef-packages/cs/manage/opscode-manage_1.6.2-1_amd64.deb
+      server: /dev-shared/chef-packages/cs/chef-server-core_12.0.3-1_amd64.deb
+    #  reporting: /dev-shared/chef-packages/reporting/opscode-reporting_1.2.3-1_amd64.deb
+    #  push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
+    #  manage: /dev-shared/chef-packages/manage/opscode-manage_1.9.0-1_amd64.deb
     servers:
       be-tier.lxc:
         role: backend
@@ -306,6 +309,14 @@ org and user.
 Show the status of the cluster.
 
     dev-cluster status
+
+Create a local chef-repo with appropriate knife.rb and pem files.
+This makes it easy to use knife.
+
+    dev-lxc cluster chef-repo
+	cd chef-repo
+	knife ssl fetch
+	knife client list
 
 Stop the cluster's servers.
 
