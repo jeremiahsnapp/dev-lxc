@@ -132,7 +132,7 @@ module DevLXC::CLI
   class DevLXC < Thor
     desc "create [PLATFORM_CONTAINER_NAME]", "Create a platform container"
     def create(platform_container_name=nil)
-      platform_container_names = %w(p-ubuntu-1004 p-ubuntu-1204 p-ubuntu-1404 p-centos-5 p-centos-6)
+      platform_container_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-centos-5 p-centos-6)
       if platform_container_name.nil? || ! platform_container_names.include?(platform_container_name)
         platform_container_names_with_index = platform_container_names.map.with_index{ |a, i| [i+1, *a]}
         print_table platform_container_names_with_index
