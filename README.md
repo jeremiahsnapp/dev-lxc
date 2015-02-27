@@ -203,9 +203,13 @@ dev-lxc can also be used as a library.
 	cluster.run_command("uptime")
 	server = DevLXC::ChefServer.new("fe1-tier.lxc", config)
 	server.stop
+	server.status
+	cluster.status
 	server.start
+	cluster.status
 	server.run_command("chef-server-ctl reconfigure")
 	cluster.destroy
+	cluster.status
 
 ## Cluster Config Files
 
