@@ -172,7 +172,7 @@ an Ubuntu 12.04 base container now.
 
 ### Cluster Config Files
 
-dev-lxc uses a yaml configuration file to define a cluster.
+dev-lxc uses a YAML configuration file to define a cluster.
 
 The following command generates sample config files for various cluster topologies.
 
@@ -215,14 +215,14 @@ Make sure the mounts and packages represent paths that are available in your env
 
 ### Managing Multiple Clusters
 
-By default, `dev-lxc` looks for a `dev-lxc.yaml` file in the present working directory.
+By default, `dev-lxc` looks for a `dev-lxc.yml` file in the present working directory.
 You can also specify a particular config file as an option for most dev-lxc commands.
 
 I use the following strategy to avoid specifying each cluster's config file while managing multiple clusters.
 
 	mkdir -p ~/clusters/{clusterA,clusterB}
-	dev-lxc cluster init tier > ~/clusters/clusterA/dev-lxc.yaml
-	dev-lxc cluster init standalone > ~/clusters/clusterB/dev-lxc.yaml
+	dev-lxc cluster init tier > ~/clusters/clusterA/dev-lxc.yml
+	dev-lxc cluster init standalone > ~/clusters/clusterB/dev-lxc.yml
 	cd ~/clusters/clusterA && dev-lxc cluster start  # starts clusterA
 	cd ~/clusters/clusterB && dev-lxc cluster start  # starts clusterB
 
@@ -246,7 +246,7 @@ more clusters you have to maintain uniqueness across the YAML config files for t
     It is easy to provide uniqueness. For example, you can use the following command to replace `-tier`
 	with `-1234` in a tier cluster's config.
 
-        sed -i 's/-tier/-1234/' dev-lxc.yaml
+        sed -i 's/-tier/-1234/' dev-lxc.yml
 
 2. IP Addresses
 
@@ -287,9 +287,9 @@ The following instructions will use a tier cluster for demonstration purposes.
 The size of this cluster uses about 3GB ram and takes a long time for the first
 build of the servers. Feel free to try the standalone config first.
 
-The following command saves a predefined config to dev-lxc.yaml.
+The following command saves a predefined config to dev-lxc.yml.
 
-	dev-lxc cluster init tier > dev-lxc.yaml
+	dev-lxc cluster init tier > dev-lxc.yml
 
 Starting the cluster the first time takes awhile since it has a lot to build.
 
@@ -355,9 +355,9 @@ dev-lxc can also be used as a library if preferred.
 
     irb(main):001:0> require 'yaml'
 	irb(main):002:0> require 'dev-lxc'
-	irb(main):003:0> cluster = DevLXC::ChefCluster.new(YAML.load(IO.read('dev-lxc.yaml')))
+	irb(main):003:0> cluster = DevLXC::ChefCluster.new(YAML.load(IO.read('dev-lxc.yml')))
 	irb(main):004:0> cluster.start
-	irb(main):005:0> server = DevLXC::ChefServer.new("fe1-tier.lxc", YAML.load(IO.read('dev-lxc.yaml')))
+	irb(main):005:0> server = DevLXC::ChefServer.new("fe1-tier.lxc", YAML.load(IO.read('dev-lxc.yml')))
 	irb(main):006:0> server.stop
 	irb(main):007:0> server.start
 	irb(main):008:0> server.run_command("private-chef-ctl reconfigure")
