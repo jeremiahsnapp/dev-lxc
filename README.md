@@ -201,7 +201,7 @@ dev-lxc can also be used as a library.
 	irb(main):005:0> server = DevLXC::ChefServer.new("fe1-tier.lxc", YAML.load(IO.read('dev-lxc.yml')))
 	irb(main):006:0> server.stop
 	irb(main):007:0> server.start
-	irb(main):008:0> server.run_command("private-chef-ctl reconfigure")
+	irb(main):008:0> server.run_command("chef-server-ctl reconfigure")
 	irb(main):009:0> cluster.destroy
 
 ## Cluster Config Files
