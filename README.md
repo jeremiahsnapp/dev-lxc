@@ -81,6 +81,11 @@ dl cl start
 ```
 
 ```
+dev-lxc cluster status
+dl cl stat
+```
+
+```
 dev-lxc cluster destroy
 dl cl d
 ```
