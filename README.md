@@ -198,6 +198,8 @@ dev-lxc can also be used as a library.
 	require 'dev-lxc'
 	cluster = DevLXC::ChefCluster.new(YAML.load(IO.read('dev-lxc.yml')))
 	cluster.start
+	cluster.status
+	cluster.run_command("uptime")
 	server = DevLXC::ChefServer.new("fe1-tier.lxc", YAML.load(IO.read('dev-lxc.yml')))
 	server.stop
 	server.start
