@@ -96,7 +96,7 @@ build of the servers. Feel free to try the standalone config first.
 The following command saves a predefined config to dev-lxc.yml.
 
 Be sure you configure the
-[mounts and packages entries](https://github.com/jeremiahsnapp/dev-lxc#setup-mounts-and-packages)
+[mounts and packages entries](https://github.com/jeremiahsnapp/dev-lxc#cluster-config-files)
 appropriately.
 
 	dev-lxc cluster init tier > dev-lxc.yml
@@ -254,7 +254,8 @@ Make sure the mounts and packages represent actual paths that are available in y
 By default, `dev-lxc` looks for a `dev-lxc.yml` file in the present working directory.
 You can also specify a particular config file as an option for most dev-lxc commands.
 
-I use the following strategy to avoid specifying each cluster's config file while managing multiple clusters.
+The following is an example of managing multiple clusters while still avoiding specifying
+each cluster's config file.
 
 	mkdir -p ~/clusters/{clusterA,clusterB}
 	dev-lxc cluster init tier > ~/clusters/clusterA/dev-lxc.yml
