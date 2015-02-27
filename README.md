@@ -194,15 +194,15 @@ You can also run most of these commands against individual servers by using the 
 
 dev-lxc can also be used as a library.
 
-    irb(main):001:0> require 'yaml'
-	irb(main):002:0> require 'dev-lxc'
-	irb(main):003:0> cluster = DevLXC::ChefCluster.new(YAML.load(IO.read('dev-lxc.yml')))
-	irb(main):004:0> cluster.start
-	irb(main):005:0> server = DevLXC::ChefServer.new("fe1-tier.lxc", YAML.load(IO.read('dev-lxc.yml')))
-	irb(main):006:0> server.stop
-	irb(main):007:0> server.start
-	irb(main):008:0> server.run_command("chef-server-ctl reconfigure")
-	irb(main):009:0> cluster.destroy
+    require 'yaml'
+	require 'dev-lxc'
+	cluster = DevLXC::ChefCluster.new(YAML.load(IO.read('dev-lxc.yml')))
+	cluster.start
+	server = DevLXC::ChefServer.new("fe1-tier.lxc", YAML.load(IO.read('dev-lxc.yml')))
+	server.stop
+	server.start
+	server.run_command("chef-server-ctl reconfigure")
+	cluster.destroy
 
 ## Cluster Config Files
 
