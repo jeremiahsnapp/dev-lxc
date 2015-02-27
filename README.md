@@ -110,8 +110,6 @@ creation of the cluster's servers is very quick.
 
 	dev-lxc cluster start
 
-[https://chef-tier.lxc](https://chef-tier.lxc) resolves to the frontend.
-
 A test org, user, knife.rb and keys are automatically created in
 the bootstrap backend server in `/root/chef-repo/.chef` for testing purposes.
 
@@ -121,7 +119,17 @@ org and user.
 
 #### Cluster status
 
+Run the following command to see the status of the cluster.
+
     dev-lxc cluster status
+
+This is an example of the output.
+
+	Cluster is available at https://chef-tier.lxc
+	      be-tier.lxc     running         10.0.3.202
+	     fe1-tier.lxc     running         10.0.3.203
+
+[https://chef-tier.lxc](https://chef-tier.lxc) resolves to the frontend.
 
 #### Create chef-repo
 
