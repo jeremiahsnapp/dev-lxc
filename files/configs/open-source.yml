@@ -1,10 +1,10 @@
 platform_container: p-ubuntu-1204
 topology: open-source
-api_fqdn: chef-osc.lxc
+api_fqdn: chef.lxc
 mounts:
   - /dev-shared dev-shared
 packages:
   server: /dev-shared/chef-packages/osc/chef-server_11.1.6-1_amd64.deb
 servers:
   chef-osc.lxc:
-    ipaddress: 10.0.3.205
+    ipaddress: 10.0.3.207
