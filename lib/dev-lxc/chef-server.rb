@@ -142,15 +142,17 @@ module DevLXC
         DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress) if %w(open-source standalone frontend).include?(@role)
         @server.sync_mounts(@mounts)
         @server.start
-        configure_server unless @packages["server"].nil?
-        create_users if %w(standalone bootstrap_backend).include?(@role)
-        if %w(standalone bootstrap_backend frontend).include?(@role)
-          configure_reporting unless @packages["reporting"].nil?
-          configure_push_jobs_server unless @packages["push-jobs-server"].nil?
-        end
-        if %w(standalone frontend).include?(@role) && ! @packages["manage"].nil?
-          @server.install_package(@packages["manage"])
-          configure_manage
+        unless @packages["server"].nil?
+          configure_server
+          create_users if %w(standalone bootstrap_backend).include?(@role)
+          if %w(standalone bootstrap_backend frontend).include?(@role)
+            configure_reporting unless @packages["reporting"].nil?
+            configure_push_jobs_server unless @packages["push-jobs-server"].nil?
+          end
+          if %w(standalone frontend).include?(@role) && ! @packages["manage"].nil?
+            @server.install_package(@packages["manage"])
+            configure_manage
+          end
         end
         @server.stop
         puts "Cloning container #{@server.name} into unique container #{unique_container.name}"
