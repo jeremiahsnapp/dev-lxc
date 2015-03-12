@@ -9,12 +9,15 @@ module DevLXC
       @api_fqdn = @cluster_config["api_fqdn"]
       @topology = @cluster_config["topology"]
       @servers = @cluster_config["servers"]
-      case @topology
-      when 'open-source', 'standalone'
-        @bootstrap_backend = @servers.select {|k,v| v["role"] == nil}.first.first
-      when 'tier'
-        @bootstrap_backend = @servers.select {|k,v| v["role"] == "backend" && v["bootstrap"] == true}.first.first
-        @frontends = @servers.select {|k,v| v["role"] == "frontend"}.keys
+      @frontends = Array.new
+      @servers.each do |name, config|
+        case @topology
+        when 'open-source', 'standalone'
+          @bootstrap_backend = name if config["role"].nil?
+        when 'tier'
+          @bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
+          @frontends << name if config["role"] == "frontend"
+        end
       end
     end
 
