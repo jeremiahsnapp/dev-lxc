@@ -58,7 +58,7 @@ module DevLXC
       knife_rb = %Q(
 current_dir = File.dirname(__FILE__)
 
-chef_server_url "https://#{api_fqdn}/organizations/ponyville"
+chef_server_url "https://#{@api_fqdn}/organizations/ponyville"
 
 node_name "rainbowdash"
 client_key "\#{current_dir}/rainbowdash.pem"
