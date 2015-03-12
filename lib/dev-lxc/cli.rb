@@ -26,13 +26,13 @@ module DevLXC::CLI
       puts IO.read("#{File.dirname(__FILE__)}/../../files/configs/#{topology}.yml")
     end
 
-    desc "status", "Show status of a cluster's Chef servers"
+    desc "status", "Show status of all servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def status
       get_cluster(options[:config]).status
     end
 
-    desc "abspath [ROOTFS_PATH]", "Returns the absolute path to a file for each Chef server in a cluster"
+    desc "abspath [ROOTFS_PATH]", "Returns the absolute path to a file in each Chef Server (not in an Analytics server)"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def abspath(rootfs_path)
       puts get_cluster(options[:config]).abspath(rootfs_path).join(" ")
@@ -44,29 +44,29 @@ module DevLXC::CLI
       get_cluster(options[:config]).chef_repo
     end
 
-    desc "run_command [COMMAND]", "Runs a command in each Chef server in a cluster"
+    desc "run_command [COMMAND]", "Runs a command in each Chef Server (not in an Analytics server)"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def run_command(command)
       get_cluster(options[:config]).run_command(command)
     end
 
-    desc "start", "Start a cluster's Chef servers"
+    desc "start", "Start all servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def start
       get_cluster(options[:config]).start
     end
 
-    desc "stop", "Stop a cluster's Chef servers"
+    desc "stop", "Stop all servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def stop
       get_cluster(options[:config]).stop
     end
 
-    desc "destroy", "Destroy a cluster's Chef servers"
+    desc "destroy", "Destroy all servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the cluster's unique containers"
-    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the cluster's shared container"
-    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the cluster's platform container"
+    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique containers"
+    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared container"
+    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform container"
     def destroy
       cluster = get_cluster(options[:config])
       cluster.destroy
@@ -87,41 +87,41 @@ module DevLXC::CLI
       end
     }
 
-    desc "status [NAME]", "Show status of a cluster's Chef server"
+    desc "status [NAME]", "Show status of a server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def status(name)
       get_server(name, options[:config]).status
     end
 
-    desc "abspath [NAME] [ROOTFS_PATH]", "Returns the absolute path to a file in a cluster's Chef server"
+    desc "abspath [NAME] [ROOTFS_PATH]", "Returns the absolute path to a file in a server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def abspath(name, rootfs_path)
       puts get_server(name, options[:config]).abspath(rootfs_path)
     end
 
-    desc "run_command [NAME] [COMMAND]", "Runs a command in a cluster's Chef server"
+    desc "run_command [NAME] [COMMAND]", "Runs a command in a server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def run_command(name, command)
       get_server(name, options[:config]).run_command(command)
     end
 
-    desc "start [NAME]", "Start a cluster's Chef server"
+    desc "start [NAME]", "Start a server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def start(name)
       get_server(name, options[:config]).start
     end
 
-    desc "stop [NAME]", "Stop a cluster's Chef server"
+    desc "stop [NAME]", "Stop a server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def stop(name)
       get_server(name, options[:config]).stop
     end
 
-    desc "destroy [NAME]", "Destroy a cluster's Chef server"
+    desc "destroy [NAME]", "Destroy a server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the server's unique container"
-    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the server's shared container"
-    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the server's platform container"
+    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique container"
+    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared container"
+    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform container"
     def destroy(name)
       server = get_server(name, options[:config])
       server.destroy
@@ -144,10 +144,10 @@ module DevLXC::CLI
       ::DevLXC.create_platform_container(platform_container_name)
     end
 
-    desc "cluster SUBCOMMAND ...ARGS", "Manage Chef cluster"
+    desc "cluster SUBCOMMAND ...ARGS", "Manage cluster"
     subcommand "cluster", Cluster
 
-    desc "server SUBCOMMAND ...ARGS", "Manage Chef server"
+    desc "server SUBCOMMAND ...ARGS", "Manage server"
     subcommand "server", Server
   end
 end

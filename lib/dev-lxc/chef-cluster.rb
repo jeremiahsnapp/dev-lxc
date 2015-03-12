@@ -7,6 +7,7 @@ module DevLXC
     def initialize(cluster_config)
       @cluster_config = cluster_config
       @api_fqdn = @cluster_config["api_fqdn"]
+      @analytics_fqdn = @cluster_config["analytics_fqdn"]
       @topology = @cluster_config["topology"]
       @servers = @cluster_config["servers"]
       @frontends = Array.new
@@ -18,6 +19,7 @@ module DevLXC
           @bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
           @frontends << name if config["role"] == "frontend"
         end
+        @analytics_server = name if config["role"] == "analytics"
       end
     end
 
@@ -29,17 +31,19 @@ module DevLXC
           chef_servers << ChefServer.new(frontend_name, @cluster_config)
         end
       end
+      chef_servers << ChefServer.new(@analytics_server, @cluster_config) if @analytics_server
       chef_servers
     end
 
     def status
       puts "Cluster is available at https://#{@api_fqdn}"
+      puts "Analytics is available at https://#{@analytics_fqdn}" if @analytics_fqdn
       chef_servers.each { |cs| cs.status }
     end
 
     def abspath(rootfs_path)
       abspath = Array.new
-      chef_servers.each { |cs| abspath << cs.abspath(rootfs_path) }
+      chef_servers.each { |cs| abspath << cs.abspath(rootfs_path) unless cs.role == 'analytics' }
       abspath.compact
     end
 
@@ -78,7 +82,7 @@ knife[:chef_repo_path] = Dir.pwd
     end
 
     def run_command(command)
-      chef_servers.each { |cs| cs.run_command(command) }
+      chef_servers.each { |cs| cs.run_command(command) unless cs.role == 'analytics' }
     end
 
     def start
