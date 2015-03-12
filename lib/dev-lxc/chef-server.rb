@@ -15,7 +15,7 @@ module DevLXC
       @ipaddress = @config["ipaddress"]
       case cluster.topology
       when "open-source", "standalone"
-        @role = cluster.topology
+        @role = cluster.topology if @server.name == cluster.bootstrap_backend
       when "tier"
         @role = "bootstrap_backend" if @server.name == cluster.bootstrap_backend
         @role = "frontend" if cluster.frontends.include?(@server.name)
@@ -126,7 +126,7 @@ module DevLXC
         return
       else
         puts "Creating container #{@server.name}"
-        unless %w(open-source standalone).include?(@role) || @server.name == @bootstrap_backend || DevLXC::Container.new(@bootstrap_backend).defined?
+        unless @server.name == @bootstrap_backend || DevLXC::Container.new(@bootstrap_backend).defined?
           raise "The bootstrap backend server must be created first."
         end
         shared_container = create_shared_container

@@ -9,7 +9,10 @@ module DevLXC
       @api_fqdn = @cluster_config["api_fqdn"]
       @topology = @cluster_config["topology"]
       @servers = @cluster_config["servers"]
-      if @topology == 'tier'
+      case @topology
+      when 'open-source', 'standalone'
+        @bootstrap_backend = @servers.select {|k,v| v["role"] == nil}.first.first
+      when 'tier'
         @bootstrap_backend = @servers.select {|k,v| v["role"] == "backend" && v["bootstrap"] == true}.first.first
         @frontends = @servers.select {|k,v| v["role"] == "frontend"}.keys
       end
@@ -17,11 +20,8 @@ module DevLXC
 
     def chef_servers
       chef_servers = Array.new
-      case @topology
-      when "open-source", "standalone"
-        chef_servers << ChefServer.new(@servers.keys.first, @cluster_config)
-      when "tier"
-        chef_servers << ChefServer.new(@bootstrap_backend, @cluster_config)
+      chef_servers << ChefServer.new(@bootstrap_backend, @cluster_config)
+      if @topology == "tier"
         @frontends.each do |frontend_name|
           chef_servers << ChefServer.new(frontend_name, @cluster_config)
         end
@@ -41,15 +41,11 @@ module DevLXC
     end
 
     def chef_repo
-      case @topology
-      when "open-source"
+      if @topology == "open-source"
         puts "Unable to create a chef-repo for an Open Source Chef Server"
         exit 1
-      when "standalone"
-        chef_server = ChefServer.new(@servers.keys.first, @cluster_config)
-      when "tier"
-        chef_server = ChefServer.new(@bootstrap_backend, @cluster_config)
       end
+      chef_server = ChefServer.new(@bootstrap_backend, @cluster_config)
       if ! chef_server.server.defined?
         puts "The '#{chef_server.server.name}' Chef Server does not exist. Please create it first."
         exit 1
