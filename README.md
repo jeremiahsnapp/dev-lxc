@@ -138,9 +138,9 @@ This is an example of the output.
 ```
 Cluster is available at https://chef.lxc
 Analytics is available at https://analytics.lxc
-         be-tier.lxc     running         10.0.3.203
-        fe1-tier.lxc     running         10.0.3.204
-  analytics-tier.lxc     running         10.0.3.206
+         tier-be.lxc     running         10.0.3.203
+        tier-fe1.lxc     running         10.0.3.204
+  tier-analytics.lxc     running         10.0.3.206
 ```
 
 [https://chef.lxc](https://chef.lxc) resolves to the frontend.
@@ -216,7 +216,7 @@ dev-lxc can also be used as a library.
 	cluster.start
 	cluster.status
 	cluster.run_command("uptime")
-	server = DevLXC::ChefServer.new("fe1-tier.lxc", config)
+	server = DevLXC::ChefServer.new("tier-fe1.lxc", config)
 	server.stop
 	server.status
 	cluster.status
@@ -249,17 +249,17 @@ The following command generates sample config files for various cluster topologi
     #  push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
     #  analytics: /dev-shared/chef-packages/analytics/opscode-analytics_1.1.1-1_amd64.deb
     servers:
-      be-tier.lxc:
+      tier-be.lxc:
         role: backend
         ipaddress: 10.0.3.203
         bootstrap: true
-      fe1-tier.lxc:
+      tier-fe1.lxc:
         role: frontend
         ipaddress: 10.0.3.204
-    #  fe2-tier.lxc:
+    #  tier-fe2.lxc:
     #    role: frontend
     #    ipaddress: 10.0.3.205
-    #  analytics-tier.lxc:
+    #  tier-analytics.lxc:
     #    role: analytics
     #    ipaddress: 10.0.3.206
 
@@ -320,10 +320,10 @@ more clusters you have to maintain uniqueness across the YAML config files for t
     If cluster B is started with the same `api_fqdn` as an already running cluster A, then cluster B
 	will overwrite cluster A's DNS resolution of `api_fqdn`.
 
-    It is easy to provide uniqueness. For example, you can use the following command to replace `-tier`
+    It is easy to provide uniqueness. For example, you can use the following command to replace `tier-`
 	with `-1234` in a tier cluster's config.
 
-        sed -i 's/-tier/-1234/' dev-lxc.yml
+        sed -i 's/tier-/1234-/' dev-lxc.yml
 
 * IP Addresses
 
