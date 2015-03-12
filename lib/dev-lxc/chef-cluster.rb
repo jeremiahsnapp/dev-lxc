@@ -2,7 +2,7 @@ require "dev-lxc/chef-server"
 
 module DevLXC
   class ChefCluster
-    attr_reader :api_fqdn, :topology, :bootstrap_backend, :frontends
+    attr_reader :bootstrap_backend
 
     def initialize(cluster_config)
       @cluster_config = cluster_config

@@ -3,7 +3,7 @@ require "dev-lxc/chef-cluster"
 
 module DevLXC
   class ChefServer
-    attr_reader :platform_container_name, :server, :shared_container_name
+    attr_reader :server
 
     def initialize(name, cluster_config)
       unless cluster_config["servers"].keys.include?(name)
@@ -17,7 +17,7 @@ module DevLXC
       @mounts = cluster_config["mounts"]
       @bootstrap_backend = cluster.bootstrap_backend
       @chef_server_config = cluster.chef_server_config
-      @api_fqdn = cluster.api_fqdn
+      @api_fqdn = cluster_config["api_fqdn"]
       @platform_container_name = cluster_config["platform_container"]
       @packages = cluster_config["packages"]
 
