@@ -1,9 +1,11 @@
 # dev-lxc
 
-A tool for creating Chef server clusters using LXC containers.
+A tool for creating Chef Server clusters with a Chef Analytics server using LXC containers.
 
-Using [ruby-lxc](https://github.com/lxc/ruby-lxc) it builds a standalone server or
-tier cluster composed of a backend and multiple frontends with round-robin DNS resolution.
+Using [ruby-lxc](https://github.com/lxc/ruby-lxc) it builds a standalone Chef Server or
+tier Chef Server cluster composed of a backend and multiple frontends with round-robin
+DNS resolution. It will also optionally build a Chef Analytics server and connect it with
+the Chef Server.
 
 The dev-lxc tool is well suited as a tool for support related work, customized
 cluster builds for demo purposes, as well as general experimentation and exploration.
@@ -92,8 +94,9 @@ dl cl d
 
 ### Create and Manage a Cluster
 
-The following instructions will use a tier cluster for demonstration purposes.
-The size of this cluster uses about 3GB ram and takes a long time for the first
+The following instructions will build a tier cluster with an Analytics server for
+demonstration purposes.
+The size of this cluster uses about 3GB ram and takes awhile for the first
 build of the servers. Feel free to try the standalone config first.
 
 #### Define cluster
@@ -105,6 +108,8 @@ Be sure you configure the
 appropriately.
 
 	dev-lxc cluster init tier > dev-lxc.yml
+
+Uncomment the Analytics server section in `dev-lxc.yml` if you want it to be built.
 
 #### Start cluster
 
@@ -130,11 +135,15 @@ Run the following command to see the status of the cluster.
 
 This is an example of the output.
 
-	Cluster is available at https://chef-tier.lxc
-	      be-tier.lxc     running         10.0.3.202
-	     fe1-tier.lxc     running         10.0.3.203
+```
+Cluster is available at https://chef.lxc
+Analytics is available at https://analytics.lxc
+         be-tier.lxc     running         10.0.3.203
+        fe1-tier.lxc     running         10.0.3.204
+  analytics-tier.lxc     running         10.0.3.206
+```
 
-[https://chef-tier.lxc](https://chef-tier.lxc) resolves to the frontend.
+[https://chef.lxc](https://chef.lxc) resolves to the frontend.
 
 #### Create chef-repo
 
@@ -166,6 +175,9 @@ seconds effectively starting with a clean slate very easily.
 
 The abspath subcommand can be used to prepend each server's rootfs path to a particular file.
 
+When using `dev-lxc cluster abspath` only results for actual Chef Servers will be returned.
+If an Analytics server is described in `dev-lcx.yml` it will be ignored.
+
 For example, you can use the following command to edit each server's chef-server.rb file without
 logging into the containers.
 
@@ -175,6 +187,9 @@ logging into the containers.
 
 After modifying the chef-server.rb you could use the run_command subcommand to tell each server
 to run `chef-server-ctl reconfigure`.
+
+When using `dev-lxc cluster run_command` the command will only be run in actual Chef Servers.
+If an Analytics server is described in `dev-lcx.yml` it will be ignored.
 
     dev-lxc cluster run_command 'chef-server-ctl reconfigure'
 
@@ -223,31 +238,36 @@ The following command generates sample config files for various cluster topologi
 
     platform_container: p-ubuntu-1404
     topology: tier
-    api_fqdn: chef-tier.lxc
+    api_fqdn: chef.lxc
+    #analytics_fqdn: analytics.lxc
     mounts:
       - /dev-shared dev-shared
     packages:
-      server: /dev-shared/chef-packages/cs/chef-server-core_12.0.3-1_amd64.deb
+      server: /dev-shared/chef-packages/cs/chef-server-core_12.0.5-1_amd64.deb
+    #  manage: /dev-shared/chef-packages/manage/opscode-manage_1.11.2-1_amd64.deb
     #  reporting: /dev-shared/chef-packages/reporting/opscode-reporting_1.2.3-1_amd64.deb
     #  push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
-    #  manage: /dev-shared/chef-packages/manage/opscode-manage_1.9.0-1_amd64.deb
+    #  analytics: /dev-shared/chef-packages/analytics/opscode-analytics_1.1.1-1_amd64.deb
     servers:
       be-tier.lxc:
         role: backend
-        ipaddress: 10.0.3.202
+        ipaddress: 10.0.3.203
         bootstrap: true
       fe1-tier.lxc:
         role: frontend
-        ipaddress: 10.0.3.203
+        ipaddress: 10.0.3.204
     #  fe2-tier.lxc:
     #    role: frontend
-    #    ipaddress: 10.0.3.204
+    #    ipaddress: 10.0.3.205
+    #  analytics-tier.lxc:
+    #    role: analytics
+    #    ipaddress: 10.0.3.206
 
 This config defines a tier cluster consisting of a single backend and a single frontend.
 
 A second frontend is commented out to conserve resources. If you uncomment the second
 frontend then both frontends will be created and dnsmasq will resolve the `api_fqdn`
-[chef-tier.lxc](chef-tier.lxc) to both frontends using a round-robin policy.
+[chef.lxc](chef.lxc) to both frontends using a round-robin policy.
 
 The config file is very customizable. You can add or remove mounts, packages or servers,
 change ip addresses, change server names, change the base_platform and more.
