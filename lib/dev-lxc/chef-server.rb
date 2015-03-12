@@ -13,13 +13,7 @@ module DevLXC
       @server = DevLXC::Container.new(name)
       @config = cluster_config["servers"][@server.name]
       @ipaddress = @config["ipaddress"]
-      case cluster.topology
-      when "open-source", "standalone"
-        @role = cluster.topology if @server.name == cluster.bootstrap_backend
-      when "tier"
-        @role = "bootstrap_backend" if @server.name == cluster.bootstrap_backend
-        @role = "frontend" if cluster.frontends.include?(@server.name)
-      end
+      @role = @config["role"] ? @config["role"] : cluster_config['topology']
       @mounts = cluster_config["mounts"]
       @bootstrap_backend = cluster.bootstrap_backend
       @chef_server_config = cluster.chef_server_config
@@ -144,14 +138,14 @@ module DevLXC
         @server.start
         unless @packages["server"].nil?
           configure_server
-          create_users if %w(standalone bootstrap_backend).include?(@role)
-          if %w(standalone bootstrap_backend frontend).include?(@role)
-            configure_reporting unless @packages["reporting"].nil?
-            configure_push_jobs_server unless @packages["push-jobs-server"].nil?
-          end
+          create_users if %w(standalone backend).include?(@role)
           if %w(standalone frontend).include?(@role) && ! @packages["manage"].nil?
             @server.install_package(@packages["manage"])
             configure_manage
+          end
+          if %w(standalone backend frontend).include?(@role)
+            configure_reporting unless @packages["reporting"].nil?
+            configure_push_jobs_server unless @packages["push-jobs-server"].nil?
           end
         end
         @server.stop
@@ -199,7 +193,7 @@ module DevLXC
         FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/chef-server")
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/chef-server/chef-server.rb", @chef_server_config)
         run_ctl(@server_ctl, "reconfigure")
-      when "standalone", "bootstrap_backend"
+      when "standalone", "backend"
         case @chef_server_type
         when 'private-chef'
           puts "Creating /etc/opscode/private-chef.rb"
