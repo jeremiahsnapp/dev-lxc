@@ -11,8 +11,8 @@ packages:
 #  push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
 #  analytics: /dev-shared/chef-packages/analytics/opscode-analytics_1.1.1-1_amd64.deb
 servers:
-  chef-standalone.lxc:
+  standalone-chef.lxc:
     ipaddress: 10.0.3.201
-#  analytics-standalone.lxc:
+#  standalone-analytics.lxc:
 #    role: analytics
 #    ipaddress: 10.0.3.202

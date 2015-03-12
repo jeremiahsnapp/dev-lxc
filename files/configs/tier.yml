@@ -11,16 +11,16 @@ packages:
 #  push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
 #  analytics: /dev-shared/chef-packages/analytics/opscode-analytics_1.1.1-1_amd64.deb
 servers:
-  be-tier.lxc:
+  tier-be.lxc:
     role: backend
     ipaddress: 10.0.3.203
     bootstrap: true
-  fe1-tier.lxc:
+  tier-fe1.lxc:
     role: frontend
     ipaddress: 10.0.3.204
-#  fe2-tier.lxc:
+#  tier-fe2.lxc:
 #    role: frontend
 #    ipaddress: 10.0.3.205
-#  analytics-tier.lxc:
+#  tier-analytics.lxc:
 #    role: analytics
 #    ipaddress: 10.0.3.206
