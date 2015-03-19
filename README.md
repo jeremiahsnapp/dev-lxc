@@ -212,7 +212,7 @@ base containers if you want to build them from scratch.
 
     dev-lxc destroy -u -s
 
-#### Use commands against a specific server
+#### Use commands against specific servers
 You can also run most of these commands against a set of servers by specifying a pattern that matches
 a set of server names.
 
