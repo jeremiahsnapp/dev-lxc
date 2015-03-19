@@ -83,6 +83,13 @@ module DevLXC::CLI
       match_pattern(pattern).each { |cs| cs.start }
     end
 
+    # make `start` the default subcommand and pass any arguments to it
+    default_task :start
+    def method_missing(method, *args)
+      args = ["start", method.to_s] + args
+      DevLXC.start(args)
+    end
+
     desc "stop", "Stop servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     def stop(pattern=nil)

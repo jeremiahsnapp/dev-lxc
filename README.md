@@ -92,6 +92,12 @@ dl i standalone > dev-lxc.yml
 ```
 dev-lxc start
 dl start
+
+# if no subcommand is given then `start` will be called by default
+# and any arguments will be passed to the `start` subcommand
+# so both of the following commands will start all servers
+dev-lxc
+dl
 ```
 
 ```
