@@ -3,7 +3,8 @@ require 'dev-lxc'
 require 'thor'
 
 module DevLXC::CLI
-  class Cluster < Thor
+  class DevLXC < Thor
+
     no_commands{
       def get_cluster(config_option)
         config = "dev-lxc.yaml" if File.exists?("dev-lxc.yaml")
@@ -12,7 +13,23 @@ module DevLXC::CLI
         raise "A cluster config file must be provided" if config.nil?
         ::DevLXC::ChefCluster.new(YAML.load(IO.read(config)))
       end
+
+      def match_pattern(pattern)
+        get_cluster(options[:config]).chef_servers.select { |cs| cs.server.name =~ /#{pattern}/ }
+      end
     }
+
+    desc "create [PLATFORM_CONTAINER_NAME]", "Create a platform container"
+    def create(platform_container_name=nil)
+      platform_container_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-centos-5 p-centos-6)
+      if platform_container_name.nil? || ! platform_container_names.include?(platform_container_name)
+        platform_container_names_with_index = platform_container_names.map.with_index{ |a, i| [i+1, *a]}
+        print_table platform_container_names_with_index
+        selection = ask("Which platform container do you want to create?", :limited_to => platform_container_names_with_index.map{|c| c[0].to_s})
+        platform_container_name = platform_container_names[selection.to_i - 1]
+      end
+      ::DevLXC.create_platform_container(platform_container_name)
+    end
 
     desc "init [TOPOLOGY]", "Provide a cluster config file"
     def init(topology=nil)
@@ -26,16 +43,26 @@ module DevLXC::CLI
       puts IO.read("#{File.dirname(__FILE__)}/../../files/configs/#{topology}.yml")
     end
 
-    desc "status", "Show status of all servers"
+    desc "status", "Show status of servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def status
-      get_cluster(options[:config]).status
+    def status(pattern=nil)
+      config = "dev-lxc.yaml" if File.exists?("dev-lxc.yaml")
+      config = "dev-lxc.yml" if File.exists?("dev-lxc.yml")
+      config = options[:config] unless options[:config].nil?
+      raise "A cluster config file must be provided" if config.nil?
+      cluster_config = YAML.load(IO.read(config))
+
+      puts "Cluster is available at https://#{cluster_config['api_fqdn']}"
+      puts "Analytics is available at https://#{cluster_config['analytics_fqdn']}" if cluster_config['analytics_fqdn']
+      match_pattern(pattern).each { |cs| cs.status }
     end
 
-    desc "abspath [ROOTFS_PATH]", "Returns the absolute path to a file in each Chef Server (not in an Analytics server)"
+    desc "abspath [ROOTFS_PATH]", "Returns the absolute path to a file in each server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def abspath(rootfs_path)
-      puts get_cluster(options[:config]).abspath(rootfs_path).join(" ")
+    def abspath(pattern=nil, rootfs_path)
+      abspath = Array.new
+      match_pattern(pattern).map { |cs| abspath << cs.abspath(rootfs_path) }
+      puts abspath.compact.join(" ")
     end
 
     desc "chef-repo", "Creates a chef-repo in the current directory using files from the cluster's backend /root/chef-repo"
@@ -44,110 +71,37 @@ module DevLXC::CLI
       get_cluster(options[:config]).chef_repo
     end
 
-    desc "run_command [COMMAND]", "Runs a command in each Chef Server (not in an Analytics server)"
+    desc "run_command [COMMAND]", "Runs a command in each server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def run_command(command)
-      get_cluster(options[:config]).run_command(command)
+    def run_command(pattern=nil, command)
+      match_pattern(pattern).each { |cs| cs.run_command(command) }
     end
 
-    desc "start", "Start all servers"
+    desc "start", "Start servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def start
-      get_cluster(options[:config]).start
+    def start(pattern=nil)
+      match_pattern(pattern).each { |cs| cs.start }
     end
 
-    desc "stop", "Stop all servers"
+    desc "stop", "Stop servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def stop
-      get_cluster(options[:config]).stop
+    def stop(pattern=nil)
+      match_pattern(pattern).reverse_each { |cs| cs.stop }
     end
 
-    desc "destroy", "Destroy all servers"
+    desc "destroy", "Destroy servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
     option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique containers"
     option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared container"
     option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform container"
-    def destroy
-      cluster = get_cluster(options[:config])
-      cluster.destroy
-      cluster.destroy_container(:unique) if options[:unique]
-      cluster.destroy_container(:shared) if options[:shared]
-      cluster.destroy_container(:platform) if options[:platform]
-    end
-  end
-
-  class Server < Thor
-    no_commands{
-      def get_server(name, config_option)
-        config = "dev-lxc.yaml" if File.exists?("dev-lxc.yaml")
-        config = "dev-lxc.yml" if File.exists?("dev-lxc.yml")
-        config = config_option unless config_option.nil?
-        raise "A cluster config file must be provided" if config.nil?
-        ::DevLXC::ChefServer.new(name, YAML.load(IO.read(config)))
+    def destroy(pattern=nil)
+      match_pattern(pattern).reverse_each do |cs|
+        cs.destroy
+        cs.destroy_container(:unique) if options[:unique]
+        cs.destroy_container(:shared) if options[:shared]
+        cs.destroy_container(:platform) if options[:platform]
       end
-    }
-
-    desc "status [NAME]", "Show status of a server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def status(name)
-      get_server(name, options[:config]).status
     end
 
-    desc "abspath [NAME] [ROOTFS_PATH]", "Returns the absolute path to a file in a server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def abspath(name, rootfs_path)
-      puts get_server(name, options[:config]).abspath(rootfs_path)
-    end
-
-    desc "run_command [NAME] [COMMAND]", "Runs a command in a server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def run_command(name, command)
-      get_server(name, options[:config]).run_command(command)
-    end
-
-    desc "start [NAME]", "Start a server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def start(name)
-      get_server(name, options[:config]).start
-    end
-
-    desc "stop [NAME]", "Stop a server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    def stop(name)
-      get_server(name, options[:config]).stop
-    end
-
-    desc "destroy [NAME]", "Destroy a server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
-    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique container"
-    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared container"
-    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform container"
-    def destroy(name)
-      server = get_server(name, options[:config])
-      server.destroy
-      server.destroy_container(:unique) if options[:unique]
-      server.destroy_container(:shared) if options[:shared]
-      server.destroy_container(:platform) if options[:platform]
-    end
-  end
-
-  class DevLXC < Thor
-    desc "create [PLATFORM_CONTAINER_NAME]", "Create a platform container"
-    def create(platform_container_name=nil)
-      platform_container_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-centos-5 p-centos-6)
-      if platform_container_name.nil? || ! platform_container_names.include?(platform_container_name)
-        platform_container_names_with_index = platform_container_names.map.with_index{ |a, i| [i+1, *a]}
-        print_table platform_container_names_with_index
-        selection = ask("Which platform container do you want to create?", :limited_to => platform_container_names_with_index.map{|c| c[0].to_s})
-        platform_container_name = platform_container_names[selection.to_i - 1]
-      end
-      ::DevLXC.create_platform_container(platform_container_name)
-    end
-
-    desc "cluster SUBCOMMAND ...ARGS", "Manage cluster"
-    subcommand "cluster", Cluster
-
-    desc "server SUBCOMMAND ...ARGS", "Manage server"
-    subcommand "server", Server
   end
 end

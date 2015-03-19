@@ -63,6 +63,18 @@ Run `gem update dev-lxc` inside the Vagrant VM platform to ensure you have the l
 
 ## Usage
 
+### Display Help
+
+```
+dev-lxc help
+
+dev-lxc -h
+
+dev-lxc --help
+
+dev-lxc help <subcommand>
+```
+
 ### Shorter Commands are Faster (to type that is :)
 
 The dev-lxc-platform's root user's `~/.bashrc` file has aliased `dl` to `dev-lxc` for ease of use but
@@ -73,23 +85,23 @@ You only have to type enough of a `dev-lxc` subcommand to make it unique.
 The following commands are equivalent:
 
 ```
-dev-lxc cluster init standalone > dev-lxc.yml
-dl cl i standalone > dev-lxc.yml
+dev-lxc init standalone > dev-lxc.yml
+dl i standalone > dev-lxc.yml
 ```
 
 ```
-dev-lxc cluster start
-dl cl start
+dev-lxc start
+dl start
 ```
 
 ```
-dev-lxc cluster status
-dl cl stat
+dev-lxc status
+dl stat
 ```
 
 ```
-dev-lxc cluster destroy
-dl cl d
+dev-lxc destroy
+dl d
 ```
 
 ### Create and Manage a Cluster
@@ -107,7 +119,7 @@ Be sure you configure the
 [mounts and packages entries](https://github.com/jeremiahsnapp/dev-lxc#cluster-config-files)
 appropriately.
 
-	dev-lxc cluster init tier > dev-lxc.yml
+	dev-lxc init tier > dev-lxc.yml
 
 Uncomment the Analytics server section in `dev-lxc.yml` if you want it to be built.
 
@@ -118,7 +130,7 @@ Starting the cluster the first time takes awhile since it has a lot to build.
 The tool automatically creates snapshot clones at appropriate times so future
 creation of the cluster's servers is very quick.
 
-	dev-lxc cluster start
+	dev-lxc start
 
 A test org, user, knife.rb and keys are automatically created in
 the bootstrap backend server in `/root/chef-repo/.chef` for testing purposes.
@@ -131,7 +143,7 @@ org and user.
 
 Run the following command to see the status of the cluster.
 
-    dev-lxc cluster status
+    dev-lxc status
 
 This is an example of the output.
 
@@ -149,7 +161,7 @@ Analytics is available at https://analytics.lxc
 
 Create a local chef-repo with appropriate knife.rb and pem files.
 
-    dev-lxc cluster chef-repo
+    dev-lxc chef-repo
 
 Now you can easily use knife to access the cluster.
 
@@ -163,68 +175,78 @@ Clones of the servers as they existed immediately after initial installation, co
 test org and user creation are available so you can destroy the cluster and "rebuild" it within
 seconds effectively starting with a clean slate very easily.
 
-    dev-lxc cluster destroy
-	dev-lxc cluster start
+    dev-lxc destroy
+	dev-lxc start
 
 #### Stop and start the cluster
 
-	dev-lxc cluster stop
-	dev-lxc cluster start
+	dev-lxc stop
+	dev-lxc start
 
 #### Backdoor access to each server's filesystem
 
 The abspath subcommand can be used to prepend each server's rootfs path to a particular file.
 
-When using `dev-lxc cluster abspath` only results for actual Chef Servers will be returned.
-If an Analytics server is described in `dev-lcx.yml` it will be ignored.
+For example, you can use the following command to edit the backend and frontend servers' chef-server.rb
+file without logging into the containers.
 
-For example, you can use the following command to edit each server's chef-server.rb file without
-logging into the containers.
-
-    emacs $(dev-lxc cluster abspath /etc/opscode/chef-server.rb)
+    emacs $(dev-lxc abspath 'be|fe' /etc/opscode/chef-server.rb)
 
 #### Run arbitrary commands in each server
 
-After modifying the chef-server.rb you could use the run_command subcommand to tell each server
-to run `chef-server-ctl reconfigure`.
+After modifying the chef-server.rb you could use the run_command subcommand to tell the backend and
+frontend servers to run `chef-server-ctl reconfigure`.
 
-When using `dev-lxc cluster run_command` the command will only be run in actual Chef Servers.
-If an Analytics server is described in `dev-lcx.yml` it will be ignored.
-
-    dev-lxc cluster run_command 'chef-server-ctl reconfigure'
+    dev-lxc run_command 'be|fe' 'chef-server-ctl reconfigure'
 
 #### Destroy cluster
 
 Use the following command to destroy the cluster's servers and also destroy their unique and shared
 base containers if you want to build them from scratch.
 
-    dev-lxc cluster destroy -u -s
+    dev-lxc destroy -u -s
 
 #### Use commands against a specific server
-You can also run most of these commands against individual servers by using the server subcommand.
+You can also run most of these commands against a set of servers by specifying a pattern that matches
+a set of server names.
 
-    dev-lxc server ...
+    dev-lxc <subcommand> [pattern]
+
+For example, to only start the backend and frontend servers named `tier-be.lxc` and `tier-fe1.lxc`
+you can run the following command.
+
+    dev-lxc start 'be|fe'
 
 ### Using the dev-lxc library
 
-dev-lxc can also be used as a library.
+dev-lxc cli interface can be used as a library.
+
+	require 'dev-lxc/cli'
+
+	ARGV = [ 'start' ]         # start all servers
+	DevLXC::CLI::DevLXC.start
+
+	ARGV = [ 'status' ]        # show status of all servers
+	DevLXC::CLI::DevLXC.start
+
+	ARGV = [ 'run_command', 'uptime' ]   # run `uptime` in all servers
+	DevLXC::CLI::DevLXC.start
+
+	ARGV = [ 'destroy' ]       # destroy all servers
+	DevLXC::CLI::DevLXC.start
+
+dev-lxc itself can also be used as a library
 
     require 'yaml'
 	require 'dev-lxc'
-	config = YAML.load(IO.read('dev-lxc.yml'))
-	cluster = DevLXC::ChefCluster.new(config)
-	cluster.start
-	cluster.status
-	cluster.run_command("uptime")
-	server = DevLXC::ChefServer.new("tier-fe1.lxc", config)
-	server.stop
-	server.status
-	cluster.status
-	server.start
-	cluster.status
-	server.run_command("chef-server-ctl reconfigure")
-	cluster.destroy
-	cluster.status
+
+    config = YAML.load(IO.read('dev-lxc.yml'))
+    server = DevLXC::ChefServer.new("tier-fe1.lxc", config)
+
+	server.start               # start tier-fe1.lxc
+	server.status              # show status of tier-fe1.lxc
+	server.run_command("chef-server-ctl reconfigure")  # run command in tier-fe1.lxc
+	server.stop                # stop tier-fe1.lxc
 
 ## Cluster Config Files
 
@@ -232,9 +254,9 @@ dev-lxc uses a YAML configuration file named `dev-lxc.yml` to define a cluster.
 
 The following command generates sample config files for various cluster topologies.
 
-	dev-lxc cluster init
+	dev-lxc init
 
-`dev-lxc cluster init tier > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
+`dev-lxc init tier > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
 
     platform_container: p-ubuntu-1404
     topology: tier
@@ -298,10 +320,10 @@ The following is an example of managing multiple clusters while still avoiding s
 each cluster's config file.
 
 	mkdir -p ~/clusters/{clusterA,clusterB}
-	dev-lxc cluster init tier > ~/clusters/clusterA/dev-lxc.yml
-	dev-lxc cluster init standalone > ~/clusters/clusterB/dev-lxc.yml
-	cd ~/clusters/clusterA && dev-lxc cluster start  # starts clusterA
-	cd ~/clusters/clusterB && dev-lxc cluster start  # starts clusterB
+	dev-lxc init tier > ~/clusters/clusterA/dev-lxc.yml
+	dev-lxc init standalone > ~/clusters/clusterB/dev-lxc.yml
+	cd ~/clusters/clusterA && dev-lxc start  # starts clusterA
+	cd ~/clusters/clusterB && dev-lxc start  # starts clusterB
 
 ### Maintain Uniqueness Across Multiple Clusters
 
@@ -320,10 +342,10 @@ more clusters you have to maintain uniqueness across the YAML config files for t
     If cluster B is started with the same `api_fqdn` as an already running cluster A, then cluster B
 	will overwrite cluster A's DNS resolution of `api_fqdn`.
 
-    It is easy to provide uniqueness. For example, you can use the following command to replace `tier-`
-	with `-1234` in a tier cluster's config.
+    It is easy to provide uniqueness. For example, you can use the following command to replace `.lxc`
+	with `-1234.lxc` in a cluster's config.
 
-        sed -i 's/tier-/1234-/' dev-lxc.yml
+        sed -i 's/\.lxc/-1234.lxc/' dev-lxc.yml
 
 * IP Addresses
 
@@ -373,7 +395,7 @@ During a cluster build process the base containers that get created fall into th
 
     `DevLXC::ChefServer#create_base_server` controls the creation of a shared base container.
 
-    Chef packages that are common to all servers in a Chef cluster, such as Chef server,
+    Chef packages that are common to all servers in a Chef cluster, such as chef-server-core,
 	opscode-reporting and opscode-push-jobs-server are installed using `dpkg` or `rpm`.
 
     Note the manage package will not be installed at this point since it is not common to all
@@ -407,15 +429,12 @@ During a cluster build process the base containers that get created fall into th
 
 ### Destroying Base Containers
 
-When using `dev-lxc cluster destroy` to destroy an entire Chef cluster or `dev-lxc server destroy [NAME]`
-to destroy a single Chef server you have the option to also destroy any or all of the three types
-of base containers associated with the cluster or server.
+When using `dev-lxc destroy` to destroy servers you have the option to also destroy any or all of
+the three types of base containers associated with the servers.
 
-Either of the following commands will list the options available.
+The following command will list the options available.
 
-    dev-lxc cluster help destroy
-
-    dev-lxc server help destroy
+    dev-lxc help destroy
 
 Of course, you can also just use the standard LXC commands to destroy any container.
 

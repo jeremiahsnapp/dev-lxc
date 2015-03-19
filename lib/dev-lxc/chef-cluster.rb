@@ -35,18 +35,6 @@ module DevLXC
       chef_servers
     end
 
-    def status
-      puts "Cluster is available at https://#{@api_fqdn}"
-      puts "Analytics is available at https://#{@analytics_fqdn}" if @analytics_fqdn
-      chef_servers.each { |cs| cs.status }
-    end
-
-    def abspath(rootfs_path)
-      abspath = Array.new
-      chef_servers.each { |cs| abspath << cs.abspath(rootfs_path) unless cs.role == 'analytics' }
-      abspath.compact
-    end
-
     def chef_repo
       if @topology == "open-source"
         puts "Unable to create a chef-repo for an Open Source Chef Server"
@@ -79,29 +67,6 @@ knife[:chef_repo_path] = Dir.pwd
       else
         FileUtils.cp( Dir.glob("#{chef_server.abspath('/root/chef-repo/.chef')}/*.pem"), "./chef-repo/.chef" )
       end
-    end
-
-    def run_command(command)
-      chef_servers.each { |cs| cs.run_command(command) unless cs.role == 'analytics' }
-    end
-
-    def start
-      puts "Starting cluster"
-      chef_servers.each { |cs| cs.start }
-    end
-
-    def stop
-      puts "Stopping cluster"
-      chef_servers.reverse_each { |cs| cs.stop }
-    end
-
-    def destroy
-      puts "Destroying cluster"
-      chef_servers.reverse_each { |cs| cs.destroy }
-    end
-
-    def destroy_container(type)
-      chef_servers.each { |cs| cs.destroy_container(type) }
     end
 
     def chef_server_config
