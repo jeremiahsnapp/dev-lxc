@@ -22,14 +22,14 @@ module DevLXC
       @platform_container_name = cluster_config["platform_container"]
       @packages = cluster_config["packages"]
 
-      if File.basename(@packages["server"]).match(/^(\w+-\w+.*)[_-]((?:\d+\.?){3,})-/)
+      if File.basename(@packages["server"]).match(/^(\w+-\w+.*)[_-]((?:\d+\.?){3,})/)
         @chef_server_type = Regexp.last_match[1]
         @chef_server_version = Regexp.last_match[2].gsub(".", "-")
       end
 
       if @role == 'analytics'
         @shared_container_name = "s#{@platform_container_name[1..-1]}"
-        @shared_container_name += "-analytics-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["analytics"].to_s.match(/[_-]((\d+\.?){3,})-/)
+        @shared_container_name += "-analytics-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["analytics"].to_s.match(/[_-]((\d+\.?){3,})/)
       else
         @shared_container_name = "s#{@platform_container_name[1..-1]}"
         case @chef_server_type
@@ -44,8 +44,8 @@ module DevLXC
           @server_ctl = 'chef-server'
         end
         @shared_container_name += "-#{@chef_server_version}"
-        @shared_container_name += "-reporting-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["reporting"].to_s.match(/[_-]((\d+\.?){3,})-/)
-        @shared_container_name += "-pushy-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["push-jobs-server"].to_s.match(/[_-]((\d+\.?){3,})-/)
+        @shared_container_name += "-reporting-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["reporting"].to_s.match(/[_-]((\d+\.?){3,})/)
+        @shared_container_name += "-pushy-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["push-jobs-server"].to_s.match(/[_-]((\d+\.?){3,})/)
       end
     end
 
