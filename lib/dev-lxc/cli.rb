@@ -52,7 +52,7 @@ module DevLXC::CLI
       raise "A cluster config file must be provided" if config.nil?
       cluster_config = YAML.load(IO.read(config))
 
-      puts "Cluster is available at https://#{cluster_config['api_fqdn']}"
+      puts "Chef Server is available at https://#{cluster_config['api_fqdn']}"
       puts "Analytics is available at https://#{cluster_config['analytics_fqdn']}" if cluster_config['analytics_fqdn']
       match_pattern(pattern).each { |cs| cs.status }
     end
