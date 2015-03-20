@@ -46,6 +46,7 @@ module DevLXC
         @shared_container_name += "-#{@chef_server_version}"
         @shared_container_name += "-reporting-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["reporting"].to_s.match(/[_-]((\d+\.?){3,})/)
         @shared_container_name += "-pushy-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["push-jobs-server"].to_s.match(/[_-]((\d+\.?){3,})/)
+        @shared_container_name += "-sync-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["sync"].to_s.match(/[_-]((\d+\.?){3,})/)
       end
     end
 
@@ -195,6 +196,7 @@ module DevLXC
         shared_container.install_package(@packages["server"]) unless @packages["server"].nil?
         shared_container.install_package(@packages["reporting"]) unless @packages["reporting"].nil?
         shared_container.install_package(@packages["push-jobs-server"]) unless @packages["push-jobs-server"].nil?
+        shared_container.install_package(@packages["sync"]) unless @packages["sync"].nil?
       end
       shared_container.stop
       return shared_container
