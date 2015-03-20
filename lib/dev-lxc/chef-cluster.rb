@@ -47,6 +47,7 @@ module DevLXC
       end
       puts "Creating chef-repo with pem files and knife.rb in the current directory"
       FileUtils.mkdir_p("./chef-repo/.chef")
+
       knife_rb = %Q(
 current_dir = File.dirname(__FILE__)
 
@@ -62,11 +63,34 @@ cookbook_path Dir.pwd + "/cookbooks"
 knife[:chef_repo_path] = Dir.pwd
 )
       IO.write("./chef-repo/.chef/knife.rb", knife_rb)
+
       if Dir.glob("#{chef_server.abspath('/root/chef-repo/.chef')}/*.pem").empty?
         puts "The pem files can not be copied because they do not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
       else
         FileUtils.cp( Dir.glob("#{chef_server.abspath('/root/chef-repo/.chef')}/*.pem"), "./chef-repo/.chef" )
       end
+
+      bootstrap_node = %Q(#!/bin/bash
+
+if [[ -z $1 ]]; then
+  echo "Please provide the name of the node to be bootstrapped"
+  return 1
+fi
+
+xc-start $1
+
+xc-chef-config -s https://#{@api_fqdn}/organizations/ponyville \\
+               -u ponyville-validator \\
+               -k ./chef-repo/.chef/ponyville-validator.pem
+
+if [[ -n $2 ]]; then
+  xc-attach chef-client -r $2
+else
+  xc-attach chef-client
+fi
+)
+      IO.write("./bootstrap-node", bootstrap_node)
+      FileUtils.chmod("u+x", "./bootstrap-node")
     end
 
     def chef_server_config
