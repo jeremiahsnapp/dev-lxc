@@ -32,7 +32,7 @@ module DevLXC::CLI
     end
 
     desc "init [TOPOLOGY]", "Provide a cluster config file"
-    def init(topology=nil)
+    def init(topology=nil, unique_string=nil)
       topologies = %w(open-source standalone tier)
       if topology.nil? || ! topologies.include?(topology)
         topologies_with_index = topologies.map.with_index{ |a, i| [i+1, *a]}
@@ -40,7 +40,16 @@ module DevLXC::CLI
         selection = ask("Which cluster topology do you want to use?", :limited_to => topologies_with_index.map{|c| c[0].to_s})
         topology = topologies[selection.to_i - 1]
       end
-      puts IO.read("#{File.dirname(__FILE__)}/../../files/configs/#{topology}.yml")
+      config = IO.read("#{File.dirname(__FILE__)}/../../files/configs/#{topology}.yml")
+      unless unique_string.nil?
+        config_hash = YAML.load(config.gsub(/^#/, ''))
+        config.gsub!(/api_fqdn:\s+#{config_hash['api_fqdn']}/, "api_fqdn: #{unique_string}#{config_hash['api_fqdn']}")
+        config.gsub!(/analytics_fqdn:\s+#{config_hash['analytics_fqdn']}/, "analytics_fqdn: #{unique_string}#{config_hash['analytics_fqdn']}")
+        config_hash['servers'].keys.each do |server_name|
+          config.gsub!(/ #{server_name}:/, " #{unique_string}#{server_name}:")
+        end
+      end
+      puts config
     end
 
     desc "status", "Show status of servers"

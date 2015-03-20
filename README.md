@@ -336,22 +336,24 @@ each cluster's config file.
 The default cluster configs are already designed to be unique from each other but as you build
 more clusters you have to maintain uniqueness across the YAML config files for the following items.
 
-* Server names and `api_fqdn`
+* Server names, `api_fqdn` and `analytics_fqdn`
 
     Server names should really be unique across all clusters.
 
     Even when cluster A is shutdown, if cluster B uses the same server names when it is created it
 	will use the already existing servers from cluster A.
 
-    `api_fqdn` uniqueness only matters when clusters with the same `api_fqdn` are running.
+    `api_fqdn` and `analytics_fqdn` uniqueness only matters when clusters with the same `api_fqdn`
+	and `analytics_fqdn` are running.
 
-    If cluster B is started with the same `api_fqdn` as an already running cluster A, then cluster B
-	will overwrite cluster A's DNS resolution of `api_fqdn`.
+    If cluster B is started with the same `api_fqdn` or `analytics_fqdn` as an already running cluster A,
+	then cluster B will overwrite cluster A's DNS resolution of `api_fqdn` or `analytics_fqdn`.
 
-    It is easy to provide uniqueness. For example, you can use the following command to replace `.lxc`
-	with `-1234.lxc` in a cluster's config.
+    It is easy to provide uniqueness in the server names, `api_fqdn` and `analytics_fqdn`.
+	For example, you can use the following command to prefix the servers names with `1234-` when
+	generating a cluster's config.
 
-        sed -i 's/\.lxc/-1234.lxc/' dev-lxc.yml
+        dev-lxc init tier 1234- > dev-lxc.yml
 
 * IP Addresses
 
