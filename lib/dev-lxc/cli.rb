@@ -7,10 +7,13 @@ module DevLXC::CLI
 
     no_commands{
       def get_cluster(config_option)
-        config = "dev-lxc.yaml" if File.exists?("dev-lxc.yaml")
-        config = "dev-lxc.yml" if File.exists?("dev-lxc.yml")
-        config = config_option unless config_option.nil?
-        raise "A cluster config file must be provided" if config.nil?
+        config = options[:config]
+        config ||= "dev-lxc.yml"
+        if ! File.exists?(config)
+          puts "ERROR: Cluster config file `config` does not exist."
+          puts "       Create a `./dev-lxc.yml` file or specify the path using `-c`."
+          exit 1
+        end
         ::DevLXC::ChefCluster.new(YAML.load(IO.read(config)))
       end
 
@@ -53,12 +56,15 @@ module DevLXC::CLI
     end
 
     desc "status", "Show status of servers"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
+    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def status(pattern=nil)
-      config = "dev-lxc.yaml" if File.exists?("dev-lxc.yaml")
-      config = "dev-lxc.yml" if File.exists?("dev-lxc.yml")
-      config = options[:config] unless options[:config].nil?
-      raise "A cluster config file must be provided" if config.nil?
+      config = options[:config]
+      config ||= "dev-lxc.yml"
+      if ! File.exists?(config)
+        puts "ERROR: Cluster config file `config` does not exist."
+        puts "       Create a `./dev-lxc.yml` file or specify the path using `-c`."
+        exit 1
+      end
       cluster_config = YAML.load(IO.read(config))
 
       puts "Chef Server is available at https://#{cluster_config['api_fqdn']}"
@@ -67,7 +73,7 @@ module DevLXC::CLI
     end
 
     desc "abspath [ROOTFS_PATH]", "Returns the absolute path to a file in each server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
+    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def abspath(pattern=nil, rootfs_path)
       abspath = Array.new
       match_pattern(pattern).map { |cs| abspath << cs.abspath(rootfs_path) }
@@ -75,19 +81,19 @@ module DevLXC::CLI
     end
 
     desc "chef-repo", "Creates a chef-repo in the current directory using files from the cluster's backend /root/chef-repo"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
+    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def chef_repo
       get_cluster(options[:config]).chef_repo
     end
 
     desc "run_command [COMMAND]", "Runs a command in each server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
+    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(pattern=nil, command)
       match_pattern(pattern).each { |cs| cs.run_command(command) }
     end
 
     desc "start", "Start servers"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
+    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def start(pattern=nil)
       match_pattern(pattern).each { |cs| cs.start }
     end
@@ -100,13 +106,13 @@ module DevLXC::CLI
     end
 
     desc "stop", "Stop servers"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
+    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def stop(pattern=nil)
       match_pattern(pattern).reverse_each { |cs| cs.stop }
     end
 
     desc "destroy", "Destroy servers"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. ./dev-lxc.yml will be used by default"
+    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique containers"
     option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared container"
     option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform container"
