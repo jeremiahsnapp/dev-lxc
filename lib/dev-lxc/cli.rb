@@ -17,8 +17,8 @@ module DevLXC::CLI
         ::DevLXC::ChefCluster.new(YAML.load(IO.read(config)))
       end
 
-      def match_pattern(pattern)
-        get_cluster(options[:config]).chef_servers.select { |cs| cs.server.name =~ /#{pattern}/ }
+      def match_server_name_regex(server_name_regex)
+        get_cluster(options[:config]).chef_servers.select { |cs| cs.server.name =~ /#{server_name_regex}/ }
       end
     }
 
@@ -55,9 +55,9 @@ module DevLXC::CLI
       puts config
     end
 
-    desc "status", "Show status of servers"
+    desc "status [SERVER_NAME_REGEX]", "Show status of servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def status(pattern=nil)
+    def status(server_name_regex=nil)
       config = options[:config]
       config ||= "dev-lxc.yml"
       if ! File.exists?(config)
@@ -69,14 +69,14 @@ module DevLXC::CLI
 
       puts "Chef Server is available at https://#{cluster_config['api_fqdn']}"
       puts "Analytics is available at https://#{cluster_config['analytics_fqdn']}" if cluster_config['analytics_fqdn']
-      match_pattern(pattern).each { |cs| cs.status }
+      match_server_name_regex(server_name_regex).each { |cs| cs.status }
     end
 
-    desc "abspath [ROOTFS_PATH]", "Returns the absolute path to a file in each server"
+    desc "abspath [SERVER_NAME_REGEX] [ROOTFS_PATH]", "Returns the absolute path to a file in each server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def abspath(pattern=nil, rootfs_path)
+    def abspath(server_name_regex=nil, rootfs_path)
       abspath = Array.new
-      match_pattern(pattern).map { |cs| abspath << cs.abspath(rootfs_path) }
+      match_server_name_regex(server_name_regex).map { |cs| abspath << cs.abspath(rootfs_path) }
       puts abspath.compact.join(" ")
     end
 
@@ -86,16 +86,16 @@ module DevLXC::CLI
       get_cluster(options[:config]).chef_repo
     end
 
-    desc "run_command [COMMAND]", "Runs a command in each server"
+    desc "run_command [SERVER_NAME_REGEX] [COMMAND]", "Runs a command in each server"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def run_command(pattern=nil, command)
-      match_pattern(pattern).each { |cs| cs.run_command(command) }
+    def run_command(server_name_regex=nil, command)
+      match_server_name_regex(server_name_regex).each { |cs| cs.run_command(command) }
     end
 
-    desc "start", "Start servers"
+    desc "start [SERVER_NAME_REGEX]", "Start servers - This is the default if no subcommand is given"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def start(pattern=nil)
-      match_pattern(pattern).each { |cs| cs.start }
+    def start(server_name_regex=nil)
+      match_server_name_regex(server_name_regex).each { |cs| cs.start }
     end
 
     # make `start` the default subcommand and pass any arguments to it
@@ -105,19 +105,19 @@ module DevLXC::CLI
       DevLXC.start(args)
     end
 
-    desc "stop", "Stop servers"
+    desc "stop [SERVER_NAME_REGEX]", "Stop servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def stop(pattern=nil)
-      match_pattern(pattern).reverse_each { |cs| cs.stop }
+    def stop(server_name_regex=nil)
+      match_server_name_regex(server_name_regex).reverse_each { |cs| cs.stop }
     end
 
-    desc "destroy", "Destroy servers"
+    desc "destroy [SERVER_NAME_REGEX]", "Destroy servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique containers"
     option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared container"
     option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform container"
-    def destroy(pattern=nil)
-      match_pattern(pattern).reverse_each do |cs|
+    def destroy(server_name_regex=nil)
+      match_server_name_regex(server_name_regex).reverse_each do |cs|
         cs.destroy
         cs.destroy_container(:unique) if options[:unique]
         cs.destroy_container(:shared) if options[:shared]

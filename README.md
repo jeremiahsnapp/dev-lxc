@@ -216,10 +216,10 @@ base containers if you want to build them from scratch.
     dev-lxc destroy -u -s
 
 #### Use commands against specific servers
-You can also run most of these commands against a set of servers by specifying a pattern that matches
-a set of server names.
+You can also run most of these commands against a set of servers by specifying a regular expression
+that matches a set of server names.
 
-    dev-lxc <subcommand> [pattern]
+    dev-lxc <subcommand> [SERVER_NAME_REGEX]
 
 For example, to only start the backend and frontend servers named `chef-be.lxc` and `chef-fe1.lxc`
 you can run the following command.
