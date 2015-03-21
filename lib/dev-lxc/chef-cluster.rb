@@ -36,39 +36,47 @@ module DevLXC
     end
 
     def chef_repo
-      if @topology == "open-source"
-        puts "Unable to create a chef-repo for an Open Source Chef Server"
-        exit 1
-      end
       chef_server = ChefServer.new(@bootstrap_backend, @cluster_config)
       if ! chef_server.server.defined?
         puts "The '#{chef_server.server.name}' Chef Server does not exist. Please create it first."
         exit 1
       end
+
       puts "Creating chef-repo with pem files and knife.rb in the current directory"
       FileUtils.mkdir_p("./chef-repo/.chef")
+
+      pem_files = Dir.glob("#{chef_server.abspath('/root/chef-repo/.chef')}/*.pem")
+      if pem_files.empty?
+        puts "The pem files can not be copied because they do not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
+      else
+        FileUtils.cp( pem_files, "./chef-repo/.chef" )
+      end
+
+      if @topology == "open-source"
+        chef_server_url = "https://#{@api_fqdn}"
+        username = "admin"
+        validator_name = "chef-validator"
+      else
+        chef_server_url = "https://#{@api_fqdn}/organizations/ponyville"
+        username = "rainbowdash"
+        validator_name = "ponyville-validator"
+      end
 
       knife_rb = %Q(
 current_dir = File.dirname(__FILE__)
 
-chef_server_url "https://#{@api_fqdn}/organizations/ponyville"
+chef_server_url "#{chef_server_url}"
 
-node_name "rainbowdash"
-client_key "\#{current_dir}/rainbowdash.pem"
+node_name "#{username}"
+client_key "\#{current_dir}/#{username}.pem"
 
-validation_client_name "ponyville-validator"
-validation_key "\#{current_dir}/ponyville-validator.pem"
+validation_client_name "#{validator_name}"
+validation_key "\#{current_dir}/#{validator_name}.pem"
 
 cookbook_path Dir.pwd + "/cookbooks"
 knife[:chef_repo_path] = Dir.pwd
 )
       IO.write("./chef-repo/.chef/knife.rb", knife_rb)
-
-      if Dir.glob("#{chef_server.abspath('/root/chef-repo/.chef')}/*.pem").empty?
-        puts "The pem files can not be copied because they do not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
-      else
-        FileUtils.cp( Dir.glob("#{chef_server.abspath('/root/chef-repo/.chef')}/*.pem"), "./chef-repo/.chef" )
-      end
 
       bootstrap_node = %Q(#!/bin/bash
 
@@ -79,9 +87,9 @@ fi
 
 xc-start $1
 
-xc-chef-config -s https://#{@api_fqdn}/organizations/ponyville \\
-               -u ponyville-validator \\
-               -k ./chef-repo/.chef/ponyville-validator.pem
+xc-chef-config -s #{chef_server_url} \\
+               -u #{validator_name} \\
+               -k ./chef-repo/.chef/#{validator_name}.pem
 
 if [[ -n $2 ]]; then
   xc-attach chef-client -r $2
