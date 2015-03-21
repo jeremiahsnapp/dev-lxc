@@ -3,7 +3,7 @@ require "dev-lxc/chef-cluster"
 
 module DevLXC
   class ChefServer
-    attr_reader :role, :server
+    attr_reader :role, :server, :platform_container_name, :shared_container_name
 
     def initialize(name, cluster_config)
       unless cluster_config["servers"].keys.include?(name)

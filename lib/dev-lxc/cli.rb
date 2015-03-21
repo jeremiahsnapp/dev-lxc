@@ -86,6 +86,40 @@ module DevLXC::CLI
       get_cluster(options[:config]).chef_repo
     end
 
+    desc "list_base_containers [SERVER_NAME_REGEX]", "List of each servers' base containers created during the build process"
+    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    def list_base_containers(server_name_regex=nil)
+      base_containers = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Array.new } }
+      match_server_name_regex(server_name_regex).each do |cs|
+        base_containers[cs.platform_container_name][cs.shared_container_name] << cs.server.name
+      end
+      base_containers.each_with_index do |(platform_name, shared), base_containers_index|
+        shared.each_with_index do |(shared_name, final), shared_index|
+          printf "Platform: %21s  %s\n", (LXC::Container.new(platform_name).defined? ? "Created" : "Not Created"), platform_name
+          puts "|"
+          printf "\\_ Shared: %20s  %s\n", (LXC::Container.new(shared_name).defined? ? "Created" : "Not Created"), shared_name
+          final.each_with_index do |final_name, final_index|
+            puts "   |"
+            unique_name = "u-#{final_name}"
+            printf "   \\_ Unique: %17s  %s\n", (LXC::Container.new(unique_name).defined? ? "Created" : "Not Created"), unique_name
+
+            shared_connector = (final_index + 1 < final.length ? "|" : " ")
+
+            custom_name = "c-#{final_name}"
+            if LXC::Container.new(custom_name).defined?
+              printf "   #{shared_connector}  \\_ Custom: %14s  %s\n", "Created", custom_name
+              custom_spacing = "   "
+              final_width = 12
+            else
+              final_width = 15
+            end
+            printf "   #{shared_connector}  #{custom_spacing}\\_ Final: %#{final_width}s    %s\n", (LXC::Container.new(final_name).defined? ? "Created" : "Not Created"), final_name
+          end
+          puts if (shared_index + 1 < shared.length) || (base_containers_index + 1 < base_containers.length)
+        end
+      end
+    end
+
     desc "run_command [SERVER_NAME_REGEX] [COMMAND]", "Runs a command in each server"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(server_name_regex=nil, command)

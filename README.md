@@ -130,6 +130,12 @@ appropriately.
 
 Uncomment the Analytics server section in `dev-lxc.yml` if you want it to be built.
 
+#### List Base Containers
+
+List of base containers used for each server.
+
+    dev-lxc list_base_containers
+
 #### Start cluster
 
 Starting the cluster the first time takes awhile since it has a lot to build.
