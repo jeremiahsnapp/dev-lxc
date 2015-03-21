@@ -34,7 +34,7 @@ module DevLXC::CLI
       ::DevLXC.create_platform_container(platform_container_name)
     end
 
-    desc "init [TOPOLOGY]", "Provide a cluster config file"
+    desc "init [TOPOLOGY] [UNIQUE_STRING]", "Provide a cluster config file with optional uniqueness in server names and FQDNs"
     def init(topology=nil, unique_string=nil)
       topologies = %w(open-source standalone tier)
       if topology.nil? || ! topologies.include?(topology)
@@ -80,7 +80,7 @@ module DevLXC::CLI
       puts abspath.compact.join(" ")
     end
 
-    desc "chef-repo", "Creates a chef-repo in the current directory using files from the cluster's backend /root/chef-repo"
+    desc "chef-repo", "Creates a `bootstrap-node` script and chef-repo in the current directory using files from the cluster's backend /root/chef-repo"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def chef_repo
       get_cluster(options[:config]).chef_repo
