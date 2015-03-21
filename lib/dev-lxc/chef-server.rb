@@ -148,7 +148,7 @@ module DevLXC
         configure_analytics if @role == 'analytics'
         unless @role == 'analytics' || @packages["server"].nil?
           configure_server
-          create_users if %w(standalone backend).include?(@role)
+          create_users if @server.name == @bootstrap_backend
           if %w(standalone frontend).include?(@role) && ! @packages["manage"].nil?
             @server.install_package(@packages["manage"])
             configure_manage
@@ -296,23 +296,19 @@ module DevLXC
     def create_users
       puts "Creating org, user, keys and knife.rb in /root/chef-repo/.chef"
       FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef")
-      knife_rb = %Q(
-current_dir = File.dirname(__FILE__)
 
-chef_server_url "https://127.0.0.1/organizations/ponyville"
-
-node_name "rainbowdash"
-client_key "\#{current_dir}/rainbowdash.pem"
-
-validation_client_name "ponyville-validator"
-validation_key "\#{current_dir}/ponyville-validator.pem"
-
-cookbook_path Dir.pwd + "/cookbooks"
-knife[:chef_repo_path] = Dir.pwd
-)
-      IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/knife.rb", knife_rb)
       case @chef_server_type
+      when 'chef-server'
+        chef_server_url = "https://127.0.0.1"
+        username = "admin"
+        validator_name = "chef-validator"
+
+        FileUtils.cp( Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/chef-server/{admin,chef-validator}.pem"), "/root/chef-repo/.chef" )
       when 'private-chef'
+        chef_server_url = "https://127.0.0.1/organizations/ponyville"
+        username = "rainbowdash"
+        validator_name = "ponyville-validator"
+
         # give time for all services to come up completely
         sleep 60
         pivotal_rb = %Q(
@@ -330,12 +326,31 @@ knife[:chef_repo_path] = Dir.pwd
         @server.run_command("/opt/opscode/embedded/bin/knife opc user create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem -c /root/chef-repo/.chef/pivotal.rb")
         @server.run_command("/opt/opscode/embedded/bin/knife opc org user add ponyville rainbowdash --admin")
       when 'chef-server-core'
+        chef_server_url = "https://127.0.0.1/organizations/ponyville"
+        username = "rainbowdash"
+        validator_name = "ponyville-validator"
+
         # give time for all services to come up completely
         sleep 10
         run_ctl(@server_ctl, "org-create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem")
         run_ctl(@server_ctl, "user-create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem")
         run_ctl(@server_ctl, "org-user-add ponyville rainbowdash --admin")
       end
+      knife_rb = %Q(
+current_dir = File.dirname(__FILE__)
+
+chef_server_url "#{chef_server_url}"
+
+node_name "#{username}"
+client_key "\#{current_dir}/#{username}.pem"
+
+validation_client_name "#{validator_name}"
+validation_key "\#{current_dir}/#{validator_name}.pem"
+
+cookbook_path Dir.pwd + "/cookbooks"
+knife[:chef_repo_path] = Dir.pwd
+)
+      IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/knife.rb", knife_rb)
     end
   end
 end
