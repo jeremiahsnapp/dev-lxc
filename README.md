@@ -154,11 +154,11 @@ Run the following command to see the status of the cluster.
 This is an example of the output.
 
 ```
-Cluster is available at https://chef.lxc
+Chef Server is available at https://chef.lxc
 Analytics is available at https://analytics.lxc
-         tier-be.lxc     running         10.0.3.203
-        tier-fe1.lxc     running         10.0.3.204
-  tier-analytics.lxc     running         10.0.3.206
+         chef-be.lxc     running         10.0.3.203
+        chef-fe1.lxc     running         10.0.3.204
+       analytics.lxc     running         10.0.3.206
 ```
 
 [https://chef.lxc](https://chef.lxc) resolves to the frontend.
@@ -166,6 +166,9 @@ Analytics is available at https://analytics.lxc
 #### Create chef-repo
 
 Create a local chef-repo with appropriate knife.rb and pem files.
+
+Also create a `./bootstrap-node` script to simplify creating and
+bootstrapping nodes in the `dev-lxc-platform`.
 
     dev-lxc chef-repo
 
@@ -218,7 +221,7 @@ a set of server names.
 
     dev-lxc <subcommand> [pattern]
 
-For example, to only start the backend and frontend servers named `tier-be.lxc` and `tier-fe1.lxc`
+For example, to only start the backend and frontend servers named `chef-be.lxc` and `chef-fe1.lxc`
 you can run the following command.
 
     dev-lxc start 'be|fe'
@@ -247,12 +250,12 @@ dev-lxc itself can also be used as a library
 	require 'dev-lxc'
 
     config = YAML.load(IO.read('dev-lxc.yml'))
-    server = DevLXC::ChefServer.new("tier-fe1.lxc", config)
+    server = DevLXC::ChefServer.new("chef-fe1.lxc", config)
 
-	server.start               # start tier-fe1.lxc
-	server.status              # show status of tier-fe1.lxc
-	server.run_command("chef-server-ctl reconfigure")  # run command in tier-fe1.lxc
-	server.stop                # stop tier-fe1.lxc
+	server.start               # start chef-fe1.lxc
+	server.status              # show status of chef-fe1.lxc
+	server.run_command("chef-server-ctl reconfigure")  # run command in chef-fe1.lxc
+	server.stop                # stop chef-fe1.lxc
 
 ## Cluster Config Files
 
@@ -271,23 +274,28 @@ The following command generates sample config files for various cluster topologi
     mounts:
       - /dev-shared dev-shared
     packages:
-      server: /dev-shared/chef-packages/cs/chef-server-core_12.0.5-1_amd64.deb
+      server: /dev-shared/chef-packages/cs/chef-server-core_12.0.6-1_amd64.deb
     #  manage: /dev-shared/chef-packages/manage/opscode-manage_1.11.2-1_amd64.deb
     #  reporting: /dev-shared/chef-packages/reporting/opscode-reporting_1.2.3-1_amd64.deb
     #  push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
+
+    # The chef-sync package would only be installed.
+    # It would NOT be configured since we don't know whether it should be a master or replica.
+    #  sync: /dev-shared/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
+
     #  analytics: /dev-shared/chef-packages/analytics/opscode-analytics_1.1.1-1_amd64.deb
     servers:
-      tier-be.lxc:
+      chef-be.lxc:
         role: backend
         ipaddress: 10.0.3.203
         bootstrap: true
-      tier-fe1.lxc:
+      chef-fe1.lxc:
         role: frontend
         ipaddress: 10.0.3.204
-    #  tier-fe2.lxc:
+    #  chef-fe2.lxc:
     #    role: frontend
     #    ipaddress: 10.0.3.205
-    #  tier-analytics.lxc:
+    #  analytics.lxc:
     #    role: analytics
     #    ipaddress: 10.0.3.206
 
@@ -404,7 +412,7 @@ During a cluster build process the base containers that get created fall into th
     `DevLXC::ChefServer#create_base_server` controls the creation of a shared base container.
 
     Chef packages that are common to all servers in a Chef cluster, such as chef-server-core,
-	opscode-reporting and opscode-push-jobs-server are installed using `dpkg` or `rpm`.
+	opscode-reporting, opscode-push-jobs-server and chef-sync are installed using `dpkg` or `rpm`.
 
     Note the manage package will not be installed at this point since it is not common to all
 	servers (i.e. it does not get installed on backend servers).
