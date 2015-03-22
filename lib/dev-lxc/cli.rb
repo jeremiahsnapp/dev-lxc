@@ -56,7 +56,7 @@ module DevLXC::CLI
     end
 
     desc "status [SERVER_NAME_REGEX]", "Show status of servers"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def status(server_name_regex=nil)
       config = options[:config]
       config ||= "dev-lxc.yml"
@@ -73,7 +73,7 @@ module DevLXC::CLI
     end
 
     desc "abspath [SERVER_NAME_REGEX] [ROOTFS_PATH]", "Returns the absolute path to a file in each server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def abspath(server_name_regex=nil, rootfs_path)
       abspath = Array.new
       match_server_name_regex(server_name_regex).map { |cs| abspath << cs.abspath(rootfs_path) }
@@ -81,19 +81,19 @@ module DevLXC::CLI
     end
 
     desc "chef-repo", "Creates a `bootstrap-node` script and chef-repo in the current directory using files from the cluster's backend /root/chef-repo"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def chef_repo
       get_cluster(options[:config]).chef_repo
     end
 
     desc "run_command [SERVER_NAME_REGEX] [COMMAND]", "Runs a command in each server"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(server_name_regex=nil, command)
       match_server_name_regex(server_name_regex).each { |cs| cs.run_command(command) }
     end
 
     desc "up [SERVER_NAME_REGEX]", "Start servers - This is the default if no subcommand is given"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def up(server_name_regex=nil)
       match_server_name_regex(server_name_regex).each { |cs| cs.start }
     end
@@ -106,13 +106,13 @@ module DevLXC::CLI
     end
 
     desc "halt [SERVER_NAME_REGEX]", "Stop servers"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def halt(server_name_regex=nil)
       match_server_name_regex(server_name_regex).reverse_each { |cs| cs.stop }
     end
 
     desc "destroy [SERVER_NAME_REGEX]", "Destroy servers"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique containers"
     option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared container"
     option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform container"
