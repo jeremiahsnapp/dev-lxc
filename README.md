@@ -103,7 +103,7 @@ dl
 
 ```
 dev-lxc status
-dl stat
+dl st
 ```
 
 ```
@@ -161,11 +161,13 @@ Run the following command to see the status of the cluster.
 This is an example of the output.
 
 ```
-Chef Server is available at https://chef.lxc
-Analytics is available at https://analytics.lxc
-         chef-be.lxc     running         10.0.3.203
-        chef-fe1.lxc     running         10.0.3.204
-       analytics.lxc     running         10.0.3.206
+Chef Server: https://chef.lxc
+
+Analytics: https://analytics.lxc
+
+            chef-be.lxc     running         10.0.3.203
+           chef-fe1.lxc     running         10.0.3.204
+          analytics.lxc     running         10.0.3.206
 ```
 
 [https://chef.lxc](https://chef.lxc) resolves to the frontend.
@@ -325,7 +327,7 @@ frontend then both frontends will be created and dnsmasq will resolve the `api_f
 [chef.lxc](chef.lxc) to both frontends using a round-robin policy.
 
 The config file is very customizable. You can add or remove mounts, packages or servers,
-change ip addresses, change server names, change the base_platform and more.
+change ip addresses, change server names, change the platform_container and more.
 
 The `mounts` list describes what directories get mounted from the Vagrant VM platform into
 each container. You need to make sure that you configure the mount entries to be
