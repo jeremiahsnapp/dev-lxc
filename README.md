@@ -215,12 +215,24 @@ frontend servers to run `chef-server-ctl reconfigure`.
 
     dev-lxc run_command 'be|fe' 'chef-server-ctl reconfigure'
 
+#### Make a snapshot of the servers
+
+Snapshot the servers to save the changes to the servers in custom base containers.
+
+    dev-lxc halt
+	dev-lxc snapshot
+
+Now the servers can be destroyed and recreated with the same changes captured at the time of the snapshot.
+
+    dev-lxc destroy
+	dev-lxc up
+
 #### Destroy cluster
 
-Use the following command to destroy the cluster's servers and also destroy their unique and shared
+Use the following command to destroy the cluster's servers and also destroy their custom, unique and shared
 base containers if you want to build them from scratch.
 
-    dev-lxc destroy -u -s
+    dev-lxc destroy -c -u -s
 
 #### Use commands against specific servers
 You can also run most of these commands against a set of servers by specifying a regular expression
@@ -387,14 +399,14 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 
 One of the key things this tool uses is the concept of "base" containers.
 
-`dev-lxc` creates base containers with a "p-", "s-" or "u-" prefix on the name to distinguish it as
-a "platform", "shared" or "unique" base container.
+`dev-lxc` creates base containers with a "p-", "s-", "u-" or "c-" prefix on the name to distinguish
+it as a "platform", "shared", "unique" or "custom" base container.
 
 Base containers are then snapshot cloned using the btrfs filesystem to very quickly
 provide a lightweight duplicate of the base container. This clone is either used to build
 another base container or a container that will actually be run.
 
-During a cluster build process the base containers that get created fall into three categories.
+There are four categories of base containers.
 
 1. Platform
 
@@ -450,10 +462,21 @@ During a cluster build process the base containers that get created fall into th
 	unique base container. These unique base containers make it very easy to quickly recreate
 	a Chef cluster from a clean starting point.
 
+4. Custom
+
+    The custom base container is only created when the `snapshot` command is used and is identified
+	by the "c-" prefix on the container name.
+
+    `DevLXC::ChefServer#snapshot` controls the creation of a custom base container.
+
+    Custom base containers can be used to save the changes that have been made to servers.
+	Later, when the servers are destroyed and recreated, they will start running with the changes
+	that were captured at the time of the snapshot.
+
 ### Destroying Base Containers
 
 When using `dev-lxc destroy` to destroy servers you have the option to also destroy any or all of
-the three types of base containers associated with the servers.
+the four types of base containers associated with the servers.
 
 The following command will list the options available.
 
