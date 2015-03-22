@@ -92,22 +92,22 @@ module DevLXC::CLI
       match_server_name_regex(server_name_regex).each { |cs| cs.run_command(command) }
     end
 
-    desc "start [SERVER_NAME_REGEX]", "Start servers - This is the default if no subcommand is given"
+    desc "up [SERVER_NAME_REGEX]", "Start servers - This is the default if no subcommand is given"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def start(server_name_regex=nil)
+    def up(server_name_regex=nil)
       match_server_name_regex(server_name_regex).each { |cs| cs.start }
     end
 
-    # make `start` the default subcommand and pass any arguments to it
-    default_task :start
+    # make `up` the default subcommand and pass any arguments to it
+    default_task :up
     def method_missing(method, *args)
-      args = ["start", method.to_s] + args
+      args = ["up", method.to_s] + args
       DevLXC.start(args)
     end
 
-    desc "stop [SERVER_NAME_REGEX]", "Stop servers"
+    desc "halt [SERVER_NAME_REGEX]", "Stop servers"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def stop(server_name_regex=nil)
+    def halt(server_name_regex=nil)
       match_server_name_regex(server_name_regex).reverse_each { |cs| cs.stop }
     end
 

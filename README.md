@@ -90,12 +90,13 @@ dl i standalone > dev-lxc.yml
 ```
 
 ```
-dev-lxc start
-dl start
+dev-lxc up
+dl u
 
-# if no subcommand is given then `start` will be called by default
-# and any arguments will be passed to the `start` subcommand
+# if no subcommand is given then `up` will be called by default
+# and any arguments will be passed to the `up` subcommand
 # so both of the following commands will start all servers
+
 dev-lxc
 dl
 ```
@@ -136,7 +137,7 @@ Starting the cluster the first time takes awhile since it has a lot to build.
 The tool automatically creates snapshot clones at appropriate times so future
 creation of the cluster's servers is very quick.
 
-	dev-lxc start
+	dev-lxc up
 
 A test org, user, knife.rb and keys are automatically created in
 the bootstrap backend server in `/root/chef-repo/.chef` for testing purposes.
@@ -185,12 +186,12 @@ test org and user creation are available so you can destroy the cluster and "reb
 seconds effectively starting with a clean slate very easily.
 
     dev-lxc destroy
-	dev-lxc start
+	dev-lxc up
 
 #### Stop and start the cluster
 
-	dev-lxc stop
-	dev-lxc start
+	dev-lxc halt
+	dev-lxc up
 
 #### Backdoor access to each server's filesystem
 
@@ -224,7 +225,7 @@ that matches a set of server names.
 For example, to only start the backend and frontend servers named `chef-be.lxc` and `chef-fe1.lxc`
 you can run the following command.
 
-    dev-lxc start 'be|fe'
+    dev-lxc up 'be|fe'
 
 ### Using the dev-lxc library
 
@@ -232,7 +233,7 @@ dev-lxc cli interface can be used as a library.
 
 	require 'dev-lxc/cli'
 
-	ARGV = [ 'start' ]         # start all servers
+	ARGV = [ 'up' ]         # start all servers
 	DevLXC::CLI::DevLXC.start
 
 	ARGV = [ 'status' ]        # show status of all servers
@@ -336,8 +337,8 @@ each cluster's config file.
 	mkdir -p ~/clusters/{clusterA,clusterB}
 	dev-lxc init tier > ~/clusters/clusterA/dev-lxc.yml
 	dev-lxc init standalone > ~/clusters/clusterB/dev-lxc.yml
-	cd ~/clusters/clusterA && dev-lxc start  # starts clusterA
-	cd ~/clusters/clusterB && dev-lxc start  # starts clusterB
+	cd ~/clusters/clusterA && dev-lxc up  # starts clusterA
+	cd ~/clusters/clusterB && dev-lxc up  # starts clusterB
 
 ### Maintain Uniqueness Across Multiple Clusters
 
