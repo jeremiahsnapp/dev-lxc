@@ -89,6 +89,28 @@ module DevLXC
       deregister_from_dnsmasq(hwaddr)
     end
 
+    def snapshot(force=nil)
+      unless @server.defined?
+        puts "WARNING: Skipping snapshot of '#{@server.name}' because it is not created"
+        return
+      end
+      if @server.state != :stopped
+        puts "WARNING: Skipping snapshot of '#{@server.name}' because it is not stopped"
+        return
+      end
+      custom_container = DevLXC::Container.new("c-#{@server.name}")
+      if custom_container.defined?
+        if force
+          custom_container.destroy
+        else
+          puts "WARNING: Skipping snapshot of '#{@server.name}' because a custom base container already exists"
+          return
+        end
+      end
+      puts "Cloning container #{@server.name} into custom container #{custom_container.name}"
+      @server.clone("#{custom_container.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+    end
+
     def destroy
       hwaddr = @server.config_item("lxc.network.0.hwaddr") if @server.defined?
       @server.destroy
@@ -106,6 +128,8 @@ module DevLXC
 
     def destroy_container(type)
       case type
+      when :custom
+        DevLXC::Container.new("c-#{@server.name}").destroy
       when :unique
         DevLXC::Container.new("u-#{@server.name}").destroy
       when :shared
@@ -120,9 +144,15 @@ module DevLXC
         puts "Using existing container #{@server.name}"
         return
       end
+      custom_container = DevLXC::Container.new("c-#{@server.name}")
       unique_container = DevLXC::Container.new("u-#{@server.name}")
-      if unique_container.defined?
-        puts "Cloning shared container #{unique_container.name} into container #{@server.name}"
+      if custom_container.defined?
+        puts "Cloning custom container #{custom_container.name} into container #{@server.name}"
+        custom_container.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+        @server = DevLXC::Container.new(@server.name)
+        return
+      elsif unique_container.defined?
+        puts "Cloning unique container #{unique_container.name} into container #{@server.name}"
         unique_container.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
         @server = DevLXC::Container.new(@server.name)
         return

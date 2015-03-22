@@ -111,14 +111,40 @@ module DevLXC::CLI
       match_server_name_regex(server_name_regex).reverse_each { |cs| cs.stop }
     end
 
+    desc "snapshot [SERVER_NAME_REGEX]", "Create a snapshot of servers"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :force, :aliases => "-f", :type => :boolean, :desc => "Overwrite existing custom containers"
+    def snapshot(server_name_regex=nil)
+      non_stopped_servers = Array.new
+      existing_custom_containers = Array.new
+      match_server_name_regex(server_name_regex).each do |cs|
+        non_stopped_servers << cs.server.name if cs.server.state != :stopped
+        existing_custom_containers << cs.server.name if LXC::Container.new("c-#{cs.server.name}").defined?
+      end
+      unless non_stopped_servers.empty?
+        puts "WARNING: Aborting snapshot because the following servers are not stopped"
+        puts non_stopped_servers
+        exit 1
+      end
+      unless existing_custom_containers.empty? || options[:force]
+        puts "WARNING: The following servers already have a custom base container"
+        puts "         Use the `--force` or `-f` option to overwrite existing custom base containers"
+        puts existing_custom_containers
+        exit 1
+      end
+      match_server_name_regex(server_name_regex).each { |cs| cs.snapshot(options[:force]) }
+    end
+
     desc "destroy [SERVER_NAME_REGEX]", "Destroy servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :custom, :aliases => "-c", :type => :boolean, :desc => "Also destroy the custom containers"
     option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique containers"
     option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared container"
     option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform container"
     def destroy(server_name_regex=nil)
       match_server_name_regex(server_name_regex).reverse_each do |cs|
         cs.destroy
+        cs.destroy_container(:custom) if options[:custom]
         cs.destroy_container(:unique) if options[:unique]
         cs.destroy_container(:shared) if options[:shared]
         cs.destroy_container(:platform) if options[:platform]
