@@ -57,7 +57,7 @@ module DevLXC
       else
         state = "not_created"
       end
-      printf "%20s     %-15s %s\n", @server.name, state, ip_addresses
+      printf "%25s     %-15s %s\n", @server.name, state, ip_addresses
     end
 
     def abspath(rootfs_path)
