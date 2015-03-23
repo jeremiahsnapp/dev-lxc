@@ -333,7 +333,7 @@ module DevLXC
         username = "admin"
         validator_name = "chef-validator"
 
-        FileUtils.cp( Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/chef-server/{admin,chef-validator}.pem"), "/root/chef-repo/.chef" )
+        FileUtils.cp( Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/chef-server/{admin,chef-validator}.pem"), "#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef" )
       when 'private-chef'
         chef_server_url = "https://127.0.0.1/organizations/ponyville"
         username = "rainbowdash"
