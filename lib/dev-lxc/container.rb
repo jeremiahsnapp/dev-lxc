@@ -30,14 +30,14 @@ module DevLXC
 
     def sync_mounts(mounts)
       existing_mounts = self.config_item("lxc.mount.entry")
-      if existing_mounts.is_a?(Array)
+      unless existing_mounts.nil?
         preserved_mounts = existing_mounts.delete_if { |m| m.end_with?("## dev-lxc ##") }
         self.clear_config_item('lxc.mount.entries')
         self.set_config_item("lxc.mount.entry", preserved_mounts)
       end
       mounts.each do |mount|
         raise "Mount source #{mount.split.first} does not exist." unless File.exists?(mount.split.first)
-        if preserved_mounts.any? { |m| m.start_with?("#{mount} ") }
+        if ! preserved_mounts.nil? && preserved_mounts.any? { |m| m.start_with?("#{mount} ") }
           puts "Skipping mount entry #{mount}, it already exists"
           next
         else

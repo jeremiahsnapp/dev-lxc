@@ -214,7 +214,7 @@ module DevLXC
                        "#{shared_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
         end
       end
-      unless shared_container.config_item("lxc.mount.auto").empty?
+      unless shared_container.config_item("lxc.mount.auto").nil?
         shared_container.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
         shared_container.save_config
       end

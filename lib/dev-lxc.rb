@@ -15,17 +15,17 @@ module DevLXC
     puts "Creating platform container #{platform_container.name}"
     case platform_container.name
     when "p-ubuntu-1004"
-      platform_container.create("download", "btrfs", 0, ["-d", "ubuntu", "-r", "lucid", "-a", "amd64"])
+      platform_container.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "lucid", "-a", "amd64"])
     when "p-ubuntu-1204"
-      platform_container.create("download", "btrfs", 0, ["-d", "ubuntu", "-r", "precise", "-a", "amd64"])
+      platform_container.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "precise", "-a", "amd64"])
     when "p-ubuntu-1404"
-      platform_container.create("download", "btrfs", 0, ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"])
+      platform_container.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"])
     when "p-centos-5"
-      platform_container.create("centos", "btrfs", 0, ["-R", "5"])
+      platform_container.create("centos", "btrfs", {}, 0, ["-R", "5"])
     when "p-centos-6"
-      platform_container.create("download", "btrfs", 0, ["-d", "centos", "-r", "6", "-a", "amd64"])
+      platform_container.create("download", "btrfs", {}, 0, ["-d", "centos", "-r", "6", "-a", "amd64"])
     end
-    unless platform_container.config_item("lxc.mount.auto").empty?
+    unless platform_container.config_item("lxc.mount.auto").nil?
       platform_container.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
     end
     hwaddr = '00:16:3e:' + Digest::SHA1.hexdigest(Time.now.to_s).slice(0..5).unpack('a2a2a2').join(':')
