@@ -92,13 +92,6 @@ dl i standalone > dev-lxc.yml
 ```
 dev-lxc up
 dl u
-
-# if no subcommand is given then `up` will be called by default
-# and any arguments will be passed to the `up` subcommand
-# so both of the following commands will start all servers
-
-dev-lxc
-dl
 ```
 
 ```

@@ -132,13 +132,6 @@ module DevLXC::CLI
       match_server_name_regex(server_name_regex).each { |cs| cs.start }
     end
 
-    # make `up` the default subcommand and pass any arguments to it
-    default_task :up
-    def method_missing(method, *args)
-      args = ["up", method.to_s] + args
-      DevLXC.start(args)
-    end
-
     desc "halt [SERVER_NAME_REGEX]", "Stop servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def halt(server_name_regex=nil)
