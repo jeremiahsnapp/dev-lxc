@@ -22,16 +22,16 @@ module DevLXC::CLI
       end
     }
 
-    desc "create [PLATFORM_CONTAINER_NAME]", "Create a platform container"
-    def create(platform_container_name=nil)
-      platform_container_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-centos-5 p-centos-6)
-      if platform_container_name.nil? || ! platform_container_names.include?(platform_container_name)
-        platform_container_names_with_index = platform_container_names.map.with_index{ |a, i| [i+1, *a]}
-        print_table platform_container_names_with_index
-        selection = ask("Which platform container do you want to create?", :limited_to => platform_container_names_with_index.map{|c| c[0].to_s})
-        platform_container_name = platform_container_names[selection.to_i - 1]
+    desc "create [PLATFORM_IMAGE_NAME]", "Create a platform image"
+    def create(platform_image_name=nil)
+      platform_image_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-centos-5 p-centos-6)
+      if platform_image_name.nil? || ! platform_image_names.include?(platform_image_name)
+        platform_image_names_with_index = platform_image_names.map.with_index{ |a, i| [i+1, *a]}
+        print_table platform_image_names_with_index
+        selection = ask("Which platform image do you want to create?", :limited_to => platform_image_names_with_index.map{|c| c[0].to_s})
+        platform_image_name = platform_image_names[selection.to_i - 1]
       end
-      ::DevLXC.create_platform_container(platform_container_name)
+      ::DevLXC.create_platform_image(platform_image_name)
     end
 
     desc "init [TOPOLOGY] [UNIQUE_STRING]", "Provide a cluster config file with optional uniqueness in server names and FQDNs"
@@ -86,14 +86,14 @@ module DevLXC::CLI
       get_cluster(options[:config]).chef_repo
     end
 
-    desc "list_base_containers [SERVER_NAME_REGEX]", "List of each servers' base containers created during the build process"
+    desc "list_images [SERVER_NAME_REGEX]", "List of each servers' images created during the build process"
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def list_base_containers(server_name_regex=nil)
-      base_containers = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Array.new } }
+    def list_images(server_name_regex=nil)
+      images = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Array.new } }
       match_server_name_regex(server_name_regex).each do |cs|
-        base_containers[cs.platform_container_name][cs.shared_container_name] << cs.server.name
+        images[cs.platform_image_name][cs.shared_image_name] << cs.server.name
       end
-      base_containers.each_with_index do |(platform_name, shared), base_containers_index|
+      images.each_with_index do |(platform_name, shared), images_index|
         shared.each_with_index do |(shared_name, final), shared_index|
           printf "Platform: %21s  %s\n", (LXC::Container.new(platform_name).defined? ? "Created" : "Not Created"), platform_name
           puts "|"
@@ -115,7 +115,7 @@ module DevLXC::CLI
             end
             printf "   #{shared_connector}  #{custom_spacing}\\_ Final: %#{final_width}s    %s\n", (LXC::Container.new(final_name).defined? ? "Created" : "Not Created"), final_name
           end
-          puts if (shared_index + 1 < shared.length) || (base_containers_index + 1 < base_containers.length)
+          puts if (shared_index + 1 < shared.length) || (images_index + 1 < images.length)
         end
       end
     end
@@ -140,23 +140,23 @@ module DevLXC::CLI
 
     desc "snapshot [SERVER_NAME_REGEX]", "Create a snapshot of servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    option :force, :aliases => "-f", :type => :boolean, :desc => "Overwrite existing custom containers"
+    option :force, :aliases => "-f", :type => :boolean, :desc => "Overwrite existing custom images"
     def snapshot(server_name_regex=nil)
       non_stopped_servers = Array.new
-      existing_custom_containers = Array.new
+      existing_custom_images = Array.new
       match_server_name_regex(server_name_regex).each do |cs|
         non_stopped_servers << cs.server.name if cs.server.state != :stopped
-        existing_custom_containers << cs.server.name if LXC::Container.new("c-#{cs.server.name}").defined?
+        existing_custom_images << cs.server.name if LXC::Container.new("c-#{cs.server.name}").defined?
       end
       unless non_stopped_servers.empty?
         puts "WARNING: Aborting snapshot because the following servers are not stopped"
         puts non_stopped_servers
         exit 1
       end
-      unless existing_custom_containers.empty? || options[:force]
-        puts "WARNING: The following servers already have a custom base container"
-        puts "         Use the `--force` or `-f` option to overwrite existing custom base containers"
-        puts existing_custom_containers
+      unless existing_custom_images.empty? || options[:force]
+        puts "WARNING: The following servers already have a custom image"
+        puts "         Use the `--force` or `-f` option to overwrite existing custom images"
+        puts existing_custom_images
         exit 1
       end
       match_server_name_regex(server_name_regex).each { |cs| cs.snapshot(options[:force]) }
@@ -164,17 +164,17 @@ module DevLXC::CLI
 
     desc "destroy [SERVER_NAME_REGEX]", "Destroy servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    option :custom, :aliases => "-c", :type => :boolean, :desc => "Also destroy the custom containers"
-    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique containers"
-    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared container"
-    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform container"
+    option :custom, :aliases => "-c", :type => :boolean, :desc => "Also destroy the custom images"
+    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique images"
+    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared images"
+    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform images"
     def destroy(server_name_regex=nil)
       match_server_name_regex(server_name_regex).reverse_each do |cs|
         cs.destroy
-        cs.destroy_container(:custom) if options[:custom]
-        cs.destroy_container(:unique) if options[:unique]
-        cs.destroy_container(:shared) if options[:shared]
-        cs.destroy_container(:platform) if options[:platform]
+        cs.destroy_image(:custom) if options[:custom]
+        cs.destroy_image(:unique) if options[:unique]
+        cs.destroy_image(:shared) if options[:shared]
+        cs.destroy_image(:platform) if options[:platform]
       end
     end
 

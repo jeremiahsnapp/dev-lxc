@@ -3,7 +3,7 @@ require "dev-lxc/chef-cluster"
 
 module DevLXC
   class ChefServer
-    attr_reader :role, :server, :platform_container_name, :shared_container_name
+    attr_reader :role, :server, :platform_image_name, :shared_image_name
 
     def initialize(name, cluster_config)
       unless cluster_config["servers"].keys.include?(name)
@@ -19,7 +19,7 @@ module DevLXC
       @chef_server_config = cluster.chef_server_config
       @api_fqdn = cluster_config["api_fqdn"]
       @analytics_fqdn = cluster_config["analytics_fqdn"]
-      @platform_container_name = cluster_config["platform_container"]
+      @platform_image_name = cluster_config["platform_image"]
       @packages = cluster_config["packages"]
 
       if File.basename(@packages["server"]).match(/^(\w+-\w+.*)[_-]((?:\d+\.?){3,})/)
@@ -28,25 +28,25 @@ module DevLXC
       end
 
       if @role == 'analytics'
-        @shared_container_name = "s#{@platform_container_name[1..-1]}"
-        @shared_container_name += "-analytics-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["analytics"].to_s.match(/[_-]((\d+\.?){3,})/)
+        @shared_image_name = "s#{@platform_image_name[1..-1]}"
+        @shared_image_name += "-analytics-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["analytics"].to_s.match(/[_-]((\d+\.?){3,})/)
       else
-        @shared_container_name = "s#{@platform_container_name[1..-1]}"
+        @shared_image_name = "s#{@platform_image_name[1..-1]}"
         case @chef_server_type
         when 'chef-server-core'
-          @shared_container_name += '-cs'
+          @shared_image_name += '-cs'
           @server_ctl = 'chef-server'
         when 'private-chef'
-          @shared_container_name += '-ec'
+          @shared_image_name += '-ec'
           @server_ctl = 'private-chef'
         when 'chef-server'
-          @shared_container_name += '-osc'
+          @shared_image_name += '-osc'
           @server_ctl = 'chef-server'
         end
-        @shared_container_name += "-#{@chef_server_version}"
-        @shared_container_name += "-reporting-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["reporting"].to_s.match(/[_-]((\d+\.?){3,})/)
-        @shared_container_name += "-pushy-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["push-jobs-server"].to_s.match(/[_-]((\d+\.?){3,})/)
-        @shared_container_name += "-sync-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["sync"].to_s.match(/[_-]((\d+\.?){3,})/)
+        @shared_image_name += "-#{@chef_server_version}"
+        @shared_image_name += "-reporting-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["reporting"].to_s.match(/[_-]((\d+\.?){3,})/)
+        @shared_image_name += "-pushy-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["push-jobs-server"].to_s.match(/[_-]((\d+\.?){3,})/)
+        @shared_image_name += "-sync-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["sync"].to_s.match(/[_-]((\d+\.?){3,})/)
       end
     end
 
@@ -98,17 +98,17 @@ module DevLXC
         puts "WARNING: Skipping snapshot of '#{@server.name}' because it is not stopped"
         return
       end
-      custom_container = DevLXC::Container.new("c-#{@server.name}")
-      if custom_container.defined?
+      custom_image = DevLXC::Container.new("c-#{@server.name}")
+      if custom_image.defined?
         if force
-          custom_container.destroy
+          custom_image.destroy
         else
-          puts "WARNING: Skipping snapshot of '#{@server.name}' because a custom base container already exists"
+          puts "WARNING: Skipping snapshot of '#{@server.name}' because a custom image already exists"
           return
         end
       end
-      puts "Cloning container #{@server.name} into custom container #{custom_container.name}"
-      @server.clone("#{custom_container.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+      puts "Creating snapshot of container #{@server.name} in custom image #{custom_image.name}"
+      @server.clone("#{custom_image.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
     end
 
     def destroy
@@ -126,16 +126,16 @@ module DevLXC
       DevLXC.reload_dnsmasq
     end
 
-    def destroy_container(type)
+    def destroy_image(type)
       case type
       when :custom
         DevLXC::Container.new("c-#{@server.name}").destroy
       when :unique
         DevLXC::Container.new("u-#{@server.name}").destroy
       when :shared
-        DevLXC::Container.new(@shared_container_name).destroy
+        DevLXC::Container.new(@shared_image_name).destroy
       when :platform
-        DevLXC::Container.new(@platform_container_name).destroy
+        DevLXC::Container.new(@platform_image_name).destroy
       end
     end
 
@@ -144,16 +144,16 @@ module DevLXC
         puts "Using existing container #{@server.name}"
         return
       end
-      custom_container = DevLXC::Container.new("c-#{@server.name}")
-      unique_container = DevLXC::Container.new("u-#{@server.name}")
-      if custom_container.defined?
-        puts "Cloning custom container #{custom_container.name} into container #{@server.name}"
-        custom_container.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+      custom_image = DevLXC::Container.new("c-#{@server.name}")
+      unique_image = DevLXC::Container.new("u-#{@server.name}")
+      if custom_image.defined?
+        puts "Cloning custom image #{custom_image.name} into container #{@server.name}"
+        custom_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
         @server = DevLXC::Container.new(@server.name)
         return
-      elsif unique_container.defined?
-        puts "Cloning unique container #{unique_container.name} into container #{@server.name}"
-        unique_container.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+      elsif unique_image.defined?
+        puts "Cloning unique image #{unique_image.name} into container #{@server.name}"
+        unique_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
         @server = DevLXC::Container.new(@server.name)
         return
       else
@@ -161,9 +161,9 @@ module DevLXC
         unless @server.name == @bootstrap_backend || DevLXC::Container.new(@bootstrap_backend).defined?
           raise "The bootstrap backend server must be created first."
         end
-        shared_container = create_shared_container
-        puts "Cloning shared container #{shared_container.name} into container #{@server.name}"
-        shared_container.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
+        shared_image = create_shared_image
+        puts "Cloning shared image #{shared_image.name} into container #{@server.name}"
+        shared_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         @server = DevLXC::Container.new(@server.name)
         puts "Adding lxc.hook.post-stop hook"
         @server.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
@@ -190,46 +190,46 @@ module DevLXC
           end
         end
         @server.stop
-        puts "Cloning container #{@server.name} into unique container #{unique_container.name}"
-        @server.clone("#{unique_container.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+        puts "Cloning container #{@server.name} into unique image #{unique_image.name}"
+        @server.clone("#{unique_image.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
       end
     end
 
-    def create_shared_container
-      shared_container = DevLXC::Container.new(@shared_container_name)
-      if shared_container.defined?
-        puts "Using existing shared container #{shared_container.name}"
-        return shared_container
+    def create_shared_image
+      shared_image = DevLXC::Container.new(@shared_image_name)
+      if shared_image.defined?
+        puts "Using existing shared image #{shared_image.name}"
+        return shared_image
       end
-      platform_container = DevLXC.create_platform_container(@platform_container_name)
-      puts "Cloning platform container #{platform_container.name} into shared container #{shared_container.name}"
-      platform_container.clone(shared_container.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
-      shared_container = DevLXC::Container.new(shared_container.name)
+      platform_image = DevLXC.create_platform_image(@platform_image_name)
+      puts "Cloning platform image #{platform_image.name} into shared image #{shared_image.name}"
+      platform_image.clone(shared_image.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
+      shared_image = DevLXC::Container.new(shared_image.name)
 
       # Disable certain sysctl.d files in Ubuntu 10.04, they cause `start procps` to fail
       # Enterprise Chef server's postgresql recipe expects to be able to `start procps`
-      if platform_container.name == "p-ubuntu-1004"
-        if File.exist?("#{shared_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf")
-          FileUtils.mv("#{shared_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf",
-                       "#{shared_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
+      if platform_image.name == "p-ubuntu-1004"
+        if File.exist?("#{shared_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf")
+          FileUtils.mv("#{shared_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf",
+                       "#{shared_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
         end
       end
-      unless shared_container.config_item("lxc.mount.auto").nil?
-        shared_container.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
-        shared_container.save_config
+      unless shared_image.config_item("lxc.mount.auto").nil?
+        shared_image.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
+        shared_image.save_config
       end
-      shared_container.sync_mounts(@mounts)
-      shared_container.start
+      shared_image.sync_mounts(@mounts)
+      shared_image.start
       if @role == 'analytics'
-        shared_container.install_package(@packages["analytics"]) unless @packages["analytics"].nil?
+        shared_image.install_package(@packages["analytics"]) unless @packages["analytics"].nil?
       else
-        shared_container.install_package(@packages["server"]) unless @packages["server"].nil?
-        shared_container.install_package(@packages["reporting"]) unless @packages["reporting"].nil?
-        shared_container.install_package(@packages["push-jobs-server"]) unless @packages["push-jobs-server"].nil?
-        shared_container.install_package(@packages["sync"]) unless @packages["sync"].nil?
+        shared_image.install_package(@packages["server"]) unless @packages["server"].nil?
+        shared_image.install_package(@packages["reporting"]) unless @packages["reporting"].nil?
+        shared_image.install_package(@packages["push-jobs-server"]) unless @packages["push-jobs-server"].nil?
+        shared_image.install_package(@packages["sync"]) unless @packages["sync"].nil?
       end
-      shared_container.stop
-      return shared_container
+      shared_image.stop
+      return shared_image
     end
 
     def configure_server

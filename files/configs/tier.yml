@@ -1,4 +1,4 @@
-platform_container: p-ubuntu-1404
+platform_image: p-ubuntu-1404
 topology: tier
 api_fqdn: chef.lxc
 #analytics_fqdn: analytics.lxc

@@ -6,56 +6,56 @@ require "dev-lxc/chef-server"
 require "dev-lxc/chef-cluster"
 
 module DevLXC
-  def self.create_platform_container(platform_container_name)
-    platform_container = DevLXC::Container.new(platform_container_name)
-    if platform_container.defined?
-      puts "Using existing platform container #{platform_container.name}"
-      return platform_container
+  def self.create_platform_image(platform_image_name)
+    platform_image = DevLXC::Container.new(platform_image_name)
+    if platform_image.defined?
+      puts "Using existing platform image #{platform_image.name}"
+      return platform_image
     end
-    puts "Creating platform container #{platform_container.name}"
-    case platform_container.name
+    puts "Creating platform image #{platform_image.name}"
+    case platform_image.name
     when "p-ubuntu-1004"
-      platform_container.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "lucid", "-a", "amd64"])
+      platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "lucid", "-a", "amd64"])
     when "p-ubuntu-1204"
-      platform_container.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "precise", "-a", "amd64"])
+      platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "precise", "-a", "amd64"])
     when "p-ubuntu-1404"
-      platform_container.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"])
+      platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"])
     when "p-centos-5"
-      platform_container.create("centos", "btrfs", {}, 0, ["-R", "5"])
+      platform_image.create("centos", "btrfs", {}, 0, ["-R", "5"])
     when "p-centos-6"
-      platform_container.create("download", "btrfs", {}, 0, ["-d", "centos", "-r", "6", "-a", "amd64"])
+      platform_image.create("download", "btrfs", {}, 0, ["-d", "centos", "-r", "6", "-a", "amd64"])
     end
-    unless platform_container.config_item("lxc.mount.auto").nil?
-      platform_container.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
+    unless platform_image.config_item("lxc.mount.auto").nil?
+      platform_image.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
     end
     hwaddr = '00:16:3e:' + Digest::SHA1.hexdigest(Time.now.to_s).slice(0..5).unpack('a2a2a2').join(':')
-    puts "Setting #{platform_container.name} platform container's lxc.network.0.hwaddr to #{hwaddr}"
-    platform_container.set_config_item("lxc.network.0.hwaddr", hwaddr)
-    platform_container.save_config
-    platform_container.start
-    puts "Installing packages in platform container #{platform_container.name}"
-    case platform_container.name
+    puts "Setting #{platform_image.name} platform image's lxc.network.0.hwaddr to #{hwaddr}"
+    platform_image.set_config_item("lxc.network.0.hwaddr", hwaddr)
+    platform_image.save_config
+    platform_image.start
+    puts "Installing packages in platform image #{platform_image.name}"
+    case platform_image.name
     when "p-ubuntu-1004"
       # Disable certain sysctl.d files in Ubuntu 10.04, they cause `start procps` to fail
-      if File.exist?("#{platform_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf")
-        FileUtils.mv("#{platform_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf",
-                     "#{platform_container.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
+      if File.exist?("#{platform_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf")
+        FileUtils.mv("#{platform_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf",
+                     "#{platform_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
       end
-      platform_container.run_command("apt-get update")
-      platform_container.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox curl tree")
+      platform_image.run_command("apt-get update")
+      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox curl tree")
     when "p-ubuntu-1204", "p-ubuntu-1404"
-      platform_container.run_command("apt-get update")
-      platform_container.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree")
+      platform_image.run_command("apt-get update")
+      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree")
     when "p-centos-5"
       # downgrade openssl temporarily to overcome an install bug
       # reference: http://www.hack.net.br/blog/2014/02/12/openssl-conflicts-with-file-from-package-openssl/
-      platform_container.run_command("yum downgrade -y openssl")
-      platform_container.run_command("yum install -y @base @core vim-enhanced emacs-nox tree")
+      platform_image.run_command("yum downgrade -y openssl")
+      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree")
     when "p-centos-6"
-      platform_container.run_command("yum install -y @base @core vim-enhanced emacs-nox tree")
+      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree")
     end
-    platform_container.stop
-    return platform_container
+    platform_image.stop
+    return platform_image
   end
 
   def self.assign_ip_address(ipaddress, container_name, hwaddr)

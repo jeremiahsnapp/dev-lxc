@@ -1,4 +1,4 @@
-platform_container: p-ubuntu-1204
+platform_image: p-ubuntu-1204
 topology: open-source
 api_fqdn: chef.lxc
 mounts:

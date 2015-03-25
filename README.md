@@ -15,10 +15,12 @@ cluster builds for demo purposes, as well as general experimentation and explora
 1. LXC 1.0 Containers - Resource efficient servers with fast start/stop times and standard init
 2. Btrfs - Efficient storage backend provides fast, lightweight container cloning
 3. Dnsmasq - DHCP networking and DNS resolution
-4. Base containers - Containers that are built to resemble a traditional server
+4. Platform Images - Images that are built to resemble a traditional server
 5. ruby-lxc - Ruby bindings for liblxc
 6. YAML - Simple, customizable definition of clusters; No more setting ENV variables
 7. Build process closely follows online installation documentation
+8. Images - Images are created during the cluster's build process which makes rebuilding
+   a cluster very fast.
 
 Its containers, standard init, networking and build process are designed to be similar
 to what you would build if you follow the online installation documentation so the end
@@ -123,18 +125,18 @@ appropriately.
 
 Uncomment the Analytics server section in `dev-lxc.yml` if you want it to be built.
 
-#### List Base Containers
+#### List Images
 
-List of base containers used for each server.
+List of images used for each server.
 
-    dev-lxc list_base_containers
+    dev-lxc list_images
 
 #### Start cluster
 
 Starting the cluster the first time takes awhile since it has a lot to build.
 
-The tool automatically creates snapshot clones at appropriate times so future
-creation of the cluster's servers is very quick.
+The tool automatically creates images at appropriate times so future creation of the
+cluster's servers is very quick.
 
 	dev-lxc up
 
@@ -212,7 +214,7 @@ frontend servers to run `chef-server-ctl reconfigure`.
 
 #### Make a snapshot of the servers
 
-Snapshot the servers to save the changes to the servers in custom base containers.
+Save the changes in the servers to custom images.
 
     dev-lxc halt
 	dev-lxc snapshot
@@ -225,7 +227,7 @@ Now the servers can be destroyed and recreated with the same changes captured at
 #### Destroy cluster
 
 Use the following command to destroy the cluster's servers and also destroy their custom, unique and shared
-base containers if you want to build them from scratch.
+images if you want to build them from scratch.
 
     dev-lxc destroy -c -u -s
 
@@ -281,7 +283,7 @@ The following command generates sample config files for various cluster topologi
 
 `dev-lxc init tier > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
 
-    platform_container: p-ubuntu-1404
+    platform_image: p-ubuntu-1404
     topology: tier
     api_fqdn: chef.lxc
     #analytics_fqdn: analytics.lxc
@@ -320,7 +322,7 @@ frontend then both frontends will be created and dnsmasq will resolve the `api_f
 [chef.lxc](chef.lxc) to both frontends using a round-robin policy.
 
 The config file is very customizable. You can add or remove mounts, packages or servers,
-change ip addresses, change server names, change the platform_container and more.
+change ip addresses, change server names, change the platform_image and more.
 
 The `mounts` list describes what directories get mounted from the Vagrant VM platform into
 each container. You need to make sure that you configure the mount entries to be
@@ -390,40 +392,40 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 	
     Use unique IP's from that range when configuring clusters.
 
-## Base Containers
+## Images
 
-One of the key things this tool uses is the concept of "base" containers.
+One of the key things this tool uses is the concept of images.
 
-`dev-lxc` creates base containers with a "p-", "s-", "u-" or "c-" prefix on the name to distinguish
-it as a "platform", "shared", "unique" or "custom" base container.
+`dev-lxc` creates images with a "p-", "s-", "u-" or "c-" prefix on the name to distinguish
+it as a "platform", "shared", "unique" or "custom" image.
 
-Base containers are then snapshot cloned using the btrfs filesystem to very quickly
-provide a lightweight duplicate of the base container. This clone is either used to build
-another base container or a container that will actually be run.
+Images are then cloned using the btrfs filesystem to very quickly provide a lightweight duplicate
+of the image. This clone is either used to build the next image in the build process or the final
+container that will actually be run.
 
-There are four categories of base containers.
+There are four image categories.
 
 1. Platform
 
-    The platform base container is the first to get created and is identified by the
-	"p-" prefix on the container name.
+    The platform image is the first to get created and is identified by the
+	"p-" prefix on the image name.
 
-    `DevLXC#create_base_platform` controls the creation of a platform base container.
+    `DevLXC#create_platform_image` controls the creation of a platform image.
 
-    This container provides the chosen OS platform and version (e.g. p-ubuntu-1404).
+    This image provides the chosen OS platform and version (e.g. p-ubuntu-1404).
 	A typical LXC container has minimal packages installed so `dev-lxc` makes sure that the
 	same packages used in Chef's [bento boxes](https://github.com/opscode/bento) are
 	installed to provide a more typical server environment.
 	A few additional packages are also installed.
 
-    *Once this platform base container is created there is rarely a need to delete it.*
+    *Once this platform image is created there is rarely a need to delete it.*
 
 2. Shared
 
-    The shared base container is the second to get created and is identified by the
-	"s-" prefix on the container name.
+    The shared image is the second to get created and is identified by the
+	"s-" prefix on the image name.
 
-    `DevLXC::ChefServer#create_base_server` controls the creation of a shared base container.
+    `DevLXC::ChefServer#create_shared_image` controls the creation of a shared image.
 
     Chef packages that are common to all servers in a Chef cluster, such as chef-server-core,
 	opscode-reporting, opscode-push-jobs-server and chef-sync are installed using `dpkg` or `rpm`.
@@ -431,47 +433,47 @@ There are four categories of base containers.
     Note the manage package will not be installed at this point since it is not common to all
 	servers (i.e. it does not get installed on backend servers).
 
-    The name of this base container is built from the names and versions of the Chef packages that
-	get installed which makes this base container easy to be reused by another cluster that is
+    The name of this image is built from the names and versions of the Chef packages that
+	get installed which makes this image easy to be reused by another cluster that is
 	configured to use the same Chef packages.
 
-    *Since no configuration actually happens yet there is rarely a need to delete this container.*
+    *Since no configuration actually happens yet there is rarely a need to delete this image.*
 
 3. Unique
 
-    The unique base container is the last to get created and is identified by the
-	"u-" prefix on the container name.
+    The unique image is the last to get created and is identified by the
+	"u-" prefix on the image name.
 
-    `DevLXC::ChefServer#create` controls the creation of a unique base container.
+    `DevLXC::ChefServer#create` controls the creation of a unique image.
 
     Each unique Chef server (e.g. standalone, backend or frontend) is created.
 
     * The specified hostname is assigned.
-	* dnsmasq is configured to reserve the specified IP address for the container's MAC address.
+	* dnsmasq is configured to reserve the specified IP address for the image's MAC address.
 	* A DNS entry is created in dnsmasq if appropriate.
 	* All installed Chef packages are configured.
 	* Test users and orgs are created.
 	* The opscode-manage package is installed and configured if specified.
 
-    After each server is fully configured a snapshot clone of it is made resulting in the server's
-	unique base container. These unique base containers make it very easy to quickly recreate
+    After each server is fully configured a clone of it is made resulting in the server's
+	unique image. These unique images make it very easy to quickly recreate
 	a Chef cluster from a clean starting point.
 
 4. Custom
 
-    The custom base container is only created when the `snapshot` command is used and is identified
-	by the "c-" prefix on the container name.
+    The custom image is only created when the `snapshot` command is used and is identified
+	by the "c-" prefix on the image name.
 
-    `DevLXC::ChefServer#snapshot` controls the creation of a custom base container.
+    `DevLXC::ChefServer#snapshot` controls the creation of a custom image.
 
-    Custom base containers can be used to save the changes that have been made to servers.
+    Custom images can be used to save the changes that have been made in servers.
 	Later, when the servers are destroyed and recreated, they will start running with the changes
 	that were captured at the time of the snapshot.
 
-### Destroying Base Containers
+### Destroying Images
 
 When using `dev-lxc destroy` to destroy servers you have the option to also destroy any or all of
-the four types of base containers associated with the servers.
+the four types of images associated with the servers.
 
 The following command will list the options available.
 
@@ -481,17 +483,17 @@ Of course, you can also just use the standard LXC commands to destroy any contai
 
     lxc-destroy -n [NAME]
 
-### Manually Create a Platform Base Container
+### Manually Create a Platform Image
 
-Platform base containers can be used for purposes other than building clusters. For example, they can
+Platform images can be used for purposes other than building clusters. For example, they can
 be used as Chef nodes for testing purposes.
 
-You can see a menu of platform base containers this tool can create by using the following command.
+You can see a menu of platform images this tool can create by using the following command.
 
     dev-lxc create
 
-The initial creation of platform base containers can take awhile so let's go ahead and start creating
-an Ubuntu 12.04 base container now.
+The initial creation of platform images can take awhile so let's go ahead and start creating
+an Ubuntu 14.04 image now.
 
     dev-lxc create p-ubuntu-1404
 
