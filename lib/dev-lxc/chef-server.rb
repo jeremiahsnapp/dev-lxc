@@ -354,7 +354,7 @@ knife[:chef_repo_path] = Dir.pwd
         @server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc")
         @server.run_command("/opt/opscode/embedded/bin/knife opc org create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
         @server.run_command("/opt/opscode/embedded/bin/knife opc user create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem -c /root/chef-repo/.chef/pivotal.rb")
-        @server.run_command("/opt/opscode/embedded/bin/knife opc org user add ponyville rainbowdash --admin")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc org user add ponyville rainbowdash --admin -c /root/chef-repo/.chef/pivotal.rb")
       when 'chef-server-core'
         chef_server_url = "https://127.0.0.1/organizations/ponyville"
         username = "rainbowdash"
