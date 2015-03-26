@@ -1,10 +1,20 @@
-platform_image: p-ubuntu-1204
-topology: open-source
-api_fqdn: chef.lxc
-mounts:
-  - /dev-shared dev-shared
-packages:
-  server: /dev-shared/chef-packages/osc/chef-server_11.1.6-1_amd64.deb
-servers:
-  osc-chef.lxc:
-    ipaddress: 10.0.3.207
+## Mount source directories must exist in the LXC host
+
+## Make sure package paths are correct
+
+## All FQDNs and server names must end with the `.lxc` domain
+
+## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
+
+chef-server:
+  platform_image: p-ubuntu-1204
+  mounts:
+    - /dev-shared dev-shared
+  packages:
+    server: /dev-shared/chef-packages/osc/chef-server_11.1.6-1_amd64.deb
+
+  api_fqdn: chef.lxc
+  topology: open-source
+  servers:
+    osc-chef.lxc:
+      ipaddress: 10.0.3.199

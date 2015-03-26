@@ -14,11 +14,11 @@ module DevLXC::CLI
           puts "       Create a `./dev-lxc.yml` file or specify the path using `-c`."
           exit 1
         end
-        ::DevLXC::ChefCluster.new(YAML.load(IO.read(config)))
+        ::DevLXC::Cluster.new(YAML.load(IO.read(config)))
       end
 
       def match_server_name_regex(server_name_regex)
-        get_cluster(options[:config]).chef_servers.select { |cs| cs.server.name =~ /#{server_name_regex}/ }
+        get_cluster(options[:config]).servers.select { |s| s.server.name =~ /#{server_name_regex}/ }
       end
     }
 
@@ -48,7 +48,10 @@ module DevLXC::CLI
         config_hash = YAML.load(config.gsub(/^#/, ''))
         config.gsub!(/api_fqdn:\s+#{config_hash['api_fqdn']}/, "api_fqdn: #{unique_string}#{config_hash['api_fqdn']}")
         config.gsub!(/analytics_fqdn:\s+#{config_hash['analytics_fqdn']}/, "analytics_fqdn: #{unique_string}#{config_hash['analytics_fqdn']}")
-        config_hash['servers'].keys.each do |server_name|
+        config_hash['chef-server']['servers'].keys.each do |server_name|
+          config.gsub!(/ #{server_name}:/, " #{unique_string}#{server_name}:")
+        end
+        config_hash['analytics']['servers'].keys.each do |server_name|
           config.gsub!(/ #{server_name}:/, " #{unique_string}#{server_name}:")
         end
       end
@@ -58,25 +61,17 @@ module DevLXC::CLI
     desc "status [SERVER_NAME_REGEX]", "Show status of servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def status(server_name_regex=nil)
-      config = options[:config]
-      config ||= "dev-lxc.yml"
-      if ! File.exists?(config)
-        puts "ERROR: Cluster config file `config` does not exist."
-        puts "       Create a `./dev-lxc.yml` file or specify the path using `-c`."
-        exit 1
-      end
-      cluster_config = YAML.load(IO.read(config))
-
-      puts "Chef Server: https://#{cluster_config['api_fqdn']}\n\n"
-      puts "Analytics:   https://#{cluster_config['analytics_fqdn']}\n\n" if cluster_config['analytics_fqdn']
-      match_server_name_regex(server_name_regex).each { |cs| cs.status }
+      cluster = get_cluster(options[:config])
+      puts "Chef Server: https://#{cluster.api_fqdn}\n\n"
+      puts "Analytics:   https://#{cluster.analytics_fqdn}\n\n" if cluster.analytics_fqdn
+      match_server_name_regex(server_name_regex).each { |s| s.status }
     end
 
     desc "abspath [SERVER_NAME_REGEX] [ROOTFS_PATH]", "Returns the absolute path to a file in each server"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def abspath(server_name_regex=nil, rootfs_path)
       abspath = Array.new
-      match_server_name_regex(server_name_regex).map { |cs| abspath << cs.abspath(rootfs_path) }
+      match_server_name_regex(server_name_regex).map { |s| abspath << s.abspath(rootfs_path) }
       puts abspath.compact.join(" ")
     end
 
@@ -90,8 +85,8 @@ module DevLXC::CLI
     option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def list_images(server_name_regex=nil)
       images = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Array.new } }
-      match_server_name_regex(server_name_regex).each do |cs|
-        images[cs.platform_image_name][cs.shared_image_name] << cs.server.name
+      match_server_name_regex(server_name_regex).each do |s|
+        images[s.platform_image_name][s.shared_image_name] << s.server.name
       end
       images.each_with_index do |(platform_name, shared), images_index|
         shared.each_with_index do |(shared_name, final), shared_index|
@@ -123,19 +118,19 @@ module DevLXC::CLI
     desc "run_command [SERVER_NAME_REGEX] [COMMAND]", "Runs a command in each server"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(server_name_regex=nil, command)
-      match_server_name_regex(server_name_regex).each { |cs| cs.run_command(command) }
+      match_server_name_regex(server_name_regex).each { |s| s.run_command(command) }
     end
 
     desc "up [SERVER_NAME_REGEX]", "Start servers - This is the default if no subcommand is given"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def up(server_name_regex=nil)
-      match_server_name_regex(server_name_regex).each { |cs| cs.start }
+      match_server_name_regex(server_name_regex).each { |s| s.start }
     end
 
     desc "halt [SERVER_NAME_REGEX]", "Stop servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def halt(server_name_regex=nil)
-      match_server_name_regex(server_name_regex).reverse_each { |cs| cs.stop }
+      match_server_name_regex(server_name_regex).reverse_each { |s| s.stop }
     end
 
     desc "snapshot [SERVER_NAME_REGEX]", "Create a snapshot of servers"
@@ -144,9 +139,9 @@ module DevLXC::CLI
     def snapshot(server_name_regex=nil)
       non_stopped_servers = Array.new
       existing_custom_images = Array.new
-      match_server_name_regex(server_name_regex).each do |cs|
-        non_stopped_servers << cs.server.name if cs.server.state != :stopped
-        existing_custom_images << cs.server.name if LXC::Container.new("c-#{cs.server.name}").defined?
+      match_server_name_regex(server_name_regex).each do |s|
+        non_stopped_servers << s.server.name if s.server.state != :stopped
+        existing_custom_images << s.server.name if LXC::Container.new("c-#{s.server.name}").defined?
       end
       unless non_stopped_servers.empty?
         puts "WARNING: Aborting snapshot because the following servers are not stopped"
@@ -159,7 +154,7 @@ module DevLXC::CLI
         puts existing_custom_images
         exit 1
       end
-      match_server_name_regex(server_name_regex).each { |cs| cs.snapshot(options[:force]) }
+      match_server_name_regex(server_name_regex).each { |s| s.snapshot(options[:force]) }
     end
 
     desc "destroy [SERVER_NAME_REGEX]", "Destroy servers"
@@ -169,12 +164,12 @@ module DevLXC::CLI
     option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared images"
     option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform images"
     def destroy(server_name_regex=nil)
-      match_server_name_regex(server_name_regex).reverse_each do |cs|
-        cs.destroy
-        cs.destroy_image(:custom) if options[:custom]
-        cs.destroy_image(:unique) if options[:unique]
-        cs.destroy_image(:shared) if options[:shared]
-        cs.destroy_image(:platform) if options[:platform]
+      match_server_name_regex(server_name_regex).reverse_each do |s|
+        s.destroy
+        s.destroy_image(:custom) if options[:custom]
+        s.destroy_image(:unique) if options[:unique]
+        s.destroy_image(:shared) if options[:shared]
+        s.destroy_image(:platform) if options[:platform]
       end
     end
 

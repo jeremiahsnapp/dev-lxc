@@ -1,36 +1,41 @@
 require "dev-lxc/container"
-require "dev-lxc/chef-cluster"
+require "dev-lxc/cluster"
 
 module DevLXC
-  class ChefServer
-    attr_reader :role, :server, :platform_image_name, :shared_image_name
+  class Server
+    attr_reader :server, :platform_image_name, :shared_image_name
 
-    def initialize(name, cluster_config)
-      unless cluster_config["servers"].keys.include?(name)
+    def initialize(name, server_type, cluster_config)
+      unless cluster_config[server_type]["servers"].keys.include?(name)
         raise "Server #{name} is not defined in the cluster config"
       end
-      cluster = DevLXC::ChefCluster.new(cluster_config)
-      @server = DevLXC::Container.new(name)
-      @config = cluster_config["servers"][@server.name]
-      @ipaddress = @config["ipaddress"]
-      @role = @config["role"] ? @config["role"] : cluster_config['topology']
-      @mounts = cluster_config["mounts"]
-      @bootstrap_backend = cluster.bootstrap_backend
+      @server_type = server_type
+      cluster = DevLXC::Cluster.new(cluster_config)
+      @api_fqdn = cluster.api_fqdn
+      @analytics_fqdn = cluster.analytics_fqdn
+      @chef_server_bootstrap_backend = cluster.chef_server_bootstrap_backend
+      @analytics_bootstrap_backend = cluster.analytics_bootstrap_backend
       @chef_server_config = cluster.chef_server_config
-      @api_fqdn = cluster_config["api_fqdn"]
-      @analytics_fqdn = cluster_config["analytics_fqdn"]
-      @platform_image_name = cluster_config["platform_image"]
-      @packages = cluster_config["packages"]
+      @analytics_config = cluster.analytics_config
 
-      if File.basename(@packages["server"]).match(/^(\w+-\w+.*)[_-]((?:\d+\.?){3,})/)
-        @chef_server_type = Regexp.last_match[1]
-        @chef_server_version = Regexp.last_match[2].gsub(".", "-")
-      end
+      @server = DevLXC::Container.new(name)
+      @config = cluster_config[@server_type]["servers"][@server.name]
+      @ipaddress = @config["ipaddress"]
+      @role = @config["role"] ? @config["role"] : cluster_config[@server_type]['topology']
+      @mounts = cluster_config[@server_type]["mounts"]
+      @platform_image_name = cluster_config[@server_type]["platform_image"]
+      @packages = cluster_config[@server_type]["packages"]
 
-      if @role == 'analytics'
+      case @server_type
+      when 'analytics'
         @shared_image_name = "s#{@platform_image_name[1..-1]}"
         @shared_image_name += "-analytics-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["analytics"].to_s.match(/[_-]((\d+\.?){3,})/)
-      else
+      when 'chef-server'
+        if File.basename(@packages["server"]).match(/^(\w+-\w+.*)[_-]((?:\d+\.?){3,})/)
+          @chef_server_type = Regexp.last_match[1]
+          @chef_server_version = Regexp.last_match[2].gsub(".", "-")
+        end
+
         @shared_image_name = "s#{@platform_image_name[1..-1]}"
         case @chef_server_type
         when 'chef-server-core'
@@ -77,8 +82,14 @@ module DevLXC
       create
       hwaddr = @server.config_item("lxc.network.0.hwaddr")
       DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
-      DevLXC.create_dns_record(@analytics_fqdn, @server.name, @ipaddress) if @role == 'analytics'
-      DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress) if %w(open-source standalone frontend).include?(@role)
+      unless @role == 'backend'
+        case @server_type
+        when 'analytics'
+          DevLXC.create_dns_record(@analytics_fqdn, @server.name, @ipaddress)
+        when 'chef-server'
+          DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress)
+        end
+      end
       @server.sync_mounts(@mounts)
       @server.start
     end
@@ -158,7 +169,7 @@ module DevLXC
         return
       else
         puts "Creating container #{@server.name}"
-        unless @server.name == @bootstrap_backend || DevLXC::Container.new(@bootstrap_backend).defined?
+        unless @server.name == @chef_server_bootstrap_backend || DevLXC::Container.new(@chef_server_bootstrap_backend).defined?
           raise "The bootstrap backend server must be created first."
         end
         shared_image = create_shared_image
@@ -171,22 +182,30 @@ module DevLXC
         hwaddr = @server.config_item("lxc.network.0.hwaddr")
         raise "#{@server.name} needs to have an lxc.network.hwaddr entry" if hwaddr.empty?
         DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
-        DevLXC.create_dns_record(@analytics_fqdn, @server.name, @ipaddress) if @role == 'analytics'
-        DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress) if %w(open-source standalone frontend).include?(@role)
+        unless @role == 'backend'
+          case @server_type
+          when 'analytics'
+            DevLXC.create_dns_record(@analytics_fqdn, @server.name, @ipaddress)
+          when 'chef-server'
+            DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress)
+          end
+        end
         @server.sync_mounts(@mounts)
         @server.start
-        configure_analytics if @role == 'analytics'
-        unless @role == 'analytics' || @packages["server"].nil?
+        configure_analytics if @server_type == 'analytics'
+        if @server_type == 'chef-server' && ! @packages["server"].nil?
           configure_server
-          create_users if @server.name == @bootstrap_backend
+          create_users if @server.name == @chef_server_bootstrap_backend
           if %w(standalone frontend).include?(@role) && ! @packages["manage"].nil?
             @server.install_package(@packages["manage"])
             configure_manage
           end
-          if %w(standalone backend frontend).include?(@role)
+          unless @role == 'open-source'
             configure_reporting unless @packages["reporting"].nil?
             configure_push_jobs_server unless @packages["push-jobs-server"].nil?
-            configure_chef_server_for_analytics unless ! %w(standalone backend).include?(@role) || @packages["analytics"].nil?
+            if @analytics_bootstrap_backend && %w(standalone backend).include?(@role)
+              configure_chef_server_for_analytics
+            end
           end
         end
         @server.stop
@@ -220,9 +239,10 @@ module DevLXC
       end
       shared_image.sync_mounts(@mounts)
       shared_image.start
-      if @role == 'analytics'
+      case @server_type
+      when 'analytics'
         shared_image.install_package(@packages["analytics"]) unless @packages["analytics"].nil?
-      else
+      when 'chef-server'
         shared_image.install_package(@packages["server"]) unless @packages["server"].nil?
         shared_image.install_package(@packages["reporting"]) unless @packages["reporting"].nil?
         shared_image.install_package(@packages["push-jobs-server"]) unless @packages["push-jobs-server"].nil?
@@ -238,7 +258,6 @@ module DevLXC
         puts "Creating /etc/chef-server/chef-server.rb"
         FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/chef-server")
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/chef-server/chef-server.rb", @chef_server_config)
-        run_ctl(@server_ctl, "reconfigure")
       when "standalone", "backend"
         case @chef_server_type
         when 'private-chef'
@@ -250,19 +269,18 @@ module DevLXC
           FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/opscode")
           IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb", @chef_server_config)
         end
-        run_ctl(@server_ctl, "reconfigure")
       when "frontend"
         puts "Copying /etc/opscode from bootstrap backend"
-        FileUtils.cp_r("#{LXC::Container.new(@bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode",
+        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode",
                        "#{@server.config_item('lxc.rootfs')}/etc")
-        run_ctl(@server_ctl, "reconfigure")
       end
+      run_ctl(@server_ctl, "reconfigure")
     end
 
     def configure_reporting
       if @role == 'frontend'
         puts "Copying /etc/opscode-reporting from bootstrap backend"
-        FileUtils.cp_r("#{LXC::Container.new(@bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-reporting",
+        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-reporting",
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
       run_ctl(@server_ctl, "reconfigure")
@@ -292,13 +310,13 @@ module DevLXC
           "\noc_id['applications'] = {\n  'analytics' => {\n    'redirect_uri' => 'https://#{@analytics_fqdn}/'\n  }\n}\n")
 
         DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb",
-          "\nrabbitmq['vip'] = '#{@bootstrap_backend}'\nrabbitmq['node_ip_address'] = '0.0.0.0'\n")
+          "\nrabbitmq['vip'] = '#{@chef_server_bootstrap_backend}'\nrabbitmq['node_ip_address'] = '0.0.0.0'\n")
       when 'chef-server-core'
         DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb",
           "\noc_id['applications'] = {\n  'analytics' => {\n    'redirect_uri' => 'https://#{@analytics_fqdn}/'\n  }\n}\n")
 
         DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb",
-          "\nrabbitmq['vip'] = '#{@bootstrap_backend}'\nrabbitmq['node_ip_address'] = '0.0.0.0'\n")
+          "\nrabbitmq['vip'] = '#{@chef_server_bootstrap_backend}'\nrabbitmq['node_ip_address'] = '0.0.0.0'\n")
       end
 
       run_ctl(@server_ctl, "stop")
@@ -308,13 +326,18 @@ module DevLXC
     end
 
     def configure_analytics
-      puts "Copying /etc/opscode-analytics from Chef Server bootstrap backend"
-      FileUtils.cp_r("#{LXC::Container.new(@bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-analytics",
-                     "#{@server.config_item('lxc.rootfs')}/etc")
+      case @role
+      when "standalone", "backend"
+        puts "Copying /etc/opscode-analytics from Chef Server bootstrap backend"
+        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-analytics",
+                       "#{@server.config_item('lxc.rootfs')}/etc")
 
-      IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode-analytics/opscode-analytics.rb",
-        "analytics_fqdn '#{@analytics_fqdn}'\ntopology 'standalone'\n")
-
+        IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode-analytics/opscode-analytics.rb", @analytics_config)
+      when "frontend"
+        puts "Copying /etc/opscode-analytics from Analytics bootstrap backend"
+        FileUtils.cp_r("#{LXC::Container.new(@analytics_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-analytics",
+                       "#{@server.config_item('lxc.rootfs')}/etc")
+      end
       run_ctl("opscode-analytics", "reconfigure")
     end
 

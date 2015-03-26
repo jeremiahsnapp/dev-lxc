@@ -4,8 +4,8 @@ A tool for creating Chef Server clusters with a Chef Analytics server using LXC 
 
 Using [ruby-lxc](https://github.com/lxc/ruby-lxc) it builds a standalone Chef Server or
 tier Chef Server cluster composed of a backend and multiple frontends with round-robin
-DNS resolution. It will also optionally build a Chef Analytics server and connect it with
-the Chef Server.
+DNS resolution. It will also optionally build a standalone or tier Chef Analytics server
+and connect it with the Chef Server.
 
 The dev-lxc tool is well suited as a tool for support related work, customized
 cluster builds for demo purposes, as well as general experimentation and exploration.
@@ -108,8 +108,8 @@ dl d
 
 ### Create and Manage a Cluster
 
-The following instructions will build a tier cluster with an Analytics server for
-demonstration purposes.
+The following instructions will build a tier Chef Server with a tier Analytics server
+for demonstration purposes.
 The size of this cluster uses about 3GB ram and takes awhile for the first
 build of the servers. Feel free to try the standalone config first.
 
@@ -121,15 +121,17 @@ Be sure you configure the
 [mounts and packages entries](https://github.com/jeremiahsnapp/dev-lxc#cluster-config-files)
 appropriately.
 
-	dev-lxc init tier > dev-lxc.yml
-
-Uncomment the Analytics server section in `dev-lxc.yml` if you want it to be built.
+```
+dev-lxc init tier > dev-lxc.yml
+```
 
 #### List Images
 
-List of images used for each server.
+List of each servers' images created during the build process.
 
-    dev-lxc list_images
+```
+dev-lxc list_images
+```
 
 #### Start cluster
 
@@ -138,7 +140,9 @@ Starting the cluster the first time takes awhile since it has a lot to build.
 The tool automatically creates images at appropriate times so future creation of the
 cluster's servers is very quick.
 
-	dev-lxc up
+```
+dev-lxc up
+```
 
 A test org, user, knife.rb and keys are automatically created in
 the bootstrap backend server in `/root/chef-repo/.chef` for testing purposes.
@@ -151,21 +155,22 @@ org and user.
 
 Run the following command to see the status of the cluster.
 
-    dev-lxc status
+```
+dev-lxc status
+```
 
 This is an example of the output.
 
 ```
 Chef Server: https://chef.lxc
 
-Analytics: https://analytics.lxc
+Analytics:   https://analytics.lxc
 
-            chef-be.lxc     running         10.0.3.203
-           chef-fe1.lxc     running         10.0.3.204
-          analytics.lxc     running         10.0.3.206
+      chef-be.lxc     running         10.0.3.203
+     chef-fe1.lxc     running         10.0.3.204
+ analytics-be.lxc     running         10.0.3.206
+analytics-fe1.lxc     running         10.0.3.207
 ```
-
-[https://chef.lxc](https://chef.lxc) resolves to the frontend.
 
 #### Create chef-repo
 
@@ -174,13 +179,17 @@ Create a local chef-repo with appropriate knife.rb and pem files.
 Also create a `./bootstrap-node` script to simplify creating and
 bootstrapping nodes in the `dev-lxc-platform`.
 
-    dev-lxc chef-repo
+```
+dev-lxc chef-repo
+```
 
 Now you can easily use knife to access the cluster.
 
-	cd chef-repo
-	knife ssl fetch
-	knife client list
+```
+cd chef-repo
+knife ssl fetch
+knife client list
+```
 
 #### Cheap cluster rebuilds
 
@@ -188,90 +197,112 @@ Clones of the servers as they existed immediately after initial installation, co
 test org and user creation are available so you can destroy the cluster and "rebuild" it within
 seconds effectively starting with a clean slate very easily.
 
-    dev-lxc destroy
-	dev-lxc up
+```
+dev-lxc destroy
+dev-lxc up
+```
 
 #### Stop and start the cluster
 
-	dev-lxc halt
-	dev-lxc up
+```
+dev-lxc halt
+dev-lxc up
+```
 
 #### Backdoor access to each server's filesystem
 
 The abspath subcommand can be used to prepend each server's rootfs path to a particular file.
 
-For example, you can use the following command to edit the backend and frontend servers' chef-server.rb
+For example, you can use the following command to edit the Chef Servers' chef-server.rb
 file without logging into the containers.
 
-    emacs $(dev-lxc abspath 'be|fe' /etc/opscode/chef-server.rb)
+```
+emacs $(dev-lxc abspath chef /etc/opscode/chef-server.rb)
+```
 
 #### Run arbitrary commands in each server
 
 After modifying the chef-server.rb you could use the run_command subcommand to tell the backend and
 frontend servers to run `chef-server-ctl reconfigure`.
 
-    dev-lxc run_command 'be|fe' 'chef-server-ctl reconfigure'
+```
+dev-lxc run_command chef 'chef-server-ctl reconfigure'
+```
 
 #### Make a snapshot of the servers
 
 Save the changes in the servers to custom images.
 
-    dev-lxc halt
-	dev-lxc snapshot
+```
+dev-lxc halt
+dev-lxc snapshot
+```
 
 Now the servers can be destroyed and recreated with the same changes captured at the time of the snapshot.
 
-    dev-lxc destroy
-	dev-lxc up
+```
+dev-lxc destroy
+dev-lxc up
+```
 
 #### Destroy cluster
 
 Use the following command to destroy the cluster's servers and also destroy their custom, unique and shared
 images if you want to build them from scratch.
 
-    dev-lxc destroy -c -u -s
+```
+dev-lxc destroy -c -u -s
+```
 
 #### Use commands against specific servers
 You can also run most of these commands against a set of servers by specifying a regular expression
 that matches a set of server names.
 
-    dev-lxc <subcommand> [SERVER_NAME_REGEX]
+```
+dev-lxc <subcommand> [SERVER_NAME_REGEX]
+```
 
-For example, to only start the backend and frontend servers named `chef-be.lxc` and `chef-fe1.lxc`
+For example, to only start the Chef Servers named `chef-be.lxc` and `chef-fe1.lxc`
 you can run the following command.
 
-    dev-lxc up 'be|fe'
+```
+dev-lxc up 'chef'
+```
 
 ### Using the dev-lxc library
 
 dev-lxc cli interface can be used as a library.
 
-	require 'dev-lxc/cli'
+```
+require 'dev-lxc/cli'
 
-	ARGV = [ 'up' ]         # start all servers
-	DevLXC::CLI::DevLXC.start
+ARGV = [ 'up' ]         # start all servers
+DevLXC::CLI::DevLXC.start
 
-	ARGV = [ 'status' ]        # show status of all servers
-	DevLXC::CLI::DevLXC.start
+ARGV = [ 'status' ]        # show status of all servers
+DevLXC::CLI::DevLXC.start
 
-	ARGV = [ 'run_command', 'uptime' ]   # run `uptime` in all servers
-	DevLXC::CLI::DevLXC.start
+ARGV = [ 'run_command', 'uptime' ]   # run `uptime` in all servers
+DevLXC::CLI::DevLXC.start
 
-	ARGV = [ 'destroy' ]       # destroy all servers
-	DevLXC::CLI::DevLXC.start
+ARGV = [ 'destroy' ]       # destroy all servers
+DevLXC::CLI::DevLXC.start
+```
 
 dev-lxc itself can also be used as a library
 
-    require 'yaml'
-	require 'dev-lxc'
+```
+require 'yaml'
+require 'dev-lxc'
 
-    config = YAML.load(IO.read('dev-lxc.yml'))
-    server = DevLXC::ChefServer.new("chef-fe1.lxc", config)
+config = YAML.load(IO.read('dev-lxc.yml'))
+server = DevLXC::Server.new("chef-fe1.lxc", 'chef-server', config)
 
-	server.start               # start chef-fe1.lxc
-	server.status              # show status of chef-fe1.lxc
-	server.run_command("chef-server-ctl reconfigure")  # run command in chef-fe1.lxc
-	server.stop                # stop chef-fe1.lxc
+server.start               # start chef-fe1.lxc
+server.status              # show status of chef-fe1.lxc
+server.run_command("chef-server-ctl reconfigure")  # run command in chef-fe1.lxc
+server.stop                # stop chef-fe1.lxc
+```
 
 ## Cluster Config Files
 
@@ -279,41 +310,70 @@ dev-lxc uses a YAML configuration file named `dev-lxc.yml` to define a cluster.
 
 The following command generates sample config files for various cluster topologies.
 
-	dev-lxc init
+```
+dev-lxc init
+```
 
 `dev-lxc init tier > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
 
-    platform_image: p-ubuntu-1404
-    topology: tier
-    api_fqdn: chef.lxc
-    #analytics_fqdn: analytics.lxc
-    mounts:
-      - /dev-shared dev-shared
-    packages:
-      server: /dev-shared/chef-packages/cs/chef-server-core_12.0.6-1_amd64.deb
-    #  manage: /dev-shared/chef-packages/manage/opscode-manage_1.11.2-1_amd64.deb
-    #  reporting: /dev-shared/chef-packages/reporting/opscode-reporting_1.2.3-1_amd64.deb
-    #  push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
+```
+## Mount source directories must exist in the LXC host
 
-    # The chef-sync package would only be installed.
-    # It would NOT be configured since we don't know whether it should be a master or replica.
-    #  sync: /dev-shared/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
+## Make sure package paths are correct
 
-    #  analytics: /dev-shared/chef-packages/analytics/opscode-analytics_1.1.1-1_amd64.deb
-    servers:
-      chef-be.lxc:
-        role: backend
-        ipaddress: 10.0.3.203
-        bootstrap: true
-      chef-fe1.lxc:
-        role: frontend
-        ipaddress: 10.0.3.204
-    #  chef-fe2.lxc:
-    #    role: frontend
-    #    ipaddress: 10.0.3.205
-    #  analytics.lxc:
-    #    role: analytics
-    #    ipaddress: 10.0.3.206
+## All FQDNs and server names must end with the `.lxc` domain
+
+## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
+
+chef-server:
+  platform_image: p-ubuntu-1404
+  mounts:
+    - /dev-shared dev-shared
+  packages:
+    server: /dev-shared/chef-packages/cs/chef-server-core_12.0.6-1_amd64.deb
+    manage: /dev-shared/chef-packages/manage/opscode-manage_1.11.2-1_amd64.deb
+#    reporting: /dev-shared/chef-packages/reporting/opscode-reporting_1.2.3-1_amd64.deb
+#    push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
+
+##   The chef-sync package would only be installed.
+##   It would NOT be configured since we don't know whether it should be a master or replica.
+#    sync: /dev-shared/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
+
+  api_fqdn: chef.lxc
+  topology: tier
+  servers:
+    chef-be.lxc:
+      role: backend
+      ipaddress: 10.0.3.203
+      bootstrap: true
+    chef-fe1.lxc:
+      role: frontend
+      ipaddress: 10.0.3.204
+#    chef-fe2.lxc:
+#      role: frontend
+#      ipaddress: 10.0.3.205
+
+analytics:
+  platform_image: p-ubuntu-1404
+  mounts:
+    - /dev-shared dev-shared
+  packages:
+    analytics: /dev-shared/chef-packages/analytics/opscode-analytics_1.1.2-1_amd64.deb
+
+  analytics_fqdn: analytics.lxc
+  topology: tier
+  servers:
+    analytics-be.lxc:
+      role: backend
+      ipaddress: 10.0.3.206
+      bootstrap: true
+    analytics-fe1.lxc:
+      role: frontend
+      ipaddress: 10.0.3.207
+#    analytics-fe2.lxc:
+#      role: frontend
+#      ipaddress: 10.0.3.208
+```
 
 This config defines a tier cluster consisting of a single backend and a single frontend.
 
@@ -349,11 +409,13 @@ You can also specify a particular config file as an option for most dev-lxc comm
 The following is an example of managing multiple clusters while still avoiding specifying
 each cluster's config file.
 
-	mkdir -p ~/clusters/{clusterA,clusterB}
-	dev-lxc init tier > ~/clusters/clusterA/dev-lxc.yml
-	dev-lxc init standalone > ~/clusters/clusterB/dev-lxc.yml
-	cd ~/clusters/clusterA && dev-lxc up  # starts clusterA
-	cd ~/clusters/clusterB && dev-lxc up  # starts clusterB
+```
+mkdir -p ~/clusters/{clusterA,clusterB}
+dev-lxc init tier > ~/clusters/clusterA/dev-lxc.yml
+dev-lxc init standalone > ~/clusters/clusterB/dev-lxc.yml
+cd ~/clusters/clusterA && dev-lxc up  # starts clusterA
+cd ~/clusters/clusterB && dev-lxc up  # starts clusterB
+```
 
 ### Maintain Uniqueness Across Multiple Clusters
 
@@ -425,7 +487,7 @@ There are four image categories.
     The shared image is the second to get created and is identified by the
 	"s-" prefix on the image name.
 
-    `DevLXC::ChefServer#create_shared_image` controls the creation of a shared image.
+    `DevLXC::Server#create_shared_image` controls the creation of a shared image.
 
     Chef packages that are common to all servers in a Chef cluster, such as chef-server-core,
 	opscode-reporting, opscode-push-jobs-server and chef-sync are installed using `dpkg` or `rpm`.
@@ -444,7 +506,7 @@ There are four image categories.
     The unique image is the last to get created and is identified by the
 	"u-" prefix on the image name.
 
-    `DevLXC::ChefServer#create` controls the creation of a unique image.
+    `DevLXC::Server#create` controls the creation of a unique image.
 
     Each unique Chef server (e.g. standalone, backend or frontend) is created.
 
@@ -464,7 +526,7 @@ There are four image categories.
     The custom image is only created when the `snapshot` command is used and is identified
 	by the "c-" prefix on the image name.
 
-    `DevLXC::ChefServer#snapshot` controls the creation of a custom image.
+    `DevLXC::Server#snapshot` controls the creation of a custom image.
 
     Custom images can be used to save the changes that have been made in servers.
 	Later, when the servers are destroyed and recreated, they will start running with the changes
@@ -477,11 +539,15 @@ the four types of images associated with the servers.
 
 The following command will list the options available.
 
-    dev-lxc help destroy
+```
+dev-lxc help destroy
+```
 
 Of course, you can also just use the standard LXC commands to destroy any container.
 
-    lxc-destroy -n [NAME]
+```
+lxc-destroy -n [NAME]
+```
 
 ### Manually Create a Platform Image
 
@@ -490,12 +556,16 @@ be used as Chef nodes for testing purposes.
 
 You can see a menu of platform images this tool can create by using the following command.
 
-    dev-lxc create
+```
+dev-lxc create
+```
 
 The initial creation of platform images can take awhile so let's go ahead and start creating
 an Ubuntu 14.04 image now.
 
-    dev-lxc create p-ubuntu-1404
+```
+dev-lxc create p-ubuntu-1404
+```
 
 ## Contributing
 

@@ -2,8 +2,8 @@ require "fileutils"
 require "digest/sha1"
 require "lxc"
 require "dev-lxc/container"
-require "dev-lxc/chef-server"
-require "dev-lxc/chef-cluster"
+require "dev-lxc/server"
+require "dev-lxc/cluster"
 
 module DevLXC
   def self.create_platform_image(platform_image_name)
