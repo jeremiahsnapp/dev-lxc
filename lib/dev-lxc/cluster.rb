@@ -7,45 +7,49 @@ module DevLXC
     def initialize(cluster_config)
       @cluster_config = cluster_config
 
-      @chef_server_topology = @cluster_config["chef-server"]["topology"]
-      @api_fqdn = @cluster_config["chef-server"]["api_fqdn"]
-      @chef_server_servers = @cluster_config["chef-server"]["servers"]
-      @chef_server_frontends = Array.new
-      @chef_server_servers.each do |name, config|
-        case @chef_server_topology
-        when 'open-source', 'standalone'
-          @chef_server_bootstrap_backend = name if config["role"].nil?
-        when 'tier'
-          @chef_server_bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
-          @chef_server_frontends << name if config["role"] == "frontend"
+      if @cluster_config["chef-server"]
+        @chef_server_topology = @cluster_config["chef-server"]["topology"]
+        @api_fqdn = @cluster_config["chef-server"]["api_fqdn"]
+        @chef_server_servers = @cluster_config["chef-server"]["servers"]
+        @chef_server_frontends = Array.new
+        @chef_server_servers.each do |name, config|
+          case @chef_server_topology
+          when 'open-source', 'standalone'
+            @chef_server_bootstrap_backend = name if config["role"].nil?
+          when 'tier'
+            @chef_server_bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
+            @chef_server_frontends << name if config["role"] == "frontend"
+          end
         end
       end
 
-      @analytics_topology = @cluster_config["analytics"]["topology"]
-      @analytics_fqdn = @cluster_config["analytics"]["analytics_fqdn"]
-      @analytics_servers = @cluster_config["analytics"]["servers"]
-      @analytics_frontends = Array.new
-      @analytics_servers.each do |name, config|
-        case @analytics_topology
-        when 'standalone'
-          @analytics_bootstrap_backend = name if config["role"].nil?
-        when 'tier'
-          @analytics_bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
-          @analytics_frontends << name if config["role"] == "frontend"
+      if @cluster_config["analytics"]
+        @analytics_topology = @cluster_config["analytics"]["topology"]
+        @analytics_fqdn = @cluster_config["analytics"]["analytics_fqdn"]
+        @analytics_servers = @cluster_config["analytics"]["servers"]
+        @analytics_frontends = Array.new
+        @analytics_servers.each do |name, config|
+          case @analytics_topology
+          when 'standalone'
+            @analytics_bootstrap_backend = name if config["role"].nil?
+          when 'tier'
+            @analytics_bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
+            @analytics_frontends << name if config["role"] == "frontend"
+          end
         end
       end
     end
 
     def servers
       chef_servers = Array.new
-      chef_servers << Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config)
+      chef_servers << Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config) if @chef_server_bootstrap_backend
       if @chef_server_topology == "tier"
         @chef_server_frontends.each do |frontend_name|
           chef_servers << Server.new(frontend_name, 'chef-server', @cluster_config)
         end
       end
       analytics_servers = Array.new
-      analytics_servers << Server.new(@analytics_bootstrap_backend, 'analytics', @cluster_config)
+      analytics_servers << Server.new(@analytics_bootstrap_backend, 'analytics', @cluster_config) if @analytics_bootstrap_backend
       if @analytics_topology == "tier"
         @analytics_frontends.each do |frontend_name|
           analytics_servers << Server.new(frontend_name, 'analytics', @cluster_config)
@@ -55,6 +59,10 @@ module DevLXC
     end
 
     def chef_repo
+      if @chef_server_bootstrap_backend.nil?
+        puts "A bootstrap backend Chef Server is not defined in the cluster's config. Please define it first."
+        exit 1
+      end
       chef_server = Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config)
       if ! chef_server.server.defined?
         puts "The '#{chef_server.server.name}' Chef Server does not exist. Please create it first."
