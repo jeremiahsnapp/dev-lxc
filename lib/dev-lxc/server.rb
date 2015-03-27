@@ -191,6 +191,11 @@ module DevLXC
           end
         end
         @server.sync_mounts(@mounts)
+        # if platform image is centos then `/etc/hosts` file needs to be modified so `hostname -f`
+        # provides the FQDN instead of `localhost`
+        if @platform_image_name.start_with?('p-centos-')
+          IO.write("#{@server.config_item('lxc.rootfs')}/etc/hosts", "127.0.0.1 localhost\n127.0.1.1 #{@server.name}\n")
+        end
         @server.start
         configure_analytics if @server_type == 'analytics'
         if @server_type == 'chef-server' && ! @packages["server"].nil?
