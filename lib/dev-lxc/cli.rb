@@ -11,7 +11,7 @@ module DevLXC::CLI
         config ||= "dev-lxc.yml"
         if ! File.exists?(config)
           puts "ERROR: Cluster config file `config` does not exist."
-          puts "       Create a `./dev-lxc.yml` file or specify the path using `-c`."
+          puts "       Create a `./dev-lxc.yml` file or specify the path using `--config`."
           exit 1
         end
         ::DevLXC::Cluster.new(YAML.load(IO.read(config)))
@@ -82,7 +82,7 @@ module DevLXC::CLI
     end
 
     desc "list_images [SERVER_NAME_REGEX]", "List of each servers' images created during the build process"
-    option :config, :aliases => "-c", :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def list_images(server_name_regex=nil)
       images = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Array.new } }
       match_server_name_regex(server_name_regex).each do |s|
