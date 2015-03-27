@@ -317,27 +317,33 @@ dev-lxc init
 `dev-lxc init tier > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
 
 ```
-## Mount source directories must exist in the LXC host
+## platform_image can be one of the following:
+## p-centos-5, p-centos-6, p-ubuntu-1204 or p-ubuntu-1404
 
-## Make sure package paths are correct
+## Make sure a mount's source directory exists in the LXC host
+
+## Make sure a package's path is correct
 
 ## All FQDNs and server names must end with the `.lxc` domain
 
 ## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
+
+## topology can be one of the following:
+## standalone, tier or open-source (for the old open source 11 chef server)
 
 chef-server:
   platform_image: p-ubuntu-1404
   mounts:
     - /dev-shared dev-shared
   packages:
-    server: /dev-shared/chef-packages/cs/chef-server-core_12.0.6-1_amd64.deb
+    server: /dev-shared/chef-packages/cs/chef-server-core_12.0.7-1_amd64.deb
     manage: /dev-shared/chef-packages/manage/opscode-manage_1.11.2-1_amd64.deb
 #    reporting: /dev-shared/chef-packages/reporting/opscode-reporting_1.2.3-1_amd64.deb
 #    push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
-
-##   The chef-sync package would only be installed.
-##   It would NOT be configured since we don't know whether it should be a master or replica.
 #    sync: /dev-shared/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
+
+##   The chef-sync package will only be installed.
+##   chef-sync will NOT be configured since we don't know whether it should be a master or replica.
 
   api_fqdn: chef.lxc
   topology: tier
