@@ -77,8 +77,9 @@ module DevLXC::CLI
 
     desc "chef-repo", "Creates a `bootstrap-node` script and chef-repo in the current directory using files from the cluster's backend /root/chef-repo"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :pivotal, :aliases => "-p", :type => :boolean, :desc => "Also copy pivotal.rb and pivotal.pem"
     def chef_repo
-      get_cluster(options[:config]).chef_repo
+      get_cluster(options[:config]).chef_repo(options[:pivotal])
     end
 
     desc "list_images [SERVER_NAME_REGEX]", "List of each servers' images created during the build process"

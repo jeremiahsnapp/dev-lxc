@@ -58,7 +58,7 @@ module DevLXC
       servers = chef_servers + analytics_servers
     end
 
-    def chef_repo
+    def chef_repo(copy_pivotal=false)
       if @chef_server_bootstrap_backend.nil?
         puts "A bootstrap backend Chef Server is not defined in the cluster's config. Please define it first."
         exit 1
@@ -76,34 +76,47 @@ module DevLXC
       if pem_files.empty?
         puts "The pem files can not be copied because they do not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
       else
+        pem_files.delete_if { |pem_file| pem_file.end_with?("/pivotal.pem") } unless copy_pivotal
         FileUtils.cp( pem_files, "./chef-repo/.chef" )
       end
 
       if @chef_server_topology == "open-source"
         chef_server_url = "https://#{@api_fqdn}"
-        username = "admin"
         validator_name = "chef-validator"
       else
+        chef_server_root = "https://#{@api_fqdn}"
         chef_server_url = "https://#{@api_fqdn}/organizations/ponyville"
-        username = "rainbowdash"
         validator_name = "ponyville-validator"
+
+        if copy_pivotal
+          if File.exists?("./chef-repo/.chef/pivotal.rb")
+            puts "Skipping pivotal.rb because it already exists in `./chef-repo/.chef`"
+          else
+            pivotal_rb_path = "#{chef_server.abspath('/root/chef-repo/.chef')}/pivotal.rb"
+            if File.exists?(pivotal_rb_path)
+              pivotal_rb = IO.read(pivotal_rb_path)
+              pivotal_rb.sub!(/^chef_server_root .*/, "chef_server_root \"#{chef_server_root}\"")
+              pivotal_rb.sub!(/^chef_server_url .*/, "chef_server_url \"#{chef_server_url}\"")
+              IO.write("./chef-repo/.chef/pivotal.rb", pivotal_rb)
+            else
+              puts "The pivotal.rb file can not be copied because it does not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
+            end
+          end
+        end
       end
 
-      knife_rb = %Q(
-current_dir = File.dirname(__FILE__)
-
-chef_server_url "#{chef_server_url}"
-
-node_name "#{username}"
-client_key "\#{current_dir}/#{username}.pem"
-
-validation_client_name "#{validator_name}"
-validation_key "\#{current_dir}/#{validator_name}.pem"
-
-cookbook_path Dir.pwd + "/cookbooks"
-knife[:chef_repo_path] = Dir.pwd
-)
-      IO.write("./chef-repo/.chef/knife.rb", knife_rb)
+      if File.exists?("./chef-repo/.chef/knife.rb")
+        puts "Skipping knife.rb because it already exists in `./chef-repo/.chef`"
+      else
+        knife_rb_path = "#{chef_server.abspath('/root/chef-repo/.chef')}/knife.rb"
+        if File.exists?(knife_rb_path)
+          knife_rb = IO.read(knife_rb_path)
+          knife_rb.sub!(/^chef_server_url .*/, "chef_server_url \"#{chef_server_url}\"")
+          IO.write("./chef-repo/.chef/knife.rb", knife_rb)
+        else
+          puts "The knife.rb file can not be copied because it does not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
+        end
+      end
 
       bootstrap_node = %Q(#!/bin/bash
 
