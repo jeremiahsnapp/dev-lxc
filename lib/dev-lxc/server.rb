@@ -362,38 +362,29 @@ module DevLXC
         validator_name = "chef-validator"
 
         FileUtils.cp( Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/chef-server/{admin,chef-validator}.pem"), "#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef" )
-      when 'private-chef'
+      when 'private-chef', 'chef-server-core'
+        chef_server_root = "https://127.0.0.1"
         chef_server_url = "https://127.0.0.1/organizations/ponyville"
         username = "rainbowdash"
         validator_name = "ponyville-validator"
 
-        # give time for all services to come up completely
-        sleep 60
+        FileUtils.cp( "#{@server.config_item('lxc.rootfs')}/etc/opscode/pivotal.pem", "#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef" )
+
         pivotal_rb = %Q(
-chef_server_root "https://127.0.0.1/"
-chef_server_url "https://127.0.0.1/"
+current_dir = File.dirname(__FILE__)
+
+chef_server_root "#{chef_server_root}"
+chef_server_url "#{chef_server_url}"
 
 node_name "pivotal"
-client_key "/etc/opscode/pivotal.pem"
+client_key "\#{current_dir}/pivotal.pem"
 
+cookbook_path Dir.pwd + "/cookbooks"
 knife[:chef_repo_path] = Dir.pwd
 )
         IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/pivotal.rb", pivotal_rb)
-        @server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc")
-        @server.run_command("/opt/opscode/embedded/bin/knife opc org create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
-        @server.run_command("/opt/opscode/embedded/bin/knife opc user create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem -c /root/chef-repo/.chef/pivotal.rb")
-        @server.run_command("/opt/opscode/embedded/bin/knife opc org user add ponyville rainbowdash --admin -c /root/chef-repo/.chef/pivotal.rb")
-      when 'chef-server-core'
-        chef_server_url = "https://127.0.0.1/organizations/ponyville"
-        username = "rainbowdash"
-        validator_name = "ponyville-validator"
-
-        # give time for all services to come up completely
-        sleep 10
-        run_ctl(@server_ctl, "org-create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem")
-        run_ctl(@server_ctl, "user-create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem")
-        run_ctl(@server_ctl, "org-user-add ponyville rainbowdash --admin")
       end
+
       knife_rb = %Q(
 current_dir = File.dirname(__FILE__)
 
@@ -409,6 +400,22 @@ cookbook_path Dir.pwd + "/cookbooks"
 knife[:chef_repo_path] = Dir.pwd
 )
       IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/knife.rb", knife_rb)
+
+      case @chef_server_type
+      when 'private-chef'
+        # give time for all services to come up completely
+        sleep 60
+        @server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc org create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc user create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem -c /root/chef-repo/.chef/pivotal.rb")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc org user add ponyville rainbowdash --admin -c /root/chef-repo/.chef/pivotal.rb")
+      when 'chef-server-core'
+        # give time for all services to come up completely
+        sleep 10
+        run_ctl(@server_ctl, "org-create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem")
+        run_ctl(@server_ctl, "user-create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem")
+        run_ctl(@server_ctl, "org-user-add ponyville rainbowdash --admin")
+      end
     end
   end
 end
