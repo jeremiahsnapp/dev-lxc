@@ -58,7 +58,7 @@ module DevLXC
       servers = chef_servers + analytics_servers
     end
 
-    def chef_repo(copy_pivotal=false)
+    def chef_repo(force=false, pivotal=false)
       if @chef_server_bootstrap_backend.nil?
         puts "A bootstrap backend Chef Server is not defined in the cluster's config. Please define it first."
         exit 1
@@ -76,7 +76,7 @@ module DevLXC
       if pem_files.empty?
         puts "The pem files can not be copied because they do not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
       else
-        pem_files.delete_if { |pem_file| pem_file.end_with?("/pivotal.pem") } unless copy_pivotal
+        pem_files.delete_if { |pem_file| pem_file.end_with?("/pivotal.pem") } unless pivotal
         FileUtils.cp( pem_files, "./chef-repo/.chef" )
       end
 
@@ -88,8 +88,8 @@ module DevLXC
         chef_server_url = "https://#{@api_fqdn}/organizations/ponyville"
         validator_name = "ponyville-validator"
 
-        if copy_pivotal
-          if File.exists?("./chef-repo/.chef/pivotal.rb")
+        if pivotal
+          if File.exists?("./chef-repo/.chef/pivotal.rb") && ! force
             puts "Skipping pivotal.rb because it already exists in `./chef-repo/.chef`"
           else
             pivotal_rb_path = "#{chef_server.abspath('/root/chef-repo/.chef')}/pivotal.rb"
@@ -105,7 +105,7 @@ module DevLXC
         end
       end
 
-      if File.exists?("./chef-repo/.chef/knife.rb")
+      if File.exists?("./chef-repo/.chef/knife.rb") && ! force
         puts "Skipping knife.rb because it already exists in `./chef-repo/.chef`"
       else
         knife_rb_path = "#{chef_server.abspath('/root/chef-repo/.chef')}/knife.rb"
