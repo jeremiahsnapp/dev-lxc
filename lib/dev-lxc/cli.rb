@@ -64,7 +64,10 @@ module DevLXC::CLI
       cluster = get_cluster(options[:config])
       puts "Chef Server: https://#{cluster.api_fqdn}\n\n"
       puts "Analytics:   https://#{cluster.analytics_fqdn}\n\n" if cluster.analytics_fqdn
-      match_server_name_regex(server_name_regex).each { |s| s.status }
+      servers = Array.new
+      match_server_name_regex(server_name_regex).map { |s| servers << s.status }
+      max_server_name_length = servers.max_by { |s| s['name'].length }['name'].length unless servers.empty?
+      servers.each { |s| printf "%#{max_server_name_length}s     %-15s %s\n", s['name'], s['state'], s['ip_addresses'] }
     end
 
     desc "abspath [SERVER_NAME_REGEX] [ROOTFS_PATH]", "Returns the absolute path to a file in each server"
