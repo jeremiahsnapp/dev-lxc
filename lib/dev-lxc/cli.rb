@@ -95,25 +95,25 @@ module DevLXC::CLI
       end
       images.each_with_index do |(platform_name, shared), images_index|
         shared.each_with_index do |(shared_name, final), shared_index|
-          printf "Platform: %21s  %s\n", (LXC::Container.new(platform_name).defined? ? "Created" : "Not Created"), platform_name
+          printf "Platform: %25s  %s\n", (LXC::Container.new(platform_name).defined? ? "Created" : "Not Created"), platform_name
           puts "|"
-          printf "\\_ Shared: %20s  %s\n", (LXC::Container.new(shared_name).defined? ? "Created" : "Not Created"), shared_name
+          printf "\\_ Shared: %24s  %s\n", (LXC::Container.new(shared_name).defined? ? "Created" : "Not Created"), shared_name
           final.each_with_index do |final_name, final_index|
             puts "   |"
             unique_name = "u-#{final_name}"
-            printf "   \\_ Unique: %17s  %s\n", (LXC::Container.new(unique_name).defined? ? "Created" : "Not Created"), unique_name
+            printf "   \\_ Unique: %21s  %s\n", (LXC::Container.new(unique_name).defined? ? "Created" : "Not Created"), unique_name
 
             shared_connector = (final_index + 1 < final.length ? "|" : " ")
 
             custom_name = "c-#{final_name}"
             if LXC::Container.new(custom_name).defined?
-              printf "   #{shared_connector}  \\_ Custom: %14s  %s\n", "Created", custom_name
+              printf "   #{shared_connector}  \\_ Custom: %18s  %s\n", "Created", custom_name
               custom_spacing = "   "
-              final_width = 12
+              final_width = 9
             else
-              final_width = 15
+              final_width = 12
             end
-            printf "   #{shared_connector}  #{custom_spacing}\\_ Final: %#{final_width}s    %s\n", (LXC::Container.new(final_name).defined? ? "Created" : "Not Created"), final_name
+            printf "   #{shared_connector}  #{custom_spacing}\\_ Final Server: %#{final_width}s    %s\n", (LXC::Container.new(final_name).defined? ? "Created" : "Not Created"), final_name
           end
           puts if (shared_index + 1 < shared.length) || (images_index + 1 < images.length)
         end
