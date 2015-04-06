@@ -50,7 +50,8 @@ module DevLXC
 
     def run_command(command)
       raise "Container #{self.name} must be running first" unless running?
-      attach({:wait => true, :stdin => STDIN, :stdout => STDOUT, :stderr => STDERR}) do
+      attach_opts = { wait: true, env_policy: LXC::LXC_ATTACH_CLEAR_ENV, extra_env_vars: ['HOME=/root'] }
+      attach(attach_opts) do
         LXC.run_command(command)
       end
     end
