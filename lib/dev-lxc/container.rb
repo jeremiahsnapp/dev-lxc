@@ -67,5 +67,62 @@ module DevLXC
       end
       run_command(install_command)
     end
+
+    def install_chef_client(version=nil)
+      unless self.defined?
+        puts "ERROR: Container #{self.name} does not exist."
+        exit 1
+      end
+      unless running?
+        puts "ERROR: Container #{self.name} is not running"
+        exit 1
+      end
+      if self.ip_addresses.empty?
+        puts "ERROR: Container #{self.name} network is not available."
+        exit 1
+      end
+
+      require 'tempfile'
+
+      installed_version = nil
+      file = Tempfile.new('installed_chef_client_version')
+      begin
+        attach_opts = { wait: true, env_policy: LXC::LXC_ATTACH_CLEAR_ENV, extra_env_vars: ['HOME=/root'], stdout: file }
+        attach(attach_opts) do
+          puts `chef-client -v`
+        end
+        file.rewind
+        installed_version = Regexp.last_match[1] if file.read.match(/chef:\s*(\d+\.\d+\.\d+)/i)
+      ensure
+        file.close
+        file.unlink
+      end
+      if installed_version.nil? || ( ! version.nil? && ! installed_version.start_with?(version) )
+        require "net/https"
+        require "uri"
+
+        uri = URI.parse("https://www.chef.io/chef/install.sh")
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+
+        request = Net::HTTP::Get.new(uri.request_uri)
+
+        response = http.request(request)
+
+        file = Tempfile.new('install_sh', "#{config_item('lxc.rootfs')}/tmp")
+        file.write(response.body)
+        begin
+          version = 'latest' if version.nil?
+          install_command = "bash /tmp/#{File.basename(file.path)} -v #{version}"
+          run_command(install_command)
+        ensure
+          file.close
+          file.unlink
+        end
+      else
+        puts "Chef #{installed_version} is already installed."
+      end
+    end
+
   end
 end

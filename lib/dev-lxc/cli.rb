@@ -34,6 +34,13 @@ module DevLXC::CLI
       ::DevLXC.create_platform_image(platform_image_name)
     end
 
+    desc "install-chef-client [CONTAINER_NAME]", "Install Chef Client in container"
+    option :version, :aliases => "-v", :desc => "Specify the version of Chef Client to install"
+    def install_chef_client(container_name)
+      container = ::DevLXC::Container.new(container_name)
+      container.install_chef_client(options[:version])
+    end
+
     desc "init [TOPOLOGY] [UNIQUE_STRING]", "Provide a cluster config file with optional uniqueness in server names and FQDNs"
     def init(topology=nil, unique_string=nil)
       topologies = %w(open-source standalone tier)
