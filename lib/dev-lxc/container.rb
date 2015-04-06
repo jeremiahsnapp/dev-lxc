@@ -124,5 +124,28 @@ module DevLXC
       end
     end
 
+    def configure_chef_client(chef_server_url, validation_client_name, validation_key)
+      unless self.defined?
+        puts "ERROR: Container #{self.name} does not exist."
+        exit 1
+      end
+
+      puts "Configuring Chef Client in container '#{self.name}' for Chef Server '#{chef_server_url}'"
+
+      FileUtils.mkdir_p("#{config_item('lxc.rootfs')}/etc/chef")
+
+      client_rb = %Q(chef_server_url '#{chef_server_url}'
+validation_client_name '#{validation_client_name}'
+ssl_verify_mode :verify_none
+)
+      IO.write("#{config_item('lxc.rootfs')}/etc/chef/client.rb", client_rb)
+
+      begin
+        FileUtils.cp(validation_key, "#{config_item('lxc.rootfs')}/etc/chef/validation.pem")
+      rescue Errno::ENOENT
+        puts "ERROR: The validation key '#{validation_key}' does not exist."
+      end
+    end
+
   end
 end

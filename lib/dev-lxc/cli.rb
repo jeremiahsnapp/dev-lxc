@@ -41,6 +41,33 @@ module DevLXC::CLI
       container.install_chef_client(options[:version])
     end
 
+    desc "configure-chef-client [CONTAINER_NAME]", "Configure Chef Client in container"
+    option :chef_server_url, :aliases => "-s", :desc => "Specify the URL of the Chef Server"
+    option :validation_client_name, :aliases => "-u", :desc => "Specify the name of the validation client"
+    option :validation_key, :aliases => "-k", :desc => "Specify the path to the validation key"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    def configure_chef_client(container_name)
+      chef_server_url = options[:chef_server_url]
+      validation_client_name = options[:validation_client_name]
+      validation_key = options[:validation_key]
+      if chef_server_url.nil? && validation_client_name.nil? && validation_key.nil?
+        cluster = get_cluster(options[:config])
+        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend)
+        unless chef_server_bootstrap_backend.defined?
+          puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' is not created."
+          exit 1
+        end
+        chef_server_url = "https://#{cluster.api_fqdn}/organizations/ponyville"
+        validation_client_name = 'ponyville-validator'
+        validation_key = "#{chef_server_bootstrap_backend.config_item('lxc.rootfs')}/root/chef-repo/.chef/ponyville-validator.pem"
+      elsif chef_server_url.nil? || validation_client_name.nil? || validation_key.nil?
+        puts "ERROR: All of the --chef-server-url, --validation-client-name and --validation-key options must be set or left unset. Do not set only some of these options."
+        exit 1
+      end
+      container = ::DevLXC::Container.new(container_name)
+      container.configure_chef_client(chef_server_url, validation_client_name, validation_key)
+    end
+
     desc "init [TOPOLOGY] [UNIQUE_STRING]", "Provide a cluster config file with optional uniqueness in server names and FQDNs"
     def init(topology=nil, unique_string=nil)
       topologies = %w(open-source standalone tier)
