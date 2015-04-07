@@ -6,15 +6,14 @@ module DevLXC::CLI
   class DevLXC < Thor
 
     no_commands{
-      def get_cluster(config_option)
-        config = options[:config]
-        config ||= "dev-lxc.yml"
-        if ! File.exists?(config)
-          puts "ERROR: Cluster config file `config` does not exist."
+      def get_cluster(config_file=nil)
+        config_file ||= "dev-lxc.yml"
+        if ! File.exists?(config_file)
+          puts "ERROR: Cluster config file '#{config_file}' does not exist."
           puts "       Create a `./dev-lxc.yml` file or specify the path using `--config`."
           exit 1
         end
-        ::DevLXC::Cluster.new(YAML.load(IO.read(config)))
+        ::DevLXC::Cluster.new(YAML.load(IO.read(config_file)))
       end
 
       def match_server_name_regex(server_name_regex)
