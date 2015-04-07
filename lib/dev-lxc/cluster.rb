@@ -117,28 +117,6 @@ module DevLXC
           puts "The knife.rb file can not be copied because it does not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
         end
       end
-
-      bootstrap_node = %Q(#!/bin/bash
-
-if [[ -z $1 ]]; then
-  echo "Please provide the name of the node to be bootstrapped"
-  return 1
-fi
-
-xc-start $1
-
-xc-chef-config -s #{chef_server_url} \\
-               -u #{validator_name} \\
-               -k ./chef-repo/.chef/#{validator_name}.pem
-
-if [[ -n $2 ]]; then
-  xc-attach chef-client -r $2
-else
-  xc-attach chef-client
-fi
-)
-      IO.write("./bootstrap-node", bootstrap_node)
-      FileUtils.chmod("u+x", "./bootstrap-node")
     end
 
     def chef_server_config
