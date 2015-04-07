@@ -59,6 +59,23 @@ If you aren't familiar with using containers please read this introduction.
 	Be sure that you configure the `mounts` and `packages` lists in `dev-lxc.yml` to match your
 	particular environment.
 
+    The package paths in dev-lxc's example configs assume that the packages are stored in the
+	following directory structure in the dev-lxc-platform VM. I recommend creating that
+	directory structure in the physical workstation and configuring dev-lxc-platform's `.knife.yml`
+	to mount the structure into `/dev-shared` in the dev-lxc-platform VM.
+
+```
+/dev-shared/chef-packages/
+├── analytics
+├── cs
+├── ec
+├── manage
+├── osc
+├── push-jobs-server
+├── reporting
+└── sync
+```
+
 ## Update dev-lxc gem
 
 Run `gem update dev-lxc` inside the Vagrant VM platform to ensure you have the latest version.
@@ -176,8 +193,9 @@ analytics-fe1.lxc     running         10.0.3.207
 
 Create a local chef-repo with appropriate knife.rb and pem files.
 
-Also create a `./bootstrap-node` script to simplify creating and
-bootstrapping nodes in the `dev-lxc-platform`.
+Use the `-p` option to also get pivotal.pem and pivotal.rb files.
+
+Use the `-f` option to overwrite existing knife.rb and pivotal.rb files.
 
 ```
 dev-lxc chef-repo
@@ -269,6 +287,72 @@ you can run the following command.
 dev-lxc up 'chef'
 ```
 
+### Managing Node Containers
+
+#### Manually Create a Platform Image
+
+Platform images can be used for purposes other than building clusters. For example, they can
+be used as Chef nodes for testing purposes.
+
+You can see a menu of platform images this tool can create by using the following command.
+
+```
+dev-lxc create
+```
+
+The initial creation of platform images can take awhile so let's go ahead and start creating
+an Ubuntu 14.04 image now.
+
+```
+dev-lxc create p-ubuntu-1404
+```
+
+#### Install Chef Client in a Container
+
+Use the `-v` option to specify a particular version of Chef Client.
+
+Use `-v latest` or leave out the `-v` option to install the latest version of Chef Client.
+
+For example, install the latest 11.x version of Chef Client.
+
+```
+dev-lxc install-chef-client test-node.lxc -v 11
+```
+
+#### Configure Chef Client in a Container
+
+Use the `-s`, `-u`, `-k` options to set `chef_server_url`, `validation_client_name` and
+`validation_key` in a container's `/etc/chef/client.rb` and copy the validator's key to
+`/etc/chef/validation.pem`.
+
+Or leave the options empty and it will default to using values from the cluster defined
+in `dev-lxc.yml`.
+
+```
+dev-lxc config-chef-client test-node.lxc
+```
+
+#### Bootstrap Chef Client in a Container
+
+Specifying a `BASE_CONTAINER_NAME` will clone the base container into a new container
+and bootstrap it. If no `BASE_CONTAINER_NAME` is given then the container to be bootstrapped
+needs to already exist.
+
+Use the `-v` option to specify a particular version of Chef Client.
+
+Use the `-s`, `-u`, `-k` options to set `chef_server_url`, `validation_client_name` and
+`validation_key` in a container's `/etc/chef/client.rb` and copy the validator's key to
+`/etc/chef/validation.pem`.
+
+Or leave the options empty and it will default to using values from the cluster defined
+in `dev-lxc.yml`.
+
+Use the `-r` option to specify the run_list for chef-client to use.
+
+```
+dev-lxc bootstrap-container test-node.lxc -r my_run_list
+```
+
 ### Using the dev-lxc library
 
 dev-lxc cli interface can be used as a library.
@@ -302,6 +386,7 @@ server.start               # start chef-fe1.lxc
 server.status              # show status of chef-fe1.lxc
 server.run_command("chef-server-ctl reconfigure")  # run command in chef-fe1.lxc
 server.stop                # stop chef-fe1.lxc
+server.destroy             # destroy chef-fe1.lxc
 ```
 
 ## Cluster Config Files
@@ -553,24 +638,6 @@ Of course, you can also just use the standard LXC commands to destroy any contai
 
 ```
 lxc-destroy -n [NAME]
-```
-
-### Manually Create a Platform Image
-
-Platform images can be used for purposes other than building clusters. For example, they can
-be used as Chef nodes for testing purposes.
-
-You can see a menu of platform images this tool can create by using the following command.
-
-```
-dev-lxc create
-```
-
-The initial creation of platform images can take awhile so let's go ahead and start creating
-an Ubuntu 14.04 image now.
-
-```
-dev-lxc create p-ubuntu-1404
 ```
 
 ## Contributing
