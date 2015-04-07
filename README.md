@@ -130,7 +130,7 @@ dev-lxc init tier > dev-lxc.yml
 List of each servers' images created during the build process.
 
 ```
-dev-lxc list_images
+dev-lxc list-images
 ```
 
 #### Start cluster
@@ -222,11 +222,11 @@ emacs $(dev-lxc abspath chef /etc/opscode/chef-server.rb)
 
 #### Run arbitrary commands in each server
 
-After modifying the chef-server.rb you could use the run_command subcommand to tell the backend and
+After modifying the chef-server.rb you could use the run-command subcommand to tell the backend and
 frontend servers to run `chef-server-ctl reconfigure`.
 
 ```
-dev-lxc run_command chef 'chef-server-ctl reconfigure'
+dev-lxc run-command chef 'chef-server-ctl reconfigure'
 ```
 
 #### Make a snapshot of the servers
@@ -282,7 +282,7 @@ DevLXC::CLI::DevLXC.start
 ARGV = [ 'status' ]        # show status of all servers
 DevLXC::CLI::DevLXC.start
 
-ARGV = [ 'run_command', 'uptime' ]   # run `uptime` in all servers
+ARGV = [ 'run-command', 'uptime' ]   # run `uptime` in all servers
 DevLXC::CLI::DevLXC.start
 
 ARGV = [ 'destroy' ]       # destroy all servers

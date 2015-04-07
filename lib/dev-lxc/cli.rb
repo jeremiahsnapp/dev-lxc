@@ -160,7 +160,7 @@ module DevLXC::CLI
       get_cluster(options[:config]).chef_repo(options[:force], options[:pivotal])
     end
 
-    desc "list_images [SERVER_NAME_REGEX]", "List of each servers' images created during the build process"
+    desc "list-images [SERVER_NAME_REGEX]", "List of each servers' images created during the build process"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def list_images(server_name_regex=nil)
       images = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Array.new } }
@@ -194,7 +194,7 @@ module DevLXC::CLI
       end
     end
 
-    desc "run_command [SERVER_NAME_REGEX] [COMMAND]", "Runs a command in each server"
+    desc "run-command [SERVER_NAME_REGEX] [COMMAND]", "Runs a command in each server"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(server_name_regex=nil, command)
       start_time = Time.now
