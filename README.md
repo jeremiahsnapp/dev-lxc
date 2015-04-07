@@ -1,14 +1,17 @@
 # dev-lxc
 
-A tool for creating Chef Server clusters with a Chef Analytics server using LXC containers.
+A tool for creating Chef Server clusters and Chef Analytics clusters using LXC containers.
 
 Using [ruby-lxc](https://github.com/lxc/ruby-lxc) it builds a standalone Chef Server or
 tier Chef Server cluster composed of a backend and multiple frontends with round-robin
-DNS resolution. It will also optionally build a standalone or tier Chef Analytics server
-and connect it with the Chef Server.
+DNS resolution. It can also build a standalone or tier Chef Analytics server and connect
+it with the Chef Server.
 
-The dev-lxc tool is well suited as a tool for support related work, customized
-cluster builds for demo purposes, as well as general experimentation and exploration.
+dev-lxc also has commands to manipulate Chef node containers. For example, dev-lxc can bootstrap a
+container by installing Chef Client, configuring it for a Chef Server and running a specified run_list.
+
+The dev-lxc tool is well suited as a tool for support related work, customized cluster builds
+for demo purposes, as well as general experimentation and exploration of Chef products
 
 ### Features
 
