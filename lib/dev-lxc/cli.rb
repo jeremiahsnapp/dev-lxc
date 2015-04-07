@@ -19,10 +19,15 @@ module DevLXC::CLI
       def match_server_name_regex(server_name_regex)
         get_cluster(options[:config]).servers.select { |s| s.server.name =~ /#{server_name_regex}/ }
       end
+
+      def print_elapsed_time(elapsed_time)
+        printf "\ndev-lxc is finished. (%im %.2fs)\n", elapsed_time / 60, elapsed_time % 60
+      end
     }
 
     desc "create [PLATFORM_IMAGE_NAME]", "Create a platform image"
     def create(platform_image_name=nil)
+      start_time = Time.now
       platform_image_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-centos-5 p-centos-6)
       if platform_image_name.nil? || ! platform_image_names.include?(platform_image_name)
         platform_image_names_with_index = platform_image_names.map.with_index{ |a, i| [i+1, *a]}
@@ -31,13 +36,16 @@ module DevLXC::CLI
         platform_image_name = platform_image_names[selection.to_i - 1]
       end
       ::DevLXC.create_platform_image(platform_image_name)
+      print_elapsed_time(Time.now - start_time)
     end
 
     desc "install-chef-client [CONTAINER_NAME]", "Install Chef Client in container"
     option :version, :aliases => "-v", :desc => "Specify the version of Chef Client to install"
     def install_chef_client(container_name)
+      start_time = Time.now
       container = ::DevLXC::Container.new(container_name)
       container.install_chef_client(options[:version])
+      print_elapsed_time(Time.now - start_time)
     end
 
     desc "configure-chef-client [CONTAINER_NAME]", "Configure Chef Client in container"
@@ -46,6 +54,7 @@ module DevLXC::CLI
     option :validation_key, :aliases => "-k", :desc => "Specify the path to the validation key"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def configure_chef_client(container_name)
+      start_time = Time.now
       chef_server_url = options[:chef_server_url]
       validation_client_name = options[:validation_client_name]
       validation_key = options[:validation_key]
@@ -65,6 +74,7 @@ module DevLXC::CLI
       end
       container = ::DevLXC::Container.new(container_name)
       container.configure_chef_client(chef_server_url, validation_client_name, validation_key)
+      print_elapsed_time(Time.now - start_time)
     end
 
     desc "bootstrap-container [BASE_CONTAINER_NAME] [CONTAINER_NAME]", "Bootstrap Chef Client in container"
@@ -75,6 +85,7 @@ module DevLXC::CLI
     option :validation_key, :aliases => "-k", :desc => "Specify the path to the validation key"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def bootstrap_container(base_container_name=nil, container_name)
+      start_time = Time.now
       chef_server_url = options[:chef_server_url]
       validation_client_name = options[:validation_client_name]
       validation_key = options[:validation_key]
@@ -94,6 +105,7 @@ module DevLXC::CLI
       end
       container = ::DevLXC::Container.new(container_name)
       container.bootstrap_container(base_container_name, options[:version], options[:run_list], chef_server_url, validation_client_name, validation_key)
+      print_elapsed_time(Time.now - start_time)
     end
 
     desc "init [TOPOLOGY] [UNIQUE_STRING]", "Provide a cluster config file with optional uniqueness in server names and FQDNs"
@@ -185,25 +197,32 @@ module DevLXC::CLI
     desc "run_command [SERVER_NAME_REGEX] [COMMAND]", "Runs a command in each server"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(server_name_regex=nil, command)
+      start_time = Time.now
       match_server_name_regex(server_name_regex).each { |s| s.run_command(command) }
+      print_elapsed_time(Time.now - start_time)
     end
 
     desc "up [SERVER_NAME_REGEX]", "Start servers - This is the default if no subcommand is given"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def up(server_name_regex=nil)
+      start_time = Time.now
       match_server_name_regex(server_name_regex).each { |s| s.start }
+      print_elapsed_time(Time.now - start_time)
     end
 
     desc "halt [SERVER_NAME_REGEX]", "Stop servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def halt(server_name_regex=nil)
+      start_time = Time.now
       match_server_name_regex(server_name_regex).reverse_each { |s| s.stop }
+      print_elapsed_time(Time.now - start_time)
     end
 
     desc "snapshot [SERVER_NAME_REGEX]", "Create a snapshot of servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     option :force, :aliases => "-f", :type => :boolean, :desc => "Overwrite existing custom images"
     def snapshot(server_name_regex=nil)
+      start_time = Time.now
       non_stopped_servers = Array.new
       existing_custom_images = Array.new
       match_server_name_regex(server_name_regex).each do |s|
@@ -222,6 +241,7 @@ module DevLXC::CLI
         exit 1
       end
       match_server_name_regex(server_name_regex).each { |s| s.snapshot(options[:force]) }
+      print_elapsed_time(Time.now - start_time)
     end
 
     desc "destroy [SERVER_NAME_REGEX]", "Destroy servers"
@@ -231,6 +251,7 @@ module DevLXC::CLI
     option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared images"
     option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform images"
     def destroy(server_name_regex=nil)
+      start_time = Time.now
       match_server_name_regex(server_name_regex).reverse_each do |s|
         s.destroy
         s.destroy_image(:custom) if options[:custom]
@@ -238,6 +259,7 @@ module DevLXC::CLI
         s.destroy_image(:shared) if options[:shared]
         s.destroy_image(:platform) if options[:platform]
       end
+      print_elapsed_time(Time.now - start_time)
     end
 
   end
