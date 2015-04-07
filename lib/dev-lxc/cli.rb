@@ -21,7 +21,7 @@ module DevLXC::CLI
       end
 
       def print_elapsed_time(elapsed_time)
-        printf "\ndev-lxc is finished. (%im %.2fs)\n", elapsed_time / 60, elapsed_time % 60
+        printf "dev-lxc is finished. (%im %.2fs)\n", elapsed_time / 60, elapsed_time % 60
       end
     }
 
@@ -36,6 +36,7 @@ module DevLXC::CLI
         platform_image_name = platform_image_names[selection.to_i - 1]
       end
       ::DevLXC.create_platform_image(platform_image_name)
+      puts
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -45,6 +46,7 @@ module DevLXC::CLI
       start_time = Time.now
       container = ::DevLXC::Container.new(container_name)
       container.install_chef_client(options[:version])
+      puts
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -74,6 +76,7 @@ module DevLXC::CLI
       end
       container = ::DevLXC::Container.new(container_name)
       container.configure_chef_client(chef_server_url, validation_client_name, validation_key)
+      puts
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -105,6 +108,7 @@ module DevLXC::CLI
       end
       container = ::DevLXC::Container.new(container_name)
       container.bootstrap_container(base_container_name, options[:version], options[:run_list], chef_server_url, validation_client_name, validation_key)
+      puts
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -198,7 +202,7 @@ module DevLXC::CLI
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(server_name_regex=nil, command)
       start_time = Time.now
-      match_server_name_regex(server_name_regex).each { |s| s.run_command(command) }
+      match_server_name_regex(server_name_regex).each { |s| s.run_command(command); puts }
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -206,7 +210,7 @@ module DevLXC::CLI
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def up(server_name_regex=nil)
       start_time = Time.now
-      match_server_name_regex(server_name_regex).each { |s| s.start }
+      match_server_name_regex(server_name_regex).each { |s| s.start; puts }
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -214,7 +218,7 @@ module DevLXC::CLI
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def halt(server_name_regex=nil)
       start_time = Time.now
-      match_server_name_regex(server_name_regex).reverse_each { |s| s.stop }
+      match_server_name_regex(server_name_regex).reverse_each { |s| s.stop; puts }
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -240,7 +244,7 @@ module DevLXC::CLI
         puts existing_custom_images
         exit 1
       end
-      match_server_name_regex(server_name_regex).each { |s| s.snapshot(options[:force]) }
+      match_server_name_regex(server_name_regex).each { |s| s.snapshot(options[:force]); puts }
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -258,6 +262,7 @@ module DevLXC::CLI
         s.destroy_image(:unique) if options[:unique]
         s.destroy_image(:shared) if options[:shared]
         s.destroy_image(:platform) if options[:platform]
+        puts
       end
       print_elapsed_time(Time.now - start_time)
     end
