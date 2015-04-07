@@ -147,5 +147,30 @@ ssl_verify_mode :verify_none
       end
     end
 
+    def bootstrap_container(base_container_name=nil, version=nil, run_list=nil, chef_server_url, validation_client_name, validation_key)
+      puts "Bootstrapping container '#{self.name}' for Chef Server '#{chef_server_url}'"
+      if base_container_name
+        if self.defined?
+          puts "WARN: Skipping cloning. Container '#{self.name}' already exists"
+        else
+          puts "Cloning base container '#{base_container_name}' into container '#{self.name}'"
+          base_container = DevLXC::Container.new(base_container_name)
+          unless base_container.defined?
+            puts "ERROR: Base container '#{base_container_name} does not exist"
+            exit 1
+          end
+          base_container.clone(self.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
+          self.load_config
+        end
+      end
+      self.start unless self.running?
+      self.install_chef_client(version)
+      self.configure_chef_client(chef_server_url, validation_client_name, validation_key)
+
+      chef_client_command = "chef-client"
+      chef_client_command += " -r #{run_list}" if run_list
+      self.run_command(chef_client_command)
+    end
+
   end
 end
