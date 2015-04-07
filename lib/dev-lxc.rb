@@ -9,10 +9,10 @@ module DevLXC
   def self.create_platform_image(platform_image_name)
     platform_image = DevLXC::Container.new(platform_image_name)
     if platform_image.defined?
-      puts "Using existing platform image #{platform_image.name}"
+      puts "Using existing platform image '#{platform_image.name}'"
       return platform_image
     end
-    puts "Creating platform image #{platform_image.name}"
+    puts "Creating platform image '#{platform_image.name}'"
     case platform_image.name
     when "p-ubuntu-1004"
       platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "lucid", "-a", "amd64"])
@@ -29,11 +29,11 @@ module DevLXC
       platform_image.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
     end
     hwaddr = '00:16:3e:' + Digest::SHA1.hexdigest(Time.now.to_s).slice(0..5).unpack('a2a2a2').join(':')
-    puts "Setting #{platform_image.name} platform image's lxc.network.0.hwaddr to #{hwaddr}"
+    puts "Setting '#{platform_image.name}' platform image's lxc.network.0.hwaddr to #{hwaddr}"
     platform_image.set_config_item("lxc.network.0.hwaddr", hwaddr)
     platform_image.save_config
     platform_image.start
-    puts "Installing packages in platform image #{platform_image.name}"
+    puts "Installing packages in platform image '#{platform_image.name}'"
     case platform_image.name
     when "p-ubuntu-1004"
       # Disable certain sysctl.d files in Ubuntu 10.04, they cause `start procps` to fail
@@ -59,7 +59,7 @@ module DevLXC
   end
 
   def self.assign_ip_address(ipaddress, container_name, hwaddr)
-    puts "Assigning IP address #{ipaddress} to #{container_name} container's lxc.network.hwaddr #{hwaddr}"
+    puts "Assigning IP address #{ipaddress} to '#{container_name}' container's lxc.network.hwaddr #{hwaddr}"
     search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /(^#{hwaddr}|,#{ipaddress}$)/)
     append_line_to_file("/etc/lxc/dhcp-hosts.conf", "#{hwaddr},#{ipaddress}\n")
     reload_dnsmasq

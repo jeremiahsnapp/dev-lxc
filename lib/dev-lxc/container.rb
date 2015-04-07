@@ -2,13 +2,13 @@ module DevLXC
   class Container < LXC::Container
     def start
       unless self.defined?
-        puts "ERROR: Container #{self.name} does not exist."
+        puts "ERROR: Container '#{self.name}' does not exist."
         exit 1
       end
-      puts "Starting container #{self.name}"
+      puts "Starting container '#{self.name}'"
       super
       wait(:running, 3)
-      puts "Waiting for #{self.name} container's network"
+      puts "Waiting for '#{self.name}' container's network"
       ips = nil
       30.times do
         ips = self.ip_addresses
@@ -16,13 +16,13 @@ module DevLXC
         sleep 1
       end
       if ips.empty?
-        puts "ERROR: Container #{self.name} network is not available."
+        puts "ERROR: Container '#{self.name}' network is not available."
         exit 1
       end
     end
 
     def stop
-      puts "Stopping container #{self.name}"
+      puts "Stopping container '#{self.name}'"
       super
       wait("STOPPED", 3)
     end
@@ -30,7 +30,7 @@ module DevLXC
     def destroy
       return unless self.defined?
       stop if running?
-      puts "Destroying container #{self.name}"
+      puts "Destroying container '#{self.name}'"
       super
     end
 
@@ -59,7 +59,7 @@ module DevLXC
 
     def run_command(command)
       unless running?
-        puts "ERROR: Container #{self.name} must be running first"
+        puts "ERROR: Container '#{self.name}' must be running first"
         exit 1
       end
       attach_opts = { wait: true, env_policy: LXC::LXC_ATTACH_CLEAR_ENV, extra_env_vars: ['HOME=/root'] }
@@ -70,10 +70,10 @@ module DevLXC
 
     def install_package(package_path)
       unless run_command("test -e #{package_path}") == 0
-        puts "ERROR: File #{package_path} does not exist in container #{self.name}"
+        puts "ERROR: File #{package_path} does not exist in container '#{self.name}'"
         exit 1
       end
-      puts "Installing #{package_path} in container #{self.name}"
+      puts "Installing #{package_path} in container '#{self.name}'"
       case File.extname(package_path)
       when ".deb"
         install_command = "dpkg -D10 -i #{package_path}"
@@ -85,15 +85,15 @@ module DevLXC
 
     def install_chef_client(version=nil)
       unless self.defined?
-        puts "ERROR: Container #{self.name} does not exist."
+        puts "ERROR: Container '#{self.name}' does not exist."
         exit 1
       end
       unless running?
-        puts "ERROR: Container #{self.name} is not running"
+        puts "ERROR: Container '#{self.name}' is not running"
         exit 1
       end
       if self.ip_addresses.empty?
-        puts "ERROR: Container #{self.name} network is not available."
+        puts "ERROR: Container '#{self.name}' network is not available."
         exit 1
       end
 
@@ -141,7 +141,7 @@ module DevLXC
 
     def configure_chef_client(chef_server_url, validation_client_name, validation_key)
       unless self.defined?
-        puts "ERROR: Container #{self.name} does not exist."
+        puts "ERROR: Container '#{self.name}' does not exist."
         exit 1
       end
 

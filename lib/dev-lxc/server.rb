@@ -7,7 +7,7 @@ module DevLXC
 
     def initialize(name, server_type, cluster_config)
       unless cluster_config[server_type]["servers"].keys.include?(name)
-        puts "ERROR: Server #{name} is not defined in the cluster config"
+        puts "ERROR: Server '#{name}' is not defined in the cluster config"
         exit 1
       end
       @server_type = server_type
@@ -72,10 +72,10 @@ module DevLXC
 
     def run_command(command)
       if @server.running?
-        puts "Running '#{command}' in #{@server.name}"
+        puts "Running '#{command}' in '#{@server.name}'"
         @server.run_command(command)
       else
-        puts "#{@server.name} is not running"
+        puts "'#{@server.name}' is not running"
       end
     end
 
@@ -119,7 +119,7 @@ module DevLXC
           return
         end
       end
-      puts "Creating snapshot of container #{@server.name} in custom image #{custom_image.name}"
+      puts "Creating snapshot of container '#{@server.name}' in custom image '#{custom_image.name}'"
       @server.clone("#{custom_image.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
     end
 
@@ -153,29 +153,29 @@ module DevLXC
 
     def create
       if @server.defined?
-        puts "Using existing container #{@server.name}"
+        puts "Using existing container '#{@server.name}'"
         return
       end
       custom_image = DevLXC::Container.new("c-#{@server.name}")
       unique_image = DevLXC::Container.new("u-#{@server.name}")
       if custom_image.defined?
-        puts "Cloning custom image #{custom_image.name} into container #{@server.name}"
+        puts "Cloning custom image '#{custom_image.name}' into container '#{@server.name}'"
         custom_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
         @server = DevLXC::Container.new(@server.name)
         return
       elsif unique_image.defined?
-        puts "Cloning unique image #{unique_image.name} into container #{@server.name}"
+        puts "Cloning unique image '#{unique_image.name}' into container '#{@server.name}'"
         unique_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
         @server = DevLXC::Container.new(@server.name)
         return
       else
-        puts "Creating container #{@server.name}"
+        puts "Creating container '#{@server.name}'"
         unless @server.name == @chef_server_bootstrap_backend || DevLXC::Container.new(@chef_server_bootstrap_backend).defined?
-          puts "ERROR: The bootstrap backend server must be created first."
+          puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
           exit 1
         end
         shared_image = create_shared_image
-        puts "Cloning shared image #{shared_image.name} into container #{@server.name}"
+        puts "Cloning shared image '#{shared_image.name}' into container '#{@server.name}'"
         shared_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         @server = DevLXC::Container.new(@server.name)
         puts "Adding lxc.hook.post-stop hook"
@@ -183,7 +183,7 @@ module DevLXC
         @server.save_config
         hwaddr = @server.config_item("lxc.network.0.hwaddr")
         if hwaddr.empty?
-          puts "ERROR: #{@server.name} needs to have an lxc.network.hwaddr entry"
+          puts "ERROR: '#{@server.name}' needs to have an lxc.network.hwaddr entry"
           exit 1
         end
         DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
@@ -219,7 +219,7 @@ module DevLXC
           end
         end
         @server.stop
-        puts "Cloning container #{@server.name} into unique image #{unique_image.name}"
+        puts "Cloning container '#{@server.name}' into unique image '#{unique_image.name}'"
         @server.clone("#{unique_image.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
       end
     end
@@ -227,11 +227,11 @@ module DevLXC
     def create_shared_image
       shared_image = DevLXC::Container.new(@shared_image_name)
       if shared_image.defined?
-        puts "Using existing shared image #{shared_image.name}"
+        puts "Using existing shared image '#{shared_image.name}'"
         return shared_image
       end
       platform_image = DevLXC.create_platform_image(@platform_image_name)
-      puts "Cloning platform image #{platform_image.name} into shared image #{shared_image.name}"
+      puts "Cloning platform image '#{platform_image.name}' into shared image '#{shared_image.name}'"
       platform_image.clone(shared_image.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
       shared_image = DevLXC::Container.new(shared_image.name)
 
@@ -280,7 +280,7 @@ module DevLXC
           IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb", @chef_server_config)
         end
       when "frontend"
-        puts "Copying /etc/opscode from bootstrap backend"
+        puts "Copying /etc/opscode from bootstrap backend '#{@chef_server_bootstrap_backend}'"
         FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode",
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
@@ -289,7 +289,7 @@ module DevLXC
 
     def configure_reporting
       if @role == 'frontend'
-        puts "Copying /etc/opscode-reporting from bootstrap backend"
+        puts "Copying /etc/opscode-reporting from bootstrap backend '#{@chef_server_bootstrap_backend}'"
         FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-reporting",
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
@@ -338,13 +338,13 @@ module DevLXC
     def configure_analytics
       case @role
       when "standalone", "backend"
-        puts "Copying /etc/opscode-analytics from Chef Server bootstrap backend"
+        puts "Copying /etc/opscode-analytics from Chef Server bootstrap backend '#{@chef_server_bootstrap_backend}'"
         FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-analytics",
                        "#{@server.config_item('lxc.rootfs')}/etc")
 
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode-analytics/opscode-analytics.rb", @analytics_config)
       when "frontend"
-        puts "Copying /etc/opscode-analytics from Analytics bootstrap backend"
+        puts "Copying /etc/opscode-analytics from Analytics bootstrap backend '#{@analytics_bootstrap_backend}'"
         FileUtils.cp_r("#{LXC::Container.new(@analytics_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-analytics",
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
@@ -352,7 +352,7 @@ module DevLXC
     end
 
     def run_ctl(component, subcommand)
-      puts "Running `#{component}-ctl #{subcommand}` in #{@server.name}"
+      puts "Running `#{component}-ctl #{subcommand}` in '#{@server.name}'"
       @server.run_command("#{component}-ctl #{subcommand}")
     end
 
