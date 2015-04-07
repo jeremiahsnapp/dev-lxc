@@ -7,7 +7,8 @@ module DevLXC
 
     def initialize(name, server_type, cluster_config)
       unless cluster_config[server_type]["servers"].keys.include?(name)
-        raise "Server #{name} is not defined in the cluster config"
+        puts "ERROR: Server #{name} is not defined in the cluster config"
+        exit 1
       end
       @server_type = server_type
       cluster = DevLXC::Cluster.new(cluster_config)
@@ -170,7 +171,8 @@ module DevLXC
       else
         puts "Creating container #{@server.name}"
         unless @server.name == @chef_server_bootstrap_backend || DevLXC::Container.new(@chef_server_bootstrap_backend).defined?
-          raise "The bootstrap backend server must be created first."
+          puts "ERROR: The bootstrap backend server must be created first."
+          exit 1
         end
         shared_image = create_shared_image
         puts "Cloning shared image #{shared_image.name} into container #{@server.name}"
@@ -180,7 +182,10 @@ module DevLXC
         @server.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
         @server.save_config
         hwaddr = @server.config_item("lxc.network.0.hwaddr")
-        raise "#{@server.name} needs to have an lxc.network.hwaddr entry" if hwaddr.empty?
+        if hwaddr.empty?
+          puts "ERROR: #{@server.name} needs to have an lxc.network.hwaddr entry"
+          exit 1
+        end
         DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
         unless @role == 'backend'
           case @server_type

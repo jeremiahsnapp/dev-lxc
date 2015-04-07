@@ -1,7 +1,10 @@
 module DevLXC
   class Container < LXC::Container
     def start
-      raise "Container #{self.name} does not exist." unless self.defined?
+      unless self.defined?
+        puts "ERROR: Container #{self.name} does not exist."
+        exit 1
+      end
       puts "Starting container #{self.name}"
       super
       wait(:running, 3)
@@ -12,7 +15,10 @@ module DevLXC
         break unless ips.empty?
         sleep 1
       end
-      raise "Container #{self.name} network is not available." if ips.empty?
+      if ips.empty?
+        puts "ERROR: Container #{self.name} network is not available."
+        exit 1
+      end
     end
 
     def stop
@@ -36,7 +42,10 @@ module DevLXC
         self.set_config_item("lxc.mount.entry", preserved_mounts)
       end
       mounts.each do |mount|
-        raise "Mount source #{mount.split.first} does not exist." unless File.exists?(mount.split.first)
+        unless File.exists?(mount.split.first)
+          puts "ERROR: Mount source #{mount.split.first} does not exist."
+          exit 1
+        end
         if ! preserved_mounts.nil? && preserved_mounts.any? { |m| m.start_with?("#{mount} ") }
           puts "Skipping mount entry #{mount}, it already exists"
           next
@@ -49,7 +58,10 @@ module DevLXC
     end
 
     def run_command(command)
-      raise "Container #{self.name} must be running first" unless running?
+      unless running?
+        puts "ERROR: Container #{self.name} must be running first"
+        exit 1
+      end
       attach_opts = { wait: true, env_policy: LXC::LXC_ATTACH_CLEAR_ENV, extra_env_vars: ['HOME=/root'] }
       attach(attach_opts) do
         LXC.run_command(command)
@@ -57,7 +69,10 @@ module DevLXC
     end
 
     def install_package(package_path)
-      raise "File #{package_path} does not exist in container #{self.name}" unless run_command("test -e #{package_path}") == 0
+      unless run_command("test -e #{package_path}") == 0
+        puts "ERROR: File #{package_path} does not exist in container #{self.name}"
+        exit 1
+      end
       puts "Installing #{package_path} in container #{self.name}"
       case File.extname(package_path)
       when ".deb"

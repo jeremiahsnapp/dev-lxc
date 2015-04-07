@@ -60,12 +60,12 @@ module DevLXC
 
     def chef_repo(force=false, pivotal=false)
       if @chef_server_bootstrap_backend.nil?
-        puts "A bootstrap backend Chef Server is not defined in the cluster's config. Please define it first."
+        puts "ERROR: A bootstrap backend Chef Server is not defined in the cluster's config. Please define it first."
         exit 1
       end
       chef_server = Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config)
       if ! chef_server.server.defined?
-        puts "The '#{chef_server.server.name}' Chef Server does not exist. Please create it first."
+        puts "ERROR: The '#{chef_server.server.name}' Chef Server does not exist. Please create it first."
         exit 1
       end
 

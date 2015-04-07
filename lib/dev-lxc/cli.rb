@@ -211,12 +211,12 @@ module DevLXC::CLI
         existing_custom_images << s.server.name if LXC::Container.new("c-#{s.server.name}").defined?
       end
       unless non_stopped_servers.empty?
-        puts "WARNING: Aborting snapshot because the following servers are not stopped"
+        puts "ERROR: Aborting snapshot because the following servers are not stopped"
         puts non_stopped_servers
         exit 1
       end
       unless existing_custom_images.empty? || options[:force]
-        puts "WARNING: The following servers already have a custom image"
+        puts "ERROR: The following servers already have a custom image"
         puts "         Use the `--force` or `-f` option to overwrite existing custom images"
         puts existing_custom_images
         exit 1
