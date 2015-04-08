@@ -156,6 +156,34 @@ module DevLXC::CLI
       puts abspath.compact.join(" ")
     end
 
+    desc "attach [SERVER_NAME_REGEX]", "Attach the terminal to a single server"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    def attach(server_name_regex)
+      servers = match_server_name_regex(server_name_regex)
+      if servers.length > 1
+        puts "ERROR: The following servers matched '#{server_name_regex}'"
+        servers.map { |s| puts "       #{s.server.name}" }
+        puts "       Please specify a single server to attach to"
+        exit 1
+      elsif servers.empty?
+        puts "ERROR: No servers matched '#{server_name_regex}'"
+        puts "       Please specify a single server to attach to"
+        exit 1
+      end
+      server = servers.first.server
+      unless server.defined? && server.running?
+        puts "ERROR: Server '#{server.name}' is not running"
+        exit 1
+      end
+      attach_opts = {
+        wait: true,
+        env_policy: LXC::LXC_ATTACH_CLEAR_ENV,
+        extra_env_vars: ["LANG=en_US.UTF-8", "TERM=linux", "HOME=#{ENV['HOME']}"]
+      }
+      shell = ENV['SHELL']
+      server.attach(attach_opts) { system(shell) }
+    end
+
     desc "chef-repo", "Creates a `bootstrap-node` script and chef-repo in the current directory using files from the cluster's backend /root/chef-repo"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     option :force, :aliases => "-f", :type => :boolean, :desc => "Overwrite any existing knife.rb or pivotal.rb files"
