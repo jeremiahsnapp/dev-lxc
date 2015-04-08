@@ -28,10 +28,9 @@ module DevLXC
     end
 
     def destroy
-      puts "Destroying container '#{self.name}'"
-      return unless self.defined?
       stop if running?
-      super
+      puts "Destroying container '#{self.name}'"
+      super if self.defined?
     end
 
     def sync_mounts(mounts)
