@@ -2,10 +2,13 @@ require "dev-lxc/server"
 
 module DevLXC
   class Cluster
-    attr_reader :api_fqdn, :analytics_fqdn, :chef_server_bootstrap_backend, :analytics_bootstrap_backend
+    attr_reader :api_fqdn, :analytics_fqdn, :chef_server_bootstrap_backend, :analytics_bootstrap_backend, :lxc_config_path
 
     def initialize(cluster_config)
       @cluster_config = cluster_config
+
+      @lxc_config_path = @cluster_config["lxc_config_path"]
+      @lxc_config_path ||= "/var/lib/dev-lxc"
 
       if @cluster_config["chef-server"]
         @chef_server_topology = @cluster_config["chef-server"]["topology"]

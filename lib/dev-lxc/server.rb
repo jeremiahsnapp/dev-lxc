@@ -12,6 +12,7 @@ module DevLXC
       end
       @server_type = server_type
       cluster = DevLXC::Cluster.new(cluster_config)
+      @lxc_config_path = cluster.lxc_config_path
       @api_fqdn = cluster.api_fqdn
       @analytics_fqdn = cluster.analytics_fqdn
       @chef_server_bootstrap_backend = cluster.chef_server_bootstrap_backend
@@ -19,7 +20,7 @@ module DevLXC
       @chef_server_config = cluster.chef_server_config
       @analytics_config = cluster.analytics_config
 
-      @server = DevLXC::Container.new(name)
+      @server = DevLXC::Container.new(name, @lxc_config_path)
       @config = cluster_config[@server_type]["servers"][@server.name]
       @ipaddress = @config["ipaddress"]
       @role = @config["role"] ? @config["role"] : cluster_config[@server_type]['topology']
@@ -110,7 +111,7 @@ module DevLXC
         puts "WARNING: Skipping snapshot of '#{@server.name}' because it is not stopped"
         return
       end
-      custom_image = DevLXC::Container.new("c-#{@server.name}")
+      custom_image = DevLXC::Container.new("c-#{@server.name}", @lxc_config_path)
       if custom_image.defined?
         if force
           custom_image.destroy
@@ -141,13 +142,13 @@ module DevLXC
     def destroy_image(type)
       case type
       when :custom
-        DevLXC::Container.new("c-#{@server.name}").destroy
+        DevLXC::Container.new("c-#{@server.name}", @lxc_config_path).destroy
       when :unique
-        DevLXC::Container.new("u-#{@server.name}").destroy
+        DevLXC::Container.new("u-#{@server.name}", @lxc_config_path).destroy
       when :shared
-        DevLXC::Container.new(@shared_image_name).destroy
+        DevLXC::Container.new(@shared_image_name, @lxc_config_path).destroy
       when :platform
-        DevLXC::Container.new(@platform_image_name).destroy
+        DevLXC::Container.new(@platform_image_name, @lxc_config_path).destroy
       end
     end
 
@@ -156,28 +157,28 @@ module DevLXC
         puts "Using existing container '#{@server.name}'"
         return
       end
-      custom_image = DevLXC::Container.new("c-#{@server.name}")
-      unique_image = DevLXC::Container.new("u-#{@server.name}")
+      custom_image = DevLXC::Container.new("c-#{@server.name}", @lxc_config_path)
+      unique_image = DevLXC::Container.new("u-#{@server.name}", @lxc_config_path)
       if custom_image.defined?
         puts "Cloning custom image '#{custom_image.name}' into container '#{@server.name}'"
         custom_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
-        @server = DevLXC::Container.new(@server.name)
+        @server = DevLXC::Container.new(@server.name, @lxc_config_path)
         return
       elsif unique_image.defined?
         puts "Cloning unique image '#{unique_image.name}' into container '#{@server.name}'"
         unique_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
-        @server = DevLXC::Container.new(@server.name)
+        @server = DevLXC::Container.new(@server.name, @lxc_config_path)
         return
       else
         puts "Creating container '#{@server.name}'"
-        unless @server.name == @chef_server_bootstrap_backend || DevLXC::Container.new(@chef_server_bootstrap_backend).defined?
+        unless @server.name == @chef_server_bootstrap_backend || DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?
           puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
           exit 1
         end
         shared_image = create_shared_image
         puts "Cloning shared image '#{shared_image.name}' into container '#{@server.name}'"
         shared_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
-        @server = DevLXC::Container.new(@server.name)
+        @server = DevLXC::Container.new(@server.name, @lxc_config_path)
         puts "Adding lxc.hook.post-stop hook"
         @server.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
         @server.save_config
@@ -225,15 +226,15 @@ module DevLXC
     end
 
     def create_shared_image
-      shared_image = DevLXC::Container.new(@shared_image_name)
+      shared_image = DevLXC::Container.new(@shared_image_name, @lxc_config_path)
       if shared_image.defined?
         puts "Using existing shared image '#{shared_image.name}'"
         return shared_image
       end
-      platform_image = DevLXC.create_platform_image(@platform_image_name)
+      platform_image = DevLXC.create_platform_image(@platform_image_name, @lxc_config_path)
       puts "Cloning platform image '#{platform_image.name}' into shared image '#{shared_image.name}'"
       platform_image.clone(shared_image.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
-      shared_image = DevLXC::Container.new(shared_image.name)
+      shared_image = DevLXC::Container.new(shared_image.name, @lxc_config_path)
 
       # Disable certain sysctl.d files in Ubuntu 10.04, they cause `start procps` to fail
       # Enterprise Chef server's postgresql recipe expects to be able to `start procps`
@@ -281,7 +282,7 @@ module DevLXC
         end
       when "frontend"
         puts "Copying /etc/opscode from bootstrap backend '#{@chef_server_bootstrap_backend}'"
-        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode",
+        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode",
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
       run_ctl(@server_ctl, "reconfigure")
@@ -290,7 +291,7 @@ module DevLXC
     def configure_reporting
       if @role == 'frontend'
         puts "Copying /etc/opscode-reporting from bootstrap backend '#{@chef_server_bootstrap_backend}'"
-        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-reporting",
+        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-reporting",
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
       run_ctl(@server_ctl, "reconfigure")
@@ -339,13 +340,13 @@ module DevLXC
       case @role
       when "standalone", "backend"
         puts "Copying /etc/opscode-analytics from Chef Server bootstrap backend '#{@chef_server_bootstrap_backend}'"
-        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-analytics",
+        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-analytics",
                        "#{@server.config_item('lxc.rootfs')}/etc")
 
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode-analytics/opscode-analytics.rb", @analytics_config)
       when "frontend"
         puts "Copying /etc/opscode-analytics from Analytics bootstrap backend '#{@analytics_bootstrap_backend}'"
-        FileUtils.cp_r("#{LXC::Container.new(@analytics_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-analytics",
+        FileUtils.cp_r("#{LXC::Container.new(@analytics_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-analytics",
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
       run_ctl("opscode-analytics", "reconfigure")

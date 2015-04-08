@@ -62,7 +62,7 @@ module DevLXC::CLI
       validation_key = options[:validation_key]
       if chef_server_url.nil? && validation_client_name.nil? && validation_key.nil?
         cluster = get_cluster(options[:config])
-        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend)
+        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend, cluster.lxc_config_path)
         unless chef_server_bootstrap_backend.defined?
           puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' is not created."
           exit 1
@@ -94,7 +94,7 @@ module DevLXC::CLI
       validation_key = options[:validation_key]
       if chef_server_url.nil? && validation_client_name.nil? && validation_key.nil?
         cluster = get_cluster(options[:config])
-        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend)
+        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend, cluster.lxc_config_path)
         unless chef_server_bootstrap_backend.defined?
           puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' is not created."
           exit 1
@@ -195,31 +195,32 @@ module DevLXC::CLI
     desc "list-images [SERVER_NAME_REGEX]", "List of each servers' images created during the build process"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def list_images(server_name_regex=nil)
+      lxc_config_path = get_cluster(options[:config]).lxc_config_path
       images = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Array.new } }
       match_server_name_regex(server_name_regex).each do |s|
         images[s.platform_image_name][s.shared_image_name] << s.server.name
       end
       images.each_with_index do |(platform_name, shared), images_index|
         shared.each_with_index do |(shared_name, final), shared_index|
-          printf "Platform: %25s  %s\n", (LXC::Container.new(platform_name).defined? ? "Created" : "Not Created"), platform_name
+          printf "Platform: %25s  %s\n", (LXC::Container.new(platform_name, lxc_config_path).defined? ? "Created" : "Not Created"), platform_name
           puts "|"
-          printf "\\_ Shared: %24s  %s\n", (LXC::Container.new(shared_name).defined? ? "Created" : "Not Created"), shared_name
+          printf "\\_ Shared: %24s  %s\n", (LXC::Container.new(shared_name, lxc_config_path).defined? ? "Created" : "Not Created"), shared_name
           final.each_with_index do |final_name, final_index|
             puts "   |"
             unique_name = "u-#{final_name}"
-            printf "   \\_ Unique: %21s  %s\n", (LXC::Container.new(unique_name).defined? ? "Created" : "Not Created"), unique_name
+            printf "   \\_ Unique: %21s  %s\n", (LXC::Container.new(unique_name, lxc_config_path).defined? ? "Created" : "Not Created"), unique_name
 
             shared_connector = (final_index + 1 < final.length ? "|" : " ")
 
             custom_name = "c-#{final_name}"
-            if LXC::Container.new(custom_name).defined?
+            if LXC::Container.new(custom_name, lxc_config_path).defined?
               printf "   #{shared_connector}  \\_ Custom: %18s  %s\n", "Created", custom_name
               custom_spacing = "   "
               final_width = 9
             else
               final_width = 12
             end
-            printf "   #{shared_connector}  #{custom_spacing}\\_ Final Server: %#{final_width}s    %s\n", (LXC::Container.new(final_name).defined? ? "Created" : "Not Created"), final_name
+            printf "   #{shared_connector}  #{custom_spacing}\\_ Final Server: %#{final_width}s    %s\n", (LXC::Container.new(final_name, lxc_config_path).defined? ? "Created" : "Not Created"), final_name
           end
           puts if (shared_index + 1 < shared.length) || (images_index + 1 < images.length)
         end
@@ -257,9 +258,10 @@ module DevLXC::CLI
       start_time = Time.now
       non_stopped_servers = Array.new
       existing_custom_images = Array.new
+      lxc_config_path = get_cluster(options[:config]).lxc_config_path
       match_server_name_regex(server_name_regex).each do |s|
         non_stopped_servers << s.server.name if s.server.state != :stopped
-        existing_custom_images << s.server.name if LXC::Container.new("c-#{s.server.name}").defined?
+        existing_custom_images << s.server.name if LXC::Container.new("c-#{s.server.name}", lxc_config_path).defined?
       end
       unless non_stopped_servers.empty?
         puts "ERROR: Aborting snapshot because the following servers are not stopped"
