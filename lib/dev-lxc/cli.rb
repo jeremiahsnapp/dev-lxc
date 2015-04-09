@@ -143,7 +143,7 @@ module DevLXC::CLI
       puts "Chef Server: https://#{cluster.api_fqdn}\n\n"
       puts "Analytics:   https://#{cluster.analytics_fqdn}\n\n" if cluster.analytics_fqdn
       servers = Array.new
-      match_server_name_regex(server_name_regex).map { |s| servers << s.status }
+      match_server_name_regex(server_name_regex).map { |s| servers << s.server.status }
       max_server_name_length = servers.max_by { |s| s['name'].length }['name'].length unless servers.empty?
       servers.each { |s| printf "%#{max_server_name_length}s     %-15s %s\n", s['name'], s['state'], s['ip_addresses'] }
     end

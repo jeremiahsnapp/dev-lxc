@@ -57,16 +57,6 @@ module DevLXC
       end
     end
 
-    def status
-      if @server.defined?
-        state = @server.state
-        ip_addresses = @server.ip_addresses.join(" ") if @server.state == :running
-      else
-        state = "not_created"
-      end
-      { 'name' => @server.name, 'state' => state, 'ip_addresses' => ip_addresses }
-    end
-
     def abspath(rootfs_path)
       "#{@server.config_item('lxc.rootfs')}#{rootfs_path}" if @server.defined?
     end

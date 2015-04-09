@@ -1,5 +1,15 @@
 module DevLXC
   class Container < LXC::Container
+    def status
+      if self.defined?
+        state = self.state
+        ip_addresses = self.ip_addresses.join(" ") if self.state == :running
+      else
+        state = "not_created"
+      end
+      { 'name' => self.name, 'state' => state, 'ip_addresses' => ip_addresses }
+    end
+
     def start
       unless self.defined?
         puts "ERROR: Container '#{self.name}' does not exist."
