@@ -136,6 +136,14 @@ module DevLXC::CLI
       puts config
     end
 
+    desc "global-status", "Show status of all dev-lxc images and servers"
+    def global_status
+      containers = Array.new
+      LXC::list_containers({config_path: '/var/lib/dev-lxc'}).map { |c| containers << ::DevLXC::Container.new(c, '/var/lib/dev-lxc').status }
+      max_container_name_length = containers.max_by { |c| c['name'].length }['name'].length unless containers.empty?
+      containers.each { |c| printf "%#{max_container_name_length}s     %-15s %s\n", c['name'], c['state'], c['ip_addresses'] }
+    end
+
     desc "status [SERVER_NAME_REGEX]", "Show status of servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def status(server_name_regex=nil)
