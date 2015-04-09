@@ -153,24 +153,6 @@ List of each servers' images created during the build process.
 dev-lxc list-images
 ```
 
-#### Start cluster
-
-Starting the cluster the first time takes awhile since it has a lot to build.
-
-The tool automatically creates images at appropriate times so future creation of the
-cluster's servers is very quick.
-
-```
-dev-lxc up
-```
-
-A test org, user, knife.rb and keys are automatically created in
-the bootstrap backend server in `/root/chef-repo/.chef` for testing purposes.
-
-The `knife-opc` plugin is installed in the embedded ruby environment of the
-Private Chef and Enterprise Chef server to facilitate the creation of the test
-org and user.
-
 #### Cluster status
 
 Run the following command to see the status of the cluster.
@@ -191,6 +173,62 @@ Analytics:   https://analytics.lxc
  analytics-be.lxc     running         10.0.3.206
 analytics-fe1.lxc     running         10.0.3.207
 ```
+
+#### cluster-view, tks, tls commands
+
+The dev-lxc-platform comes with some commands that create and manage helpful
+tmux/byobu sessions to more easily see the state of a cluster.
+
+Running the `cluster-view` command in the same directory as a `dev-lxc.yml` file
+creates a tmux/byobu session with the same name as the cluster's directory.
+`cluster-view` can also be run with the parent directory of a `dev-lxc.yml` file
+as the first argument and `cluster-view` will change to that directory before
+creating the tmux/byobu session.
+
+The session's first window is named "cluster".
+
+The left side is for running dev-lxc commands.
+
+The right side is made up of three vertically stacked panes with each pane's content
+updating every 0.5 seconds.
+
+* Top - system's memory usage provided by `free -h`
+* Middle - cluster's status provided by `dev-lxc status`
+* Bottom - list of the cluster's images provided by `dev-lxc list-images`
+
+The session's second window is named "shell". It opens in the same directory as the
+cluster's `dev-lxc.yml` file.
+
+The `tls` and `tks` commands are really aliases.
+
+`tls` is an alias for `tmux list-sessions` and is used to see what tmux/byobu sessions
+are running.
+
+`tks` is an alias for `tmux kill-session -t` and is used to kill tmux/byobu sessions.
+When specifying the session to be killed you only need as many characters of the session
+name that are required to make the name unique among the list of running sessions.
+
+I recommend switching to a different running tmux/byobu session before killing the current
+tmux/byobu session. Otherwise you will need to reattach to the remaining tmux/byobu session.
+Use the keyboard shortcuts Alt-Up/Down to easily switch between tmux/byobu sessions.
+
+#### Start cluster
+
+Starting the cluster the first time takes awhile since it has a lot to build.
+
+The tool automatically creates images at appropriate times so future creation of the
+cluster's servers is very quick.
+
+```
+dev-lxc up
+```
+
+A test org, user, knife.rb and keys are automatically created in
+the bootstrap backend server in `/root/chef-repo/.chef` for testing purposes.
+
+The `knife-opc` plugin is installed in the embedded ruby environment of the
+Private Chef and Enterprise Chef server to facilitate the creation of the test
+org and user.
 
 #### Create chef-repo
 
@@ -250,6 +288,14 @@ frontend servers to run `chef-server-ctl reconfigure`.
 dev-lxc run-command chef 'chef-server-ctl reconfigure'
 ```
 
+#### Attach the terminal to a server
+
+Attach the terminal to a server in the cluster that matches the REGEX pattern given.
+
+```
+dev-lxc attach chef-be
+```
+
 #### Make a snapshot of the servers
 
 Save the changes in the servers to custom images.
@@ -275,6 +321,15 @@ images if you want to build them from scratch.
 dev-lxc destroy -c -u -s
 ```
 
+#### Global status of all dev-lxc images and servers
+
+Use the `global-status` command to see the status of all dev-lxc images and servers stored in dev-lxc's
+default LXC config_path `/var/lib/dev-lxc`.
+
+```
+dev-lxc global-status
+```
+
 #### Use commands against specific servers
 You can also run most of these commands against a set of servers by specifying a regular expression
 that matches a set of server names.
@@ -287,7 +342,7 @@ For example, to only start the Chef Servers named `chef-be.lxc` and `chef-fe1.lx
 you can run the following command.
 
 ```
-dev-lxc up 'chef'
+dev-lxc up chef
 ```
 
 ### Managing Node Containers
@@ -558,6 +613,12 @@ it as a "platform", "shared", "unique" or "custom" image.
 Images are then cloned using the btrfs filesystem to very quickly provide a lightweight duplicate
 of the image. This clone is either used to build the next image in the build process or the final
 container that will actually be run.
+
+By default, the cluster's images and final server containers are all stored in `/var/lib/dev-lxc`
+so they don't clutter the containers stored in the default LXC config_path `/var/lib/lxc`.
+
+The cluster's LXC config_path can be configured by setting `lxc_config_path` at the top of the
+`dev-lxc.yml` file to the desired directory.
 
 There are four image categories.
 
