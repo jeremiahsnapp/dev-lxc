@@ -161,7 +161,7 @@ module DevLXC::CLI
     def abspath(server_name_regex=nil, rootfs_path)
       abspath = Array.new
       match_server_name_regex(server_name_regex).map { |s| abspath << s.abspath(rootfs_path) }
-      puts abspath.compact.join(" ")
+      puts abspath.compact
     end
 
     desc "attach [SERVER_NAME_REGEX]", "Attach the terminal to a single server"
