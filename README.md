@@ -270,13 +270,13 @@ dev-lxc up
 
 #### Backdoor access to each server's filesystem
 
-The abspath subcommand can be used to prepend each server's rootfs path to a particular file.
+The realpath subcommand can be used to prepend each server's rootfs path to a particular file.
 
 For example, you can use the following command to edit the Chef Servers' chef-server.rb
 file without logging into the containers.
 
 ```
-emacs $(dev-lxc abspath chef /etc/opscode/chef-server.rb)
+emacs $(dev-lxc realpath chef /etc/opscode/chef-server.rb)
 ```
 
 #### Run arbitrary commands in each server

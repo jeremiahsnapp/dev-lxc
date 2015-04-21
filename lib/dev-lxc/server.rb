@@ -57,7 +57,7 @@ module DevLXC
       end
     end
 
-    def abspath(rootfs_path)
+    def realpath(rootfs_path)
       "#{@server.config_item('lxc.rootfs')}#{rootfs_path}" if @server.defined?
     end
 
