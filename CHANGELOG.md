@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 1.1.2 (2015-04-22)
+
+* Set `ssl_verify_mode :verify_none` in knife.rb and pivotal.rb
+
 ## 1.1.1 (2015-04-22)
 
 * Fix chef_server_url in pivotal.rb
