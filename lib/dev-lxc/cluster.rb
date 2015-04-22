@@ -99,7 +99,7 @@ module DevLXC
             if File.exists?(pivotal_rb_path)
               pivotal_rb = IO.read(pivotal_rb_path)
               pivotal_rb.sub!(/^chef_server_root .*/, "chef_server_root \"#{chef_server_root}\"")
-              pivotal_rb.sub!(/^chef_server_url .*/, "chef_server_url \"#{chef_server_url}\"")
+              pivotal_rb.sub!(/^chef_server_url .*/, "chef_server_url \"#{chef_server_root}\"")
               IO.write("./chef-repo/.chef/pivotal.rb", pivotal_rb)
             else
               puts "The pivotal.rb file can not be copied because it does not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"

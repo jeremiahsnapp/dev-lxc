@@ -370,7 +370,7 @@ module DevLXC
 current_dir = File.dirname(__FILE__)
 
 chef_server_root "#{chef_server_root}"
-chef_server_url "#{chef_server_url}"
+chef_server_url "#{chef_server_root}"
 
 node_name "pivotal"
 client_key "\#{current_dir}/pivotal.pem"
