@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 1.1.1 (2015-04-22)
+
+* Fix chef_server_url in pivotal.rb
+
 ## 1.1.0 (2015-04-21)
 
 * Change "abspath" command name to "realpath"
