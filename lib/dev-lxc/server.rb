@@ -377,6 +377,8 @@ client_key "\#{current_dir}/pivotal.pem"
 
 cookbook_path Dir.pwd + "/cookbooks"
 knife[:chef_repo_path] = Dir.pwd
+
+ssl_verify_mode :verify_none
 )
         IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/pivotal.rb", pivotal_rb)
       end
@@ -394,6 +396,8 @@ validation_key "\#{current_dir}/#{validator_name}.pem"
 
 cookbook_path Dir.pwd + "/cookbooks"
 knife[:chef_repo_path] = Dir.pwd
+
+ssl_verify_mode :verify_none
 )
       IO.write("#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef/knife.rb", knife_rb)
 
