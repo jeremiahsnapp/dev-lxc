@@ -622,7 +622,7 @@ The cluster's LXC config_path can be configured by setting `lxc_config_path` at 
 
 There are four image categories.
 
-1. Platform
+1. Platform Image
 
     The platform image is the first to get created and is identified by the
 	"p-" prefix on the image name.
@@ -637,7 +637,7 @@ There are four image categories.
 
     *Once this platform image is created there is rarely a need to delete it.*
 
-2. Shared
+2. Shared Image
 
     The shared image is the second to get created and is identified by the
 	"s-" prefix on the image name.
@@ -656,7 +656,7 @@ There are four image categories.
 
     *Since no configuration actually happens yet there is rarely a need to delete this image.*
 
-3. Unique
+3. Unique Image
 
     The unique image is the last to get created and is identified by the
 	"u-" prefix on the image name.
@@ -676,7 +676,7 @@ There are four image categories.
 	unique image. These unique images make it very easy to quickly recreate
 	a Chef cluster from a clean starting point.
 
-4. Custom
+4. Custom Image
 
     The custom image is only created when the `snapshot` command is used and is identified
 	by the "c-" prefix on the image name.
