@@ -1,5 +1,10 @@
 # dev-lxc Change Log
 
+## 1.1.3 (2015-04-30)
+
+* Fix chef-repo command's description
+* Update package versions in config templates
+
 ## 1.1.2 (2015-04-22)
 
 * Set `ssl_verify_mode :verify_none` in knife.rb and pivotal.rb
