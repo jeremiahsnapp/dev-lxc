@@ -65,10 +65,10 @@ If you aren't familiar with using containers please read this introduction.
     The package paths in dev-lxc's example configs assume that the packages are stored in the
 	following directory structure in the dev-lxc-platform VM. I recommend creating that
 	directory structure in the physical workstation and configuring dev-lxc-platform's `.knife.yml`
-	to mount the structure into `/dev-shared` in the dev-lxc-platform VM.
+	to mount the structure into `/root/dev` in the dev-lxc-platform VM.
 
 ```
-/dev-shared/chef-packages/
+/root/dev/chef-packages/
 ├── analytics
 ├── cs
 ├── ec
@@ -477,13 +477,13 @@ dev-lxc init
 chef-server:
   platform_image: p-ubuntu-1404
   mounts:
-    - /dev-shared dev-shared
+    - /root/dev root/dev
   packages:
-    server: /dev-shared/chef-packages/cs/chef-server-core_12.0.7-1_amd64.deb
-    manage: /dev-shared/chef-packages/manage/opscode-manage_1.11.2-1_amd64.deb
-#    reporting: /dev-shared/chef-packages/reporting/opscode-reporting_1.2.3-1_amd64.deb
-#    push-jobs-server: /dev-shared/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
-#    sync: /dev-shared/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
+    server: /root/dev/chef-packages/cs/chef-server-core_12.0.7-1_amd64.deb
+    manage: /root/dev/chef-packages/manage/opscode-manage_1.11.2-1_amd64.deb
+#    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.2.3-1_amd64.deb
+#    push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
+#    sync: /root/dev/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
 
 ##   The chef-sync package will only be installed.
 ##   chef-sync will NOT be configured since we don't know whether it should be a master or replica.
@@ -505,9 +505,9 @@ chef-server:
 analytics:
   platform_image: p-ubuntu-1404
   mounts:
-    - /dev-shared dev-shared
+    - /root/dev root/dev
   packages:
-    analytics: /dev-shared/chef-packages/analytics/opscode-analytics_1.1.2-1_amd64.deb
+    analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.1.2-1_amd64.deb
 
   analytics_fqdn: analytics.lxc
   topology: tier
