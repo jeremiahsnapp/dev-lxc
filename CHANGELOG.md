@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 1.2.0 (2015-05-01)
+
+* Change the chef-packages mount point
+
 ## 1.1.3 (2015-04-30)
 
 * Fix chef-repo command's description
