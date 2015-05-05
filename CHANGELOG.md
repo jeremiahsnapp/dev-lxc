@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 1.2.1 (2015-05-05)
+
+* Fix output spacing in list-images
+
 ## 1.2.0 (2015-05-01)
 
 * Change the chef-packages mount point
