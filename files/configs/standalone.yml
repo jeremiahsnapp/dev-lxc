@@ -18,7 +18,7 @@ chef-server:
     - /root/dev root/dev
   packages:
     server: /root/dev/chef-packages/cs/chef-server-core_12.0.8-1_amd64.deb
-    manage: /root/dev/chef-packages/manage/opscode-manage_1.12.0-1_amd64.deb
+    manage: /root/dev/chef-packages/manage/opscode-manage_1.13.0-1_amd64.deb
 #    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.3.0-1_amd64.deb
 #    push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
 #    sync: /root/dev/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
