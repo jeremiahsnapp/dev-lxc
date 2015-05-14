@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 1.2.2 (2015-05-14)
+
+* Update version of Chef Manage in templates
+
 ## 1.2.1 (2015-05-05)
 
 * Fix output spacing in list-images
