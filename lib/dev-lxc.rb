@@ -58,6 +58,7 @@ module DevLXC
     when "p-centos-6"
       platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
     end
+    platform_image.run_command("useradd --create-home --shell /bin/bash --password $6$q3FDMpMZ$zfahCxEWHbzuEV98QPzhGZ7fLtGcLNZrbKK7OAYGXmJXZc07WbcxVnDwrMyX/cL6vSp4/IjlrVUZFBp7Orhyu1 dev-lxc")
     platform_image.stop
     return platform_image
   end
