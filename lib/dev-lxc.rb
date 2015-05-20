@@ -42,17 +42,21 @@ module DevLXC
                      "#{platform_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
       end
       platform_image.run_command("apt-get update")
-      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox curl tree")
+      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox curl tree openssh-server")
+      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "/usr/sbin/dpkg-reconfigure openssh-server\n")
+      FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
     when "p-ubuntu-1204", "p-ubuntu-1404"
       platform_image.run_command("apt-get update")
-      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree")
+      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree openssh-server")
+      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "/usr/sbin/dpkg-reconfigure openssh-server\n")
+      FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
     when "p-centos-5"
       # downgrade openssl temporarily to overcome an install bug
       # reference: http://www.hack.net.br/blog/2014/02/12/openssl-conflicts-with-file-from-package-openssl/
       platform_image.run_command("yum downgrade -y openssl")
-      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree")
+      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
     when "p-centos-6"
-      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree")
+      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
     end
     platform_image.stop
     return platform_image
