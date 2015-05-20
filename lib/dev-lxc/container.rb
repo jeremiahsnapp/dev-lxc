@@ -185,6 +185,8 @@ ssl_verify_mode :verify_none
           end
           base_container.clone(self.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
           self.load_config
+          puts "Deleting SSH Server Host Keys"
+          FileUtils.rm_f(Dir.glob("#{self.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
         end
       end
       self.start unless self.running?

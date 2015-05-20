@@ -169,6 +169,8 @@ module DevLXC
         puts "Cloning shared image '#{shared_image.name}' into container '#{@server.name}'"
         shared_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         @server = DevLXC::Container.new(@server.name, @lxc_config_path)
+        puts "Deleting SSH Server Host Keys"
+        FileUtils.rm_f(Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
         puts "Adding lxc.hook.post-stop hook"
         @server.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
         @server.save_config
@@ -225,6 +227,8 @@ module DevLXC
       puts "Cloning platform image '#{platform_image.name}' into shared image '#{shared_image.name}'"
       platform_image.clone(shared_image.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
       shared_image = DevLXC::Container.new(shared_image.name, @lxc_config_path)
+      puts "Deleting SSH Server Host Keys"
+      FileUtils.rm_f(Dir.glob("#{shared_image.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
 
       # Disable certain sysctl.d files in Ubuntu 10.04, they cause `start procps` to fail
       # Enterprise Chef server's postgresql recipe expects to be able to `start procps`
