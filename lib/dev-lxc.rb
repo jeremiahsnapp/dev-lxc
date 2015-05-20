@@ -55,10 +55,15 @@ module DevLXC
       # reference: http://www.hack.net.br/blog/2014/02/12/openssl-conflicts-with-file-from-package-openssl/
       platform_image.run_command("yum downgrade -y openssl")
       platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
+      FileUtils.mkdir_p("#{platform_image.config_item('lxc.rootfs')}/etc/sudoers.d")
+      FileUtils.chmod(0750, "#{platform_image.config_item('lxc.rootfs')}/etc/sudoers.d")
+      append_line_to_file("#{platform_image.config_item('lxc.rootfs')}/etc/sudoers", "\n#includedir /etc/sudoers.d\n")
     when "p-centos-6"
       platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
     end
     platform_image.run_command("useradd --create-home --shell /bin/bash --password $6$q3FDMpMZ$zfahCxEWHbzuEV98QPzhGZ7fLtGcLNZrbKK7OAYGXmJXZc07WbcxVnDwrMyX/cL6vSp4/IjlrVUZFBp7Orhyu1 dev-lxc")
+    IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/sudoers.d/dev-lxc", "dev-lxc   ALL=NOPASSWD:ALL\n")
+    FileUtils.chmod(0440, "#{platform_image.config_item('lxc.rootfs')}/etc/sudoers.d/dev-lxc")
     platform_image.stop
     return platform_image
   end
