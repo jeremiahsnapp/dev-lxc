@@ -1,5 +1,12 @@
 # dev-lxc Change Log
 
+## 1.3.0 (2015-05-21)
+
+* New "adhoc" cluster functionality
+* Platform images have openssh-server installed
+* Platform images have "dev-lxc" user with "dev-lxc" password and passwordless sudo
+* Update Analytics package in templates
+
 ## 1.2.2 (2015-05-14)
 
 * Update version of Chef Manage in templates
