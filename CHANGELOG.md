@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 1.3.1 (2015-05-21)
+
+* Allow adhoc servers time to generate SSH Server Host Keys
+
 ## 1.3.0 (2015-05-21)
 
 * New "adhoc" cluster functionality
