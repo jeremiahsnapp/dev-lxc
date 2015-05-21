@@ -10,6 +10,10 @@ module DevLXC
       @lxc_config_path = @cluster_config["lxc_config_path"]
       @lxc_config_path ||= "/var/lib/dev-lxc"
 
+      if @cluster_config["adhoc"]
+        @adhoc_servers = @cluster_config["adhoc"]["servers"].keys
+      end
+
       if @cluster_config["chef-server"]
         @chef_server_topology = @cluster_config["chef-server"]["topology"]
         @api_fqdn = @cluster_config["chef-server"]["api_fqdn"]
@@ -44,6 +48,12 @@ module DevLXC
     end
 
     def servers
+      adhoc_servers = Array.new
+      if @adhoc_servers
+        @adhoc_servers.each do |name|
+          adhoc_servers << Server.new(name, 'adhoc', @cluster_config)
+        end
+      end
       chef_servers = Array.new
       chef_servers << Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config) if @chef_server_bootstrap_backend
       if @chef_server_topology == "tier"
@@ -58,7 +68,7 @@ module DevLXC
           analytics_servers << Server.new(frontend_name, 'analytics', @cluster_config)
         end
       end
-      servers = chef_servers + analytics_servers
+      servers = adhoc_servers + chef_servers + analytics_servers
     end
 
     def chef_repo(force=false, pivotal=false)

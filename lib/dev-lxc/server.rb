@@ -29,6 +29,8 @@ module DevLXC
       @packages = cluster_config[@server_type]["packages"]
 
       case @server_type
+      when 'adhoc'
+        @shared_image_name = ''
       when 'analytics'
         @shared_image_name = "s#{@platform_image_name[1..-1]}"
         @shared_image_name += "-analytics-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["analytics"].to_s.match(/[_-]((\d+\.?){3,})/)
@@ -161,13 +163,19 @@ module DevLXC
         return
       else
         puts "Creating container '#{@server.name}'"
-        unless @server.name == @chef_server_bootstrap_backend || DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?
-          puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
-          exit 1
+        if @server_type == 'adhoc'
+          platform_image = DevLXC.create_platform_image(@platform_image_name, @lxc_config_path)
+          puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
+          platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
+        else
+          unless @server.name == @chef_server_bootstrap_backend || DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?
+            puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
+            exit 1
+          end
+          shared_image = create_shared_image
+          puts "Cloning shared image '#{shared_image.name}' into container '#{@server.name}'"
+          shared_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         end
-        shared_image = create_shared_image
-        puts "Cloning shared image '#{shared_image.name}' into container '#{@server.name}'"
-        shared_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         @server = DevLXC::Container.new(@server.name, @lxc_config_path)
         puts "Deleting SSH Server Host Keys"
         FileUtils.rm_f(Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))

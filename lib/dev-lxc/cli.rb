@@ -114,7 +114,7 @@ module DevLXC::CLI
 
     desc "init [TOPOLOGY] [UNIQUE_STRING]", "Provide a cluster config file with optional uniqueness in server names and FQDNs"
     def init(topology=nil, unique_string=nil)
-      topologies = %w(open-source standalone tier)
+      topologies = %w(adhoc open-source standalone tier)
       if topology.nil? || ! topologies.include?(topology)
         topologies_with_index = topologies.map.with_index{ |a, i| [i+1, *a]}
         print_table topologies_with_index
@@ -148,7 +148,7 @@ module DevLXC::CLI
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def status(server_name_regex=nil)
       cluster = get_cluster(options[:config])
-      puts "Chef Server: https://#{cluster.api_fqdn}\n\n"
+      puts "Chef Server: https://#{cluster.api_fqdn}\n\n" if cluster.api_fqdn
       puts "Analytics:   https://#{cluster.analytics_fqdn}\n\n" if cluster.analytics_fqdn
       servers = Array.new
       match_server_name_regex(server_name_regex).map { |s| servers << s.server.status }
@@ -211,8 +211,10 @@ module DevLXC::CLI
       images.each_with_index do |(platform_name, shared), images_index|
         shared.each_with_index do |(shared_name, final), shared_index|
           printf "Platform: %27s  %s\n", (LXC::Container.new(platform_name, lxc_config_path).defined? ? "Created" : "Not Created"), platform_name
-          puts "|"
-          printf "\\_ Shared: %26s  %s\n", (LXC::Container.new(shared_name, lxc_config_path).defined? ? "Created" : "Not Created"), shared_name
+          unless shared_name.empty?
+            puts "|"
+            printf "\\_ Shared: %26s  %s\n", (LXC::Container.new(shared_name, lxc_config_path).defined? ? "Created" : "Not Created"), shared_name
+          end
           final.each_with_index do |final_name, final_index|
             puts "   |"
             unique_name = "u-#{final_name}"
