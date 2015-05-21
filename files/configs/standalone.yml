@@ -37,7 +37,7 @@ analytics:
   mounts:
     - /root/dev root/dev
   packages:
-    analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.1.2-1_amd64.deb
+    analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.1.3-1_amd64.deb
 
   analytics_fqdn: analytics.lxc
   topology: standalone
