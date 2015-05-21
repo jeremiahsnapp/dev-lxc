@@ -352,6 +352,10 @@ dev-lxc up chef
 Platform images can be used for purposes other than building clusters. For example, they can
 be used as Chef nodes for testing purposes.
 
+Platform images have openssh-server installed and running with unique SSH Host Keys.
+
+Platform images have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
+
 You can see a menu of platform images this tool can create by using the following command.
 
 ```
@@ -634,6 +638,10 @@ There are four image categories.
 	same packages used in Chef's [bento boxes](https://github.com/opscode/bento) are
 	installed to provide a more typical server environment.
 	A few additional packages are also installed.
+
+    Platform images have openssh-server installed and running with unique SSH Host Keys.
+
+    Platform images have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
 
     *Once this platform image is created there is rarely a need to delete it.*
 
