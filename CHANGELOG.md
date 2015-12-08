@@ -1,5 +1,13 @@
 # dev-lxc Change Log
 
+## 1.4.0 (2015-12-08)
+
+* Add ability to build and use Ubuntu 15.04 and Centos 7 platform containers
+
+* Update versions of Chef packages
+
+* Refactor removal of container config's mount entries
+
 ## 1.3.1 (2015-05-21)
 
 * Allow adhoc servers time to generate SSH Server Host Keys
