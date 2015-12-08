@@ -1,5 +1,5 @@
 ## platform_image can be one of the following:
-## p-centos-5, p-centos-6, p-ubuntu-1204 or p-ubuntu-1404
+## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1504
 
 ## Make sure a mount's source directory exists in the LXC host
 

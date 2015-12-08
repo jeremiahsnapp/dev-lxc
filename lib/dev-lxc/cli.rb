@@ -28,7 +28,7 @@ module DevLXC::CLI
     desc "create [PLATFORM_IMAGE_NAME]", "Create a platform image"
     def create(platform_image_name=nil)
       start_time = Time.now
-      platform_image_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-centos-5 p-centos-6)
+      platform_image_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-ubuntu-1504 p-centos-5 p-centos-6 p-centos-7)
       if platform_image_name.nil? || ! platform_image_names.include?(platform_image_name)
         platform_image_names_with_index = platform_image_names.map.with_index{ |a, i| [i+1, *a]}
         print_table platform_image_names_with_index

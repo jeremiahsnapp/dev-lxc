@@ -20,10 +20,21 @@ module DevLXC
       platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "precise", "-a", "amd64"])
     when "p-ubuntu-1404"
       platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"])
+    when "p-ubuntu-1504"
+      platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "vivid", "-a", "amd64"])
     when "p-centos-5"
       platform_image.create("centos", "btrfs", {}, 0, ["-R", "5"])
     when "p-centos-6"
       platform_image.create("download", "btrfs", {}, 0, ["-d", "centos", "-r", "6", "-a", "amd64"])
+    when "p-centos-7"
+      platform_image.create("download", "btrfs", {}, 0, ["-d", "centos", "-r", "7", "-a", "amd64"])
+      # Centos 7 needs setpcap capabilities
+      # ref: https://bugzilla.redhat.com/show_bug.cgi?id=1176816
+      # ref: https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1339781
+      # ref: http://vfamilyserver.org/blog/2015/05/centos-7-lxc-container-slow-boot/
+      DevLXC.search_file_replace(platform_image.config_file_name, /centos.common.conf/, 'fedora.common.conf')
+      platform_image.clear_config
+      platform_image.load_config
     end
     unless platform_image.config_item("lxc.mount.auto").nil?
       platform_image.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
@@ -43,12 +54,19 @@ module DevLXC
       end
       platform_image.run_command("apt-get update")
       platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox curl tree openssh-server")
-      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "/usr/sbin/dpkg-reconfigure openssh-server\n")
+      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
       FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
     when "p-ubuntu-1204", "p-ubuntu-1404"
       platform_image.run_command("apt-get update")
       platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree openssh-server")
-      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "/usr/sbin/dpkg-reconfigure openssh-server\n")
+      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
+      FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
+    when "p-ubuntu-1504"
+      platform_image.run_command("apt-get update")
+      # install policykit-1 first Ref: https://bugs.launchpad.net/ubuntu/+source/policykit-1/+bug/1447654/
+      platform_image.run_command("apt-get install -y policykit-1")
+      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs24-nox tree openssh-server")
+      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
       FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
     when "p-centos-5"
       # downgrade openssl temporarily to overcome an install bug
@@ -59,6 +77,8 @@ module DevLXC
       FileUtils.chmod(0750, "#{platform_image.config_item('lxc.rootfs')}/etc/sudoers.d")
       append_line_to_file("#{platform_image.config_item('lxc.rootfs')}/etc/sudoers", "\n#includedir /etc/sudoers.d\n")
     when "p-centos-6"
+      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
+    when "p-centos-7"
       platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
     end
     platform_image.run_command("useradd --create-home --shell /bin/bash --password $6$q3FDMpMZ$zfahCxEWHbzuEV98QPzhGZ7fLtGcLNZrbKK7OAYGXmJXZc07WbcxVnDwrMyX/cL6vSp4/IjlrVUZFBp7Orhyu1 dev-lxc")
