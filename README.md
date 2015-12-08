@@ -508,9 +508,9 @@ chef-server:
   mounts:
     - /root/dev root/dev
   packages:
-    server: /root/dev/chef-packages/cs/chef-server-core_12.0.7-1_amd64.deb
-    manage: /root/dev/chef-packages/manage/opscode-manage_1.11.2-1_amd64.deb
-#    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.2.3-1_amd64.deb
+    server: /root/dev/chef-packages/cs/chef-server-core_12.3.1-1_amd64.deb
+    manage: /root/dev/chef-packages/manage/chef-manage_2.1.1-1_amd64.deb
+#    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.5.5-1_amd64.deb
 #    push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
 #    sync: /root/dev/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
 
@@ -536,7 +536,7 @@ analytics:
   mounts:
     - /root/dev root/dev
   packages:
-    analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.1.2-1_amd64.deb
+    analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.2.0-1_amd64.deb
 
   analytics_fqdn: analytics.lxc
   topology: tier
