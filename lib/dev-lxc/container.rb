@@ -50,17 +50,19 @@ module DevLXC
         self.clear_config_item('lxc.mount.entry')
         self.set_config_item("lxc.mount.entry", preserved_mounts)
       end
-      mounts.each do |mount|
-        unless File.exists?(mount.split.first)
-          puts "ERROR: Mount source #{mount.split.first} does not exist."
-          exit 1
-        end
-        if ! preserved_mounts.nil? && preserved_mounts.any? { |m| m.start_with?("#{mount} ") }
-          puts "Skipping mount entry #{mount}, it already exists"
-          next
-        else
-          puts "Adding mount entry #{mount}"
-          self.set_config_item("lxc.mount.entry", "#{mount} none bind,optional,create=dir 0 0     ## dev-lxc ##")
+      unless mounts.nil?
+        mounts.each do |mount|
+          unless File.exists?(mount.split.first)
+            puts "ERROR: Mount source #{mount.split.first} does not exist."
+            exit 1
+          end
+          if ! preserved_mounts.nil? && preserved_mounts.any? { |m| m.start_with?("#{mount} ") }
+            puts "Skipping mount entry #{mount}, it already exists"
+            next
+          else
+            puts "Adding mount entry #{mount}"
+            self.set_config_item("lxc.mount.entry", "#{mount} none bind,optional,create=dir 0 0     ## dev-lxc ##")
+          end
         end
       end
       self.save_config
