@@ -47,11 +47,7 @@ module DevLXC
       existing_mounts = self.config_item("lxc.mount.entry")
       unless existing_mounts.nil?
         preserved_mounts = existing_mounts.delete_if { |m| m.end_with?("## dev-lxc ##") }
-        # self.clear_config_item('lxc.mount.entries') doesn't work as of liblxc 1.1.2 and at least up to 1.1.5-0ubuntu3~ubuntu15.04.1~ppa1
-        # reference: https://github.com/lxc/lxc/issues/712
-        DevLXC.search_file_delete_line(self.config_file_name, /^lxc.mount.entry/)
-        self.clear_config
-        self.load_config
+        self.clear_config_item('lxc.mount.entry')
         self.set_config_item("lxc.mount.entry", preserved_mounts)
       end
       mounts.each do |mount|
