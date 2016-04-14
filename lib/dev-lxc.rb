@@ -39,9 +39,11 @@ module DevLXC
     unless platform_image.config_item("lxc.mount.auto").nil?
       platform_image.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
     end
-    hwaddr = '00:16:3e:' + Digest::SHA1.hexdigest(Time.now.to_s).slice(0..5).unpack('a2a2a2').join(':')
-    puts "Setting '#{platform_image.name}' platform image's lxc.network.0.hwaddr to #{hwaddr}"
-    platform_image.set_config_item("lxc.network.0.hwaddr", hwaddr)
+    if platform_image.config_item("lxc.network.0.hwaddr").nil?
+      hwaddr = '00:16:3e:' + Digest::SHA1.hexdigest(Time.now.to_s).slice(0..5).unpack('a2a2a2').join(':')
+      puts "Setting '#{platform_image.name}' platform image's lxc.network.hwaddr to #{hwaddr}"
+      platform_image.set_config_item("lxc.network.hwaddr", hwaddr)
+    end
     platform_image.save_config
     platform_image.start
     puts "Installing packages in platform image '#{platform_image.name}'"
