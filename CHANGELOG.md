@@ -1,5 +1,17 @@
 # dev-lxc Change Log
 
+## 1.5.0 (2015-04-14)
+
+* Set lxc.network.hwaddr, if one doesn’t exist, instead of lxc.network.0.hwaddr
+  Fixes a bug that caused containers to get identical hwaddrs and IPs
+
+* Remove chef-sync since it is EOL
+
+* Refactor removal of container config's mount entries
+  Make sure you are using LXC 2.0 which includes a fix that allows the refactor to work
+
+* Make mount section in dev-lxc.yml optional
+
 ## 1.4.0 (2015-12-08)
 
 * Add ability to build and use Ubuntu 15.04 and Centos 7 platform containers
