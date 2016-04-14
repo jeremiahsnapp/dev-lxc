@@ -21,10 +21,6 @@ chef-server:
     manage: /root/dev/chef-packages/manage/chef-manage_2.1.1-1_amd64.deb
 #    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.5.5-1_amd64.deb
 #    push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
-#    sync: /root/dev/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
-
-##   The chef-sync package will only be installed.
-##   chef-sync will NOT be configured since we don't know whether it should be a master or replica.
 
   api_fqdn: chef.lxc
   topology: tier

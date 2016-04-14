@@ -75,8 +75,7 @@ If you aren't familiar with using containers please read this introduction.
 ├── manage
 ├── osc
 ├── push-jobs-server
-├── reporting
-└── sync
+└── reporting
 ```
 
 ## Update dev-lxc gem
@@ -512,10 +511,6 @@ chef-server:
     manage: /root/dev/chef-packages/manage/chef-manage_2.1.1-1_amd64.deb
 #    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.5.5-1_amd64.deb
 #    push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
-#    sync: /root/dev/chef-packages/sync/chef-sync_1.0.0~rc.6-1_amd64.deb
-
-##   The chef-sync package will only be installed.
-##   chef-sync will NOT be configured since we don't know whether it should be a master or replica.
 
   api_fqdn: chef.lxc
   topology: tier
@@ -678,7 +673,7 @@ There are four image categories.
     `DevLXC::Server#create_shared_image` controls the creation of a shared image.
 
     Chef packages that are common to all servers in a Chef cluster, such as chef-server-core,
-	opscode-reporting, opscode-push-jobs-server and chef-sync are installed using `dpkg` or `rpm`.
+	opscode-reporting and opscode-push-jobs-server are installed using `dpkg` or `rpm`.
 
     Note the manage package will not be installed at this point since it is not common to all
 	servers (i.e. it does not get installed on backend servers).
