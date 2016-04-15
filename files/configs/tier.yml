@@ -1,6 +1,11 @@
 ## platform_image can be one of the following:
 ## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1504
 
+## platform_image_options can be set to provide additional arguments to the LXC create command.
+## reference arg examples: https://github.com/lxc/lxc/blob/lxc-2.0.0/templates/lxc-download.in#L200-L207
+## for example:
+## platform_image_options: --no-validate --keyserver http://my.key.server.com
+
 ## Make sure a mount's source directory exists in the LXC host
 
 ## Make sure a package's path is correct

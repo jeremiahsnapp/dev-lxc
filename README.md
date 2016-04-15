@@ -393,6 +393,13 @@ an Ubuntu 14.04 image now.
 dev-lxc create p-ubuntu-1404
 ```
 
+Note: It is possible to pass additional arguments to the underlying LXC create command.
+For example:
+
+```
+dev-lxc create p-ubuntu-1404 -o -- '--no-validate --keyserver http://my.key.server.com'
+```
+
 #### Install Chef Client in a Container
 
 Use the `-v` option to specify a particular version of Chef Client.

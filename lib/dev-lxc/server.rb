@@ -3,7 +3,7 @@ require "dev-lxc/cluster"
 
 module DevLXC
   class Server
-    attr_reader :server, :platform_image_name, :shared_image_name
+    attr_reader :server, :platform_image_name, :platform_image_options, :shared_image_name
 
     def initialize(name, server_type, cluster_config)
       unless cluster_config[server_type]["servers"].keys.include?(name)
@@ -26,6 +26,7 @@ module DevLXC
       @role = @config["role"] ? @config["role"] : cluster_config[@server_type]['topology']
       @mounts = cluster_config[@server_type]["mounts"]
       @platform_image_name = cluster_config[@server_type]["platform_image"]
+      @platform_image_options = cluster_config[@server_type]["platform_image_options"]
       @packages = cluster_config[@server_type]["packages"]
 
       case @server_type
@@ -163,7 +164,7 @@ module DevLXC
       else
         puts "Creating container '#{@server.name}'"
         if @server_type == 'adhoc'
-          platform_image = DevLXC.create_platform_image(@platform_image_name, @lxc_config_path)
+          platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options, @lxc_config_path)
           puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
           platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         else
@@ -232,7 +233,7 @@ module DevLXC
         puts "Using existing shared image '#{shared_image.name}'"
         return shared_image
       end
-      platform_image = DevLXC.create_platform_image(@platform_image_name, @lxc_config_path)
+      platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options, @lxc_config_path)
       puts "Cloning platform image '#{platform_image.name}' into shared image '#{shared_image.name}'"
       platform_image.clone(shared_image.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
       shared_image = DevLXC::Container.new(shared_image.name, @lxc_config_path)

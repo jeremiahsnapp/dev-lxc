@@ -6,28 +6,34 @@ require "dev-lxc/server"
 require "dev-lxc/cluster"
 
 module DevLXC
-  def self.create_platform_image(platform_image_name, lxc_config_path='/var/lib/lxc')
+  def self.create_platform_image(platform_image_name, platform_image_options, lxc_config_path='/var/lib/lxc')
     platform_image = DevLXC::Container.new(platform_image_name, lxc_config_path)
     if platform_image.defined?
       puts "Using existing platform image '#{platform_image.name}'"
       return platform_image
     end
     puts "Creating platform image '#{platform_image.name}'"
+    template = "download"
     case platform_image.name
     when "p-ubuntu-1004"
-      platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "lucid", "-a", "amd64"])
+      options = ["-d", "ubuntu", "-r", "lucid", "-a", "amd64"]
     when "p-ubuntu-1204"
-      platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "precise", "-a", "amd64"])
+      options = ["-d", "ubuntu", "-r", "precise", "-a", "amd64"]
     when "p-ubuntu-1404"
-      platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"])
+      options = ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"]
     when "p-ubuntu-1504"
-      platform_image.create("download", "btrfs", {}, 0, ["-d", "ubuntu", "-r", "vivid", "-a", "amd64"])
+      options = ["-d", "ubuntu", "-r", "vivid", "-a", "amd64"]
     when "p-centos-5"
-      platform_image.create("centos", "btrfs", {}, 0, ["-R", "5"])
+      template = "centos"
+      options = ["-R", "5"]
     when "p-centos-6"
-      platform_image.create("download", "btrfs", {}, 0, ["-d", "centos", "-r", "6", "-a", "amd64"])
+      options = ["-d", "centos", "-r", "6", "-a", "amd64"]
     when "p-centos-7"
-      platform_image.create("download", "btrfs", {}, 0, ["-d", "centos", "-r", "7", "-a", "amd64"])
+      options = ["-d", "centos", "-r", "7", "-a", "amd64"]
+    end
+    options.concat(platform_image_options.split) unless platform_image_options.nil?
+    platform_image.create(template, "btrfs", {}, 0, options)
+    if platform_image.name == "p-centos-7"
       # Centos 7 needs setpcap capabilities
       # ref: https://bugzilla.redhat.com/show_bug.cgi?id=1176816
       # ref: https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1339781

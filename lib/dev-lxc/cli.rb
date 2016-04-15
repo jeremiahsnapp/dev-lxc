@@ -26,6 +26,7 @@ module DevLXC::CLI
     }
 
     desc "create [PLATFORM_IMAGE_NAME]", "Create a platform image"
+    option :options, :aliases => "-o", :desc => "Specify additional options for the lxc create"
     def create(platform_image_name=nil)
       start_time = Time.now
       platform_image_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-ubuntu-1504 p-centos-5 p-centos-6 p-centos-7)
@@ -35,7 +36,7 @@ module DevLXC::CLI
         selection = ask("Which platform image do you want to create?", :limited_to => platform_image_names_with_index.map{|c| c[0].to_s})
         platform_image_name = platform_image_names[selection.to_i - 1]
       end
-      ::DevLXC.create_platform_image(platform_image_name)
+      ::DevLXC.create_platform_image(platform_image_name, options[:options])
       puts
       print_elapsed_time(Time.now - start_time)
     end
