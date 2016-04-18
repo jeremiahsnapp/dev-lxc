@@ -34,6 +34,7 @@ module DevLXC
 
       if @cluster_config["analytics"]
         @analytics_topology = @cluster_config["analytics"]["topology"]
+        @analytics_topology ||= 'standalone'
         @analytics_fqdn = @cluster_config["analytics"]["analytics_fqdn"]
         @analytics_servers = @cluster_config["analytics"]["servers"]
         @analytics_frontends = Array.new
@@ -41,6 +42,7 @@ module DevLXC
           case @analytics_topology
           when 'standalone'
             @analytics_bootstrap_backend = name if config["role"].nil?
+            @analytics_fqdn ||= @analytics_bootstrap_backend
           when 'tier'
             @analytics_bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
             @analytics_frontends << name if config["role"] == "frontend"

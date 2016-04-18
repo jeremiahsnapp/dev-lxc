@@ -48,16 +48,6 @@ analytics:
   packages:
     analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.3.1-1_amd64.deb
 
-  analytics_fqdn: analytics.lxc
-  topology: tier
   servers:
-    analytics-be.lxc:
-      role: backend
+    analytics.lxc:
       ipaddress: 10.0.3.206
-      bootstrap: true
-    analytics-fe1.lxc:
-      role: frontend
-      ipaddress: 10.0.3.207
-#    analytics-fe2.lxc:
-#      role: frontend
-#      ipaddress: 10.0.3.208
