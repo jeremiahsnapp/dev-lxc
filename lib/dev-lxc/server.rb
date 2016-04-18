@@ -15,6 +15,7 @@ module DevLXC
       @lxc_config_path = cluster.lxc_config_path
       @api_fqdn = cluster.api_fqdn
       @analytics_fqdn = cluster.analytics_fqdn
+      @compliance_fqdn = cluster.compliance_fqdn
       @chef_server_bootstrap_backend = cluster.chef_server_bootstrap_backend
       @analytics_bootstrap_backend = cluster.analytics_bootstrap_backend
       @chef_server_config = cluster.chef_server_config
@@ -32,7 +33,7 @@ module DevLXC
       @packages = cluster_config[@server_type]["packages"]
 
       case @server_type
-      when 'adhoc'
+      when 'adhoc', 'compliance'
         @shared_image_name = ''
       when 'analytics'
         @shared_image_name = "s#{@platform_image_name[1..-1]}"
@@ -84,6 +85,8 @@ module DevLXC
           DevLXC.create_dns_record(@analytics_fqdn, @server.name, @ipaddress)
         when 'chef-server'
           DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress)
+        when 'compliance'
+          DevLXC.create_dns_record(@compliance_fqdn, @server.name, @ipaddress)
         end
       end
       @server.sync_mounts(@mounts)
@@ -165,7 +168,7 @@ module DevLXC
         return
       else
         puts "Creating container '#{@server.name}'"
-        if @server_type == 'adhoc'
+        if %w(adhoc compliance).include?(@server_type)
           platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options, @lxc_config_path)
           puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
           platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
@@ -196,6 +199,8 @@ module DevLXC
             DevLXC.create_dns_record(@analytics_fqdn, @server.name, @ipaddress)
           when 'chef-server'
             DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress)
+          when 'compliance'
+            DevLXC.create_dns_record(@compliance_fqdn, @server.name, @ipaddress)
           end
         end
         @server.sync_mounts(@mounts)
@@ -207,7 +212,12 @@ module DevLXC
         @server.start
         # Allow adhoc servers time to generate SSH Server Host Keys
         sleep 5 if @server_type == 'adhoc'
+        case @server_type
+        when 'compliance'
+          @server.install_package(@packages["compliance"]) unless @packages["compliance"].nil?
+        end
         configure_analytics if @server_type == 'analytics'
+        configure_compliance if @server_type == 'compliance'
         if @server_type == 'chef-server' && ! @packages["server"].nil?
           configure_server
           create_users if @server.name == @chef_server_bootstrap_backend
@@ -329,6 +339,10 @@ module DevLXC
                        "#{@server.config_item('lxc.rootfs')}/etc")
       end
       run_ctl("opscode-analytics", "reconfigure")
+    end
+
+    def configure_compliance
+      run_ctl("chef-compliance", "reconfigure")
     end
 
     def run_ctl(component, subcommand)

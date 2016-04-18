@@ -2,7 +2,7 @@ require "dev-lxc/server"
 
 module DevLXC
   class Cluster
-    attr_reader :api_fqdn, :chef_server_bootstrap_backend, :analytics_fqdn, :analytics_bootstrap_backend, :lxc_config_path
+    attr_reader :api_fqdn, :chef_server_bootstrap_backend, :analytics_fqdn, :analytics_bootstrap_backend, :compliance_fqdn, :lxc_config_path
 
     def initialize(cluster_config)
       @cluster_config = cluster_config
@@ -49,6 +49,13 @@ module DevLXC
           end
         end
       end
+
+      if @cluster_config["compliance"]
+        compliance_servers = @cluster_config["compliance"]["servers"]
+        compliance_servers.each_key do |name|
+          @compliance_fqdn = name
+        end
+      end
     end
 
     def servers
@@ -73,6 +80,8 @@ module DevLXC
         end
       end
       servers = adhoc_servers + chef_servers + analytics_servers
+      servers << Server.new(@compliance_fqdn, 'compliance', @cluster_config) if @compliance_fqdn
+      servers
     end
 
     def chef_repo(force=false, pivotal=false)
