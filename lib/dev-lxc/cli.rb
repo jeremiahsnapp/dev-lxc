@@ -152,6 +152,7 @@ module DevLXC::CLI
       puts "Chef Server FQDN: #{cluster.api_fqdn}\n" if cluster.api_fqdn
       puts "Analytics FQDN:   #{cluster.analytics_fqdn}\n" if cluster.analytics_fqdn
       puts "Compliance FQDN:  #{cluster.compliance_fqdn}\n" if cluster.compliance_fqdn
+      puts "Supermarket FQDN: #{cluster.supermarket_fqdn}\n" if cluster.supermarket_fqdn
       puts
       servers = Array.new
       match_server_name_regex(server_name_regex).map { |s| servers << s.server.status }

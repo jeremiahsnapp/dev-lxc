@@ -1,3 +1,4 @@
+require "json"
 require "dev-lxc/container"
 require "dev-lxc/cluster"
 
@@ -16,6 +17,7 @@ module DevLXC
       @api_fqdn = cluster.api_fqdn
       @analytics_fqdn = cluster.analytics_fqdn
       @compliance_fqdn = cluster.compliance_fqdn
+      @supermarket_fqdn = cluster.supermarket_fqdn
       @chef_server_bootstrap_backend = cluster.chef_server_bootstrap_backend
       @analytics_bootstrap_backend = cluster.analytics_bootstrap_backend
       @chef_server_config = cluster.chef_server_config
@@ -33,7 +35,7 @@ module DevLXC
       @packages = cluster_config[@server_type]["packages"]
 
       case @server_type
-      when 'adhoc', 'compliance'
+      when 'adhoc', 'compliance', 'supermarket'
         @shared_image_name = ''
       when 'analytics'
         @shared_image_name = "s#{@platform_image_name[1..-1]}"
@@ -87,6 +89,8 @@ module DevLXC
           DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress)
         when 'compliance'
           DevLXC.create_dns_record(@compliance_fqdn, @server.name, @ipaddress)
+        when 'supermarket'
+          DevLXC.create_dns_record(@supermarket_fqdn, @server.name, @ipaddress)
         end
       end
       @server.sync_mounts(@mounts)
@@ -168,7 +172,11 @@ module DevLXC
         return
       else
         puts "Creating container '#{@server.name}'"
-        if %w(adhoc compliance).include?(@server_type)
+        if %w(adhoc compliance supermarket).include?(@server_type)
+          if @server_type == 'supermarket' && (@chef_server_bootstrap_backend && ! DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?)
+            puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
+            exit 1
+          end
           platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options, @lxc_config_path)
           puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
           platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
@@ -201,6 +209,8 @@ module DevLXC
             DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress)
           when 'compliance'
             DevLXC.create_dns_record(@compliance_fqdn, @server.name, @ipaddress)
+          when 'supermarket'
+            DevLXC.create_dns_record(@supermarket_fqdn, @server.name, @ipaddress)
           end
         end
         @server.sync_mounts(@mounts)
@@ -215,9 +225,12 @@ module DevLXC
         case @server_type
         when 'compliance'
           @server.install_package(@packages["compliance"]) unless @packages["compliance"].nil?
+        when 'supermarket'
+          @server.install_package(@packages["supermarket"]) unless @packages["supermarket"].nil?
         end
         configure_analytics if @server_type == 'analytics'
         configure_compliance if @server_type == 'compliance'
+        configure_supermarket if @server_type == 'supermarket'
         if @server_type == 'chef-server' && ! @packages["server"].nil?
           configure_server
           create_users if @server.name == @chef_server_bootstrap_backend
@@ -343,6 +356,21 @@ module DevLXC
 
     def configure_compliance
       run_ctl("chef-compliance", "reconfigure")
+    end
+
+    def configure_supermarket
+      if @chef_server_bootstrap_backend && DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?
+        chef_server_supermarket_config = JSON.parse(IO.read("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode/oc-id-applications/supermarket.json"))
+        supermarket_config = {
+          'chef_server_url' => "https://#{@api_fqdn}/",
+          'chef_oauth2_app_id' => chef_server_supermarket_config['uid'],
+          'chef_oauth2_secret' => chef_server_supermarket_config['secret'],
+          'chef_oauth2_verify_ssl' => false
+        }
+        FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/etc/supermarket")
+        IO.write("#{@server.config_item('lxc.rootfs')}/etc/supermarket/supermarket.json", JSON.pretty_generate(supermarket_config))
+      end
+      run_ctl("supermarket", "reconfigure")
     end
 
     def run_ctl(component, subcommand)

@@ -2,7 +2,7 @@ require "dev-lxc/server"
 
 module DevLXC
   class Cluster
-    attr_reader :api_fqdn, :chef_server_bootstrap_backend, :analytics_fqdn, :analytics_bootstrap_backend, :compliance_fqdn, :lxc_config_path
+    attr_reader :api_fqdn, :chef_server_bootstrap_backend, :analytics_fqdn, :analytics_bootstrap_backend, :compliance_fqdn, :supermarket_fqdn, :lxc_config_path
 
     def initialize(cluster_config)
       @cluster_config = cluster_config
@@ -56,6 +56,13 @@ module DevLXC
           @compliance_fqdn = name
         end
       end
+
+      if @cluster_config["supermarket"]
+        supermarket_servers = @cluster_config["supermarket"]["servers"]
+        supermarket_servers.each_key do |name|
+          @supermarket_fqdn = name
+        end
+      end
     end
 
     def servers
@@ -81,6 +88,7 @@ module DevLXC
       end
       servers = adhoc_servers + chef_servers + analytics_servers
       servers << Server.new(@compliance_fqdn, 'compliance', @cluster_config) if @compliance_fqdn
+      servers << Server.new(@supermarket_fqdn, 'supermarket', @cluster_config) if @supermarket_fqdn
       servers
     end
 
@@ -175,6 +183,14 @@ oc_id['applications']['analytics'] = {
 }
 rabbitmq['vip'] = '#{@chef_server_bootstrap_backend}'
 rabbitmq['node_ip_address'] = '0.0.0.0'
+)
+      end
+      if @supermarket_fqdn
+        chef_server_config += %Q(
+oc_id['applications'] ||= {}
+oc_id['applications']['supermarket'] = {
+  'redirect_uri' => 'https://#{@supermarket_fqdn}/auth/chef_oauth2/callback'
+}
 )
       end
       return chef_server_config
