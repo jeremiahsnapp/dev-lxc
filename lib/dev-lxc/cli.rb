@@ -149,8 +149,9 @@ module DevLXC::CLI
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def status(server_name_regex=nil)
       cluster = get_cluster(options[:config])
-      puts "Chef Server: https://#{cluster.api_fqdn}\n\n" if cluster.api_fqdn
-      puts "Analytics:   https://#{cluster.analytics_fqdn}\n\n" if cluster.analytics_fqdn
+      puts "Chef Server FQDN: #{cluster.api_fqdn}\n" if cluster.api_fqdn
+      puts "Analytics FQDN:   #{cluster.analytics_fqdn}\n" if cluster.analytics_fqdn
+      puts
       servers = Array.new
       match_server_name_regex(server_name_regex).map { |s| servers << s.server.status }
       max_server_name_length = servers.max_by { |s| s['name'].length }['name'].length unless servers.empty?
