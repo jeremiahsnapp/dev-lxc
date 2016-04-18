@@ -218,9 +218,6 @@ module DevLXC
           unless @role == 'open-source'
             configure_reporting unless @packages["reporting"].nil?
             configure_push_jobs_server unless @packages["push-jobs-server"].nil?
-            if @analytics_bootstrap_backend && %w(standalone backend).include?(@role)
-              configure_chef_server_for_analytics
-            end
           end
         end
         @server.stop
@@ -316,29 +313,6 @@ module DevLXC
         run_ctl(@server_ctl, "reconfigure")
       end
       run_ctl("opscode-manage", "reconfigure")
-    end
-
-    def configure_chef_server_for_analytics
-      puts "Configuring for Analytics"
-      case @chef_server_type
-      when 'private-chef'
-        DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb",
-          "\noc_id['applications'] = {\n  'analytics' => {\n    'redirect_uri' => 'https://#{@analytics_fqdn}/'\n  }\n}\n")
-
-        DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb",
-          "\nrabbitmq['vip'] = '#{@chef_server_bootstrap_backend}'\nrabbitmq['node_ip_address'] = '0.0.0.0'\n")
-      when 'chef-server-core'
-        DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb",
-          "\noc_id['applications'] = {\n  'analytics' => {\n    'redirect_uri' => 'https://#{@analytics_fqdn}/'\n  }\n}\n")
-
-        DevLXC.append_line_to_file("#{@server.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb",
-          "\nrabbitmq['vip'] = '#{@chef_server_bootstrap_backend}'\nrabbitmq['node_ip_address'] = '0.0.0.0'\n")
-      end
-
-      run_ctl(@server_ctl, "stop")
-      run_ctl(@server_ctl, "reconfigure")
-      run_ctl(@server_ctl, "restart")
-      run_ctl("opscode-manage", "reconfigure") if @role == 'frontend'
     end
 
     def configure_analytics

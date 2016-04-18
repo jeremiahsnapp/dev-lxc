@@ -2,7 +2,7 @@ require "dev-lxc/server"
 
 module DevLXC
   class Cluster
-    attr_reader :api_fqdn, :analytics_fqdn, :chef_server_bootstrap_backend, :analytics_bootstrap_backend, :lxc_config_path
+    attr_reader :api_fqdn, :chef_server_bootstrap_backend, :analytics_fqdn, :analytics_bootstrap_backend, :lxc_config_path
 
     def initialize(cluster_config)
       @cluster_config = cluster_config
@@ -157,6 +157,16 @@ server "#{frontend_name}",
   :role => "frontend"
 )
         end
+      end
+      if @analytics_fqdn
+        chef_server_config += %Q(
+oc_id['applications'] ||= {}
+oc_id['applications']['analytics'] = {
+  'redirect_uri' => 'https://#{@analytics_fqdn}/'
+}
+rabbitmq['vip'] = '#{@chef_server_bootstrap_backend}'
+rabbitmq['node_ip_address'] = '0.0.0.0'
+)
       end
       return chef_server_config
     end
