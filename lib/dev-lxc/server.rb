@@ -23,7 +23,9 @@ module DevLXC
       @server = DevLXC::Container.new(name, @lxc_config_path)
       @config = cluster_config[@server_type]["servers"][@server.name]
       @ipaddress = @config["ipaddress"]
-      @role = @config["role"] ? @config["role"] : cluster_config[@server_type]['topology']
+      @role = @config["role"]
+      @role ||= cluster_config[@server_type]['topology']
+      @role ||= 'standalone'
       @mounts = cluster_config[@server_type]["mounts"]
       @platform_image_name = cluster_config[@server_type]["platform_image"]
       @platform_image_options = cluster_config[@server_type]["platform_image_options"]

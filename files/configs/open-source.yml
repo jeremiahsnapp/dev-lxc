@@ -24,7 +24,6 @@ chef-server:
   packages:
     server: /root/dev/chef-packages/osc/chef-server_11.1.6-1_amd64.deb
 
-  api_fqdn: chef.lxc
   topology: open-source
   servers:
     osc-chef.lxc:

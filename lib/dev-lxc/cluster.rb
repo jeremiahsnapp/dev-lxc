@@ -16,6 +16,7 @@ module DevLXC
 
       if @cluster_config["chef-server"]
         @chef_server_topology = @cluster_config["chef-server"]["topology"]
+        @chef_server_topology ||= 'standalone'
         @api_fqdn = @cluster_config["chef-server"]["api_fqdn"]
         @chef_server_servers = @cluster_config["chef-server"]["servers"]
         @chef_server_frontends = Array.new
@@ -23,6 +24,7 @@ module DevLXC
           case @chef_server_topology
           when 'open-source', 'standalone'
             @chef_server_bootstrap_backend = name if config["role"].nil?
+            @api_fqdn ||= @chef_server_bootstrap_backend
           when 'tier'
             @chef_server_bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
             @chef_server_frontends << name if config["role"] == "frontend"
