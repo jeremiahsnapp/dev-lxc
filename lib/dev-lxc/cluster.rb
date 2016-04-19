@@ -119,8 +119,8 @@ module DevLXC
         validator_name = "chef-validator"
       else
         chef_server_root = "https://#{@api_fqdn}"
-        chef_server_url = "https://#{@api_fqdn}/organizations/ponyville"
-        validator_name = "ponyville-validator"
+        chef_server_url = "https://#{@api_fqdn}/organizations/demo"
+        validator_name = "demo-validator"
 
         if pivotal
           if File.exists?("./chef-repo/.chef/pivotal.rb") && ! force

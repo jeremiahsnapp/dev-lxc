@@ -385,15 +385,16 @@ module DevLXC
       case @chef_server_type
       when 'chef-server'
         chef_server_url = "https://127.0.0.1"
-        username = "admin"
+        admin_username = "admin"
         validator_name = "chef-validator"
 
         FileUtils.cp( Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/chef-server/{admin,chef-validator}.pem"), "#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef" )
       when 'private-chef', 'chef-server-core'
         chef_server_root = "https://127.0.0.1"
-        chef_server_url = "https://127.0.0.1/organizations/ponyville"
-        username = "rainbowdash"
-        validator_name = "ponyville-validator"
+        chef_server_url = "https://127.0.0.1/organizations/demo"
+        admin_username = "mary-admin"
+        username = "joe-user"
+        validator_name = "demo-validator"
 
         FileUtils.cp( "#{@server.config_item('lxc.rootfs')}/etc/opscode/pivotal.pem", "#{@server.config_item('lxc.rootfs')}/root/chef-repo/.chef" )
 
@@ -419,9 +420,16 @@ current_dir = File.dirname(__FILE__)
 
 chef_server_url "#{chef_server_url}"
 
-node_name "#{username}"
-client_key "\#{current_dir}/#{username}.pem"
+node_name "#{admin_username}"
+client_key "\#{current_dir}/#{admin_username}.pem"
+)
 
+      knife_rb += %Q(
+#node_name "#{username}"
+#client_key "\#{current_dir}/#{username}.pem"
+) unless username.nil?
+
+      knife_rb += %Q(
 validation_client_name "#{validator_name}"
 validation_key "\#{current_dir}/#{validator_name}.pem"
 
@@ -437,15 +445,19 @@ ssl_verify_mode :verify_none
         # give time for all services to come up completely
         sleep 60
         @server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc")
-        @server.run_command("/opt/opscode/embedded/bin/knife opc org create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
-        @server.run_command("/opt/opscode/embedded/bin/knife opc user create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem -c /root/chef-repo/.chef/pivotal.rb")
-        @server.run_command("/opt/opscode/embedded/bin/knife opc org user add ponyville rainbowdash --admin -c /root/chef-repo/.chef/pivotal.rb")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc org create demo demo --filename /root/chef-repo/.chef/demo-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc user create mary-admin mary admin mary-admin@noreply.com mary-admin --filename /root/chef-repo/.chef/mary-admin.pem -c /root/chef-repo/.chef/pivotal.rb")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc org user add demo mary-admin --admin -c /root/chef-repo/.chef/pivotal.rb")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc user create joe-user joe user joe-user@noreply.com joe-user --filename /root/chef-repo/.chef/joe-user.pem -c /root/chef-repo/.chef/pivotal.rb")
+        @server.run_command("/opt/opscode/embedded/bin/knife opc org user add demo joe-user -c /root/chef-repo/.chef/pivotal.rb")
       when 'chef-server-core'
         # give time for all services to come up completely
         sleep 10
-        run_ctl(@server_ctl, "org-create ponyville ponyville --filename /root/chef-repo/.chef/ponyville-validator.pem")
-        run_ctl(@server_ctl, "user-create rainbowdash rainbowdash rainbowdash rainbowdash@noreply.com rainbowdash --filename /root/chef-repo/.chef/rainbowdash.pem")
-        run_ctl(@server_ctl, "org-user-add ponyville rainbowdash --admin")
+        run_ctl(@server_ctl, "org-create demo demo --filename /root/chef-repo/.chef/demo-validator.pem")
+        run_ctl(@server_ctl, "user-create mary-admin mary admin mary-admin@noreply.com mary-admin --filename /root/chef-repo/.chef/mary-admin.pem")
+        run_ctl(@server_ctl, "org-user-add demo mary-admin --admin")
+        run_ctl(@server_ctl, "user-create joe-user joe user joe-user@noreply.com joe-user --filename /root/chef-repo/.chef/joe-user.pem")
+        run_ctl(@server_ctl, "org-user-add demo joe-user")
       end
     end
   end
