@@ -30,8 +30,11 @@ module DevLXC
       @role ||= cluster_config[@server_type]['topology']
       @role ||= 'standalone'
       @mounts = cluster_config[@server_type]["mounts"]
+      @mounts ||= cluster_config["mounts"]
       @platform_image_name = cluster_config[@server_type]["platform_image"]
+      @platform_image_name ||= cluster_config["platform_image"]
       @platform_image_options = cluster_config[@server_type]["platform_image_options"]
+      @platform_image_options ||= cluster_config["platform_image_options"]
       @packages = cluster_config[@server_type]["packages"]
 
       case @server_type
