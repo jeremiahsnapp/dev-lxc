@@ -1,5 +1,25 @@
 # dev-lxc Change Log
 
+## 1.6.0 (2015-04-20)
+
+* Rewrite "dev-lxc init" so its options determine what config gets generated
+
+* Allow mounts, platform_image and platform_image_options to be set globally
+
+* Create demo org and mary-admin and joe-user users
+
+* Add Supermarket server build capability
+
+* Add Compliance server build capability
+
+* Improve "dev-lxc status" output
+
+* Generate Chef Server config in one shot
+
+* Make standalone topology the default for Analytics
+
+* Make standalone topology the default for Chef Server
+
 ## 1.5.1 (2015-04-15)
 
 * Add ability to pass options to LXC create calls
