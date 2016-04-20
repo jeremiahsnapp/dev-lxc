@@ -113,25 +113,122 @@ module DevLXC::CLI
       print_elapsed_time(Time.now - start_time)
     end
 
-    desc "init [TOPOLOGY] [UNIQUE_STRING]", "Provide a cluster config file with optional uniqueness in server names and FQDNs"
-    def init(topology=nil, unique_string=nil)
-      topologies = %w(adhoc open-source standalone tier)
-      if topology.nil? || ! topologies.include?(topology)
-        topologies_with_index = topologies.map.with_index{ |a, i| [i+1, *a]}
-        print_table topologies_with_index
-        selection = ask("Which cluster topology do you want to use?", :limited_to => topologies_with_index.map{|c| c[0].to_s})
-        topology = topologies[selection.to_i - 1]
-      end
-      config = IO.read("#{File.dirname(__FILE__)}/../../files/configs/#{topology}.yml")
+    desc "init [UNIQUE_STRING]", "Provide a cluster config file with optional uniqueness in server names and FQDNs"
+    option :open_source, :type => :boolean, :desc => "Standalone Old Open Source Chef Server"
+    option :tiered_chef, :type => :boolean, :desc => "Tiered Chef Server"
+    option :chef, :type => :boolean, :desc => "Standalone Chef Server"
+    option :analytics, :type => :boolean, :desc => "Analytics Server"
+    option :compliance, :type => :boolean, :desc => "Compliance Server"
+    option :supermarket, :type => :boolean, :desc => "Supermarket Server"
+    option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
+    def init(unique_string=nil)
+      header = %Q(## platform_image can be one of the following:
+## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1504
+
+## platform_image_options can be set to provide additional arguments to the LXC create command.
+## reference arg examples: https://github.com/lxc/lxc/blob/lxc-2.0.0/templates/lxc-download.in#L200-L207
+## for example:
+## platform_image_options: --no-validate --keyserver http://my.key.server.com
+
+## Make sure all mount source directories exist in the LXC host
+
+## Make sure all package paths are correct
+
+## All FQDNs and server names must end with the `.lxc` domain
+
+## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
+
+## topology can be one of the following:
+## standalone (default), tier or open-source (for the old open source 11 chef server)
+
+platform_image: p-ubuntu-1404
+mounts:
+  - /root/dev root/dev
+)
+      open_source_config = %Q(
+chef-server:
+  packages:
+    server: /root/dev/chef-packages/osc/chef-server_11.1.6-1_amd64.deb
+  api_fqdn: chef.lxc
+  topology: open-source
+  servers:
+    osc-chef.lxc:
+      ipaddress: 10.0.3.200
+)
+      chef_server_packages = %Q(  packages:
+    server: /root/dev/chef-packages/cs/chef-server-core_12.5.0-1_amd64.deb
+    manage: /root/dev/chef-packages/manage/chef-manage_2.2.1-1_amd64.deb
+    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.5.6-1_amd64.deb
+    push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
+)
+      tiered_chef_config = %Q(
+chef-server:
+#{chef_server_packages.chomp}
+  topology: tier
+  api_fqdn: chef.lxc
+  servers:
+    chef-be.lxc:
+      ipaddress: 10.0.3.201
+      role: backend
+      bootstrap: true
+    chef-fe1.lxc:
+      ipaddress: 10.0.3.202
+      role: frontend
+)
+      chef_config = %Q(
+chef-server:
+#{chef_server_packages.chomp}
+  servers:
+    chef.lxc:
+      ipaddress: 10.0.3.203
+)
+      analytics_config = %Q(
+analytics:
+  packages:
+    analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.3.1-1_amd64.deb
+  servers:
+    analytics.lxc:
+      ipaddress: 10.0.3.204
+)
+      compliance_config = %Q(
+compliance:
+  packages:
+    compliance: /root/dev/chef-packages/compliance/chef-compliance_1.1.2-1_amd64.deb
+  servers:
+    compliance.lxc:
+      ipaddress: 10.0.3.205
+)
+      supermarket_config = %Q(
+supermarket:
+  packages:
+    supermarket: /root/dev/chef-packages/supermarket/supermarket_2.5.2-1_amd64.deb
+  servers:
+    supermarket.lxc:
+      ipaddress: 10.0.3.206
+)
+      adhoc_config = %Q(
+adhoc:
+  servers:
+    adhoc.lxc:
+      ipaddress: 10.0.3.207
+)
+      config = header
+      config += chef_config if options[:chef]
+      config += tiered_chef_config if options[:tiered_chef]
+      config += analytics_config if options[:analytics]
+      config += compliance_config if options[:compliance]
+      config += supermarket_config if options[:supermarket]
+      config += adhoc_config if options[:adhoc]
       unless unique_string.nil?
         config_hash = YAML.load(config.gsub(/^#/, ''))
         config.gsub!(/api_fqdn:\s+#{config_hash['api_fqdn']}/, "api_fqdn: #{unique_string}#{config_hash['api_fqdn']}")
         config.gsub!(/analytics_fqdn:\s+#{config_hash['analytics_fqdn']}/, "analytics_fqdn: #{unique_string}#{config_hash['analytics_fqdn']}")
-        config_hash['chef-server']['servers'].keys.each do |server_name|
-          config.gsub!(/ #{server_name}:/, " #{unique_string}#{server_name}:")
-        end
-        config_hash['analytics']['servers'].keys.each do |server_name|
-          config.gsub!(/ #{server_name}:/, " #{unique_string}#{server_name}:")
+        %w(open-source chef-server analytics compliance supermarket adhoc).each do |server_type|
+          if config_hash[server_type]
+            config_hash[server_type]['servers'].keys.each do |server_name|
+              config.gsub!(/ #{server_name}:/, " #{unique_string}#{server_name}:")
+            end
+          end
         end
       end
       puts config

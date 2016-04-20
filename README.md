@@ -106,8 +106,8 @@ You only have to type enough of a `dev-lxc` subcommand to make it unique.
 The following commands are equivalent:
 
 ```
-dev-lxc init standalone > dev-lxc.yml
-dl i standalone > dev-lxc.yml
+dev-lxc init --chef > dev-lxc.yml
+dl i --chef > dev-lxc.yml
 ```
 
 ```
@@ -127,7 +127,7 @@ dl d
 
 ### Create and Manage a Cluster
 
-The following instructions will build a tier Chef Server with a tier Analytics server
+The following instructions will build a tier Chef Server with an Analytics server
 for demonstration purposes.
 The size of this cluster uses about 3GB ram and takes awhile for the first
 build of the servers. Feel free to try the standalone config first.
@@ -141,7 +141,7 @@ Be sure you configure the
 appropriately.
 
 ```
-dev-lxc init tier > dev-lxc.yml
+dev-lxc init --tiered-chef --analytics > dev-lxc.yml
 ```
 
 #### List Images
@@ -364,7 +364,7 @@ Chef Delivery cluster.
 ```
 mkdir -p /root/dev/clusters/delivery
 cd /root/dev/clusters/delivery
-dev-lxc init adhoc > dev-lxc.yml
+dev-lxc init --adhoc > dev-lxc.yml
 cluster-view
 dl up
 ```
@@ -492,67 +492,55 @@ The following command generates sample config files for various cluster topologi
 dev-lxc init
 ```
 
-`dev-lxc init tier > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
+`dev-lxc init --tiered-chef --analytics > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
 
 ```
 ## platform_image can be one of the following:
 ## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1504
 
-## Make sure a mount's source directory exists in the LXC host
+## platform_image_options can be set to provide additional arguments to the LXC create command.
+## reference arg examples: https://github.com/lxc/lxc/blob/lxc-2.0.0/templates/lxc-download.in#L200-L207
+## for example:
+## platform_image_options: --no-validate --keyserver http://my.key.server.com
 
-## Make sure a package's path is correct
+## Make sure all mount source directories exist in the LXC host
+
+## Make sure all package paths are correct
 
 ## All FQDNs and server names must end with the `.lxc` domain
 
 ## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 
 ## topology can be one of the following:
-## standalone, tier or open-source (for the old open source 11 chef server)
+## standalone (default), tier or open-source (for the old open source 11 chef server)
+
+platform_image: p-ubuntu-1404
+mounts:
+  - /root/dev root/dev
 
 chef-server:
-  platform_image: p-ubuntu-1404
-  mounts:
-    - /root/dev root/dev
   packages:
     server: /root/dev/chef-packages/cs/chef-server-core_12.5.0-1_amd64.deb
     manage: /root/dev/chef-packages/manage/chef-manage_2.2.1-1_amd64.deb
-#    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.5.6-1_amd64.deb
-#    push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
-
-  api_fqdn: chef.lxc
+    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.5.6-1_amd64.deb
+    push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
   topology: tier
+  api_fqdn: chef.lxc
   servers:
     chef-be.lxc:
+      ipaddress: 10.0.3.201
       role: backend
-      ipaddress: 10.0.3.203
       bootstrap: true
     chef-fe1.lxc:
+      ipaddress: 10.0.3.202
       role: frontend
-      ipaddress: 10.0.3.204
-#    chef-fe2.lxc:
-#      role: frontend
-#      ipaddress: 10.0.3.205
 
 analytics:
-  platform_image: p-ubuntu-1404
-  mounts:
-    - /root/dev root/dev
   packages:
     analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.3.1-1_amd64.deb
-
-  analytics_fqdn: analytics.lxc
-  topology: tier
   servers:
-    analytics-be.lxc:
-      role: backend
-      ipaddress: 10.0.3.206
-      bootstrap: true
-    analytics-fe1.lxc:
-      role: frontend
-      ipaddress: 10.0.3.207
-#    analytics-fe2.lxc:
-#      role: frontend
-#      ipaddress: 10.0.3.208
+    analytics.lxc:
+      ipaddress: 10.0.3.204
 ```
 
 This config defines a tier cluster consisting of a single backend and a single frontend.
@@ -591,8 +579,8 @@ each cluster's config file.
 
 ```
 mkdir -p ~/clusters/{clusterA,clusterB}
-dev-lxc init tier > ~/clusters/clusterA/dev-lxc.yml
-dev-lxc init standalone > ~/clusters/clusterB/dev-lxc.yml
+dev-lxc init --tiered-chef > ~/clusters/clusterA/dev-lxc.yml
+dev-lxc init --chef > ~/clusters/clusterB/dev-lxc.yml
 cd ~/clusters/clusterA && dev-lxc up  # starts clusterA
 cd ~/clusters/clusterB && dev-lxc up  # starts clusterB
 ```
@@ -619,7 +607,7 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 	For example, you can use the following command to prefix the servers names with `1234-` when
 	generating a cluster's config.
 
-        dev-lxc init tier 1234- > dev-lxc.yml
+        dev-lxc init --tiered-chef 1234- > dev-lxc.yml
 
 * IP Addresses
 
