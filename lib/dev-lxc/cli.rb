@@ -213,6 +213,7 @@ adhoc:
       ipaddress: 10.0.3.207
 )
       config = header
+      config += open_source_config if options[:open_source]
       config += chef_config if options[:chef]
       config += tiered_chef_config if options[:tiered_chef]
       config += analytics_config if options[:analytics]
@@ -223,7 +224,7 @@ adhoc:
         config_hash = YAML.load(config.gsub(/^#/, ''))
         config.gsub!(/api_fqdn:\s+#{config_hash['api_fqdn']}/, "api_fqdn: #{unique_string}#{config_hash['api_fqdn']}")
         config.gsub!(/analytics_fqdn:\s+#{config_hash['analytics_fqdn']}/, "analytics_fqdn: #{unique_string}#{config_hash['analytics_fqdn']}")
-        %w(open-source chef-server analytics compliance supermarket adhoc).each do |server_type|
+        %w(chef-server analytics compliance supermarket adhoc).each do |server_type|
           if config_hash[server_type]
             config_hash[server_type]['servers'].keys.each do |server_name|
               config.gsub!(/ #{server_name}:/, " #{unique_string}#{server_name}:")
