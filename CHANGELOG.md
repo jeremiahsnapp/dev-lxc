@@ -1,6 +1,6 @@
 # dev-lxc Change Log
 
-## 1.6.0 (2015-04-20)
+## 1.6.0 (2016-04-20)
 
 * Rewrite "dev-lxc init" so its options determine what config gets generated
 
@@ -20,13 +20,13 @@
 
 * Make standalone topology the default for Chef Server
 
-## 1.5.1 (2015-04-15)
+## 1.5.1 (2016-04-15)
 
 * Add ability to pass options to LXC create calls
   For example, this lets users pass the following options for more control over the creation process.
   https://github.com/lxc/lxc/blob/lxc-2.0.0/templates/lxc-download.in#L200-L207
 
-## 1.5.0 (2015-04-14)
+## 1.5.0 (2016-04-14)
 
 * Set lxc.network.hwaddr, if one doesn’t exist, instead of lxc.network.0.hwaddr
   Fixes a bug that caused containers to get identical hwaddrs and IPs
