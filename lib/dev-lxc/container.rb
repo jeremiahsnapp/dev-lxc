@@ -52,10 +52,6 @@ module DevLXC
       end
       unless mounts.nil?
         mounts.each do |mount|
-          unless File.exists?(mount.split.first)
-            puts "ERROR: Mount source #{mount.split.first} does not exist."
-            exit 1
-          end
           if ! preserved_mounts.nil? && preserved_mounts.any? { |m| m.start_with?("#{mount} ") }
             puts "Skipping mount entry #{mount}, it already exists"
             next

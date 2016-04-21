@@ -6,6 +6,48 @@ module DevLXC::CLI
   class DevLXC < Thor
 
     no_commands{
+      def validate_cluster_config(cluster_config)
+        hostnames = Array.new
+        mounts = Array.new
+        packages = Array.new
+
+        mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
+
+        %w(chef-server analytics compliance supermarket adhoc).each do |server_type|
+          unless cluster_config[server_type].nil?
+            hostnames << cluster_config[server_type]['api_fqdn'] unless cluster_config[server_type]['api_fqdn'].nil?
+            hostnames << cluster_config[server_type]['analytics_fqdn'] unless cluster_config[server_type]['analytics_fqdn'].nil?
+            hostnames.concat(cluster_config[server_type]['servers'].keys) unless cluster_config[server_type]['servers'].nil?
+            mounts.concat(cluster_config[server_type]['mounts']) unless cluster_config[server_type]['mounts'].nil?
+            packages.concat(cluster_config[server_type]['packages'].values) unless cluster_config[server_type]['packages'].nil?
+          end
+        end
+        unless hostnames.empty?
+          hostnames.each do |hostname|
+            unless hostname.end_with?(".lxc")
+              puts "ERROR: Hostname #{hostname} does not end with '.lxc'."
+              exit 1
+            end
+          end
+        end
+        unless mounts.empty?
+          mounts.each do |mount|
+            unless File.exists?(mount.split.first)
+              puts "ERROR: Mount source #{mount.split.first} does not exist."
+              exit 1
+            end
+          end
+        end
+        unless packages.empty?
+          packages.each do |package|
+            unless File.exists?(package)
+              puts "ERROR: Package #{package} does not exist."
+              exit 1
+            end
+          end
+        end
+      end
+
       def get_cluster(config_file=nil)
         config_file ||= "dev-lxc.yml"
         if ! File.exists?(config_file)
@@ -13,7 +55,9 @@ module DevLXC::CLI
           puts "       Create a `./dev-lxc.yml` file or specify the path using `--config`."
           exit 1
         end
-        ::DevLXC::Cluster.new(YAML.load(IO.read(config_file)))
+        cluster_config = YAML.load(IO.read(config_file))
+        validate_cluster_config(cluster_config)
+        ::DevLXC::Cluster.new(cluster_config)
       end
 
       def match_server_name_regex(server_name_regex)
