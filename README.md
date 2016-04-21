@@ -507,6 +507,10 @@ platform_image: p-ubuntu-1404
 mounts:
   - /root/dev root/dev
 
+## list any SSH public keys you want added to /home/dev-lxc/.ssh/authorized_keys
+#ssh-keys:
+#  - /root/dev/clusters/id_rsa.pub
+
 ## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 
 chef-server:
