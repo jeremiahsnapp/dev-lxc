@@ -145,21 +145,32 @@ platform_image: p-ubuntu-1404
 mounts:
   - /root/dev root/dev
 )
-      open_source_config = %Q(
-chef-server:
-  packages:
+      open_source_packages = %Q(  packages:
     server: /root/dev/chef-packages/osc/chef-server_11.1.6-1_amd64.deb
-  api_fqdn: chef.lxc
-  topology: open-source
-  servers:
-    osc-chef.lxc:
-      ipaddress: 10.0.3.200
 )
       chef_server_packages = %Q(  packages:
     server: /root/dev/chef-packages/cs/chef-server-core_12.5.0-1_amd64.deb
     manage: /root/dev/chef-packages/manage/chef-manage_2.2.1-1_amd64.deb
     reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.5.6-1_amd64.deb
     push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
+)
+      analytics_packages = %Q(  packages:
+    analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.3.1-1_amd64.deb
+)
+      compliance_packages = %Q(  packages:
+    compliance: /root/dev/chef-packages/compliance/chef-compliance_1.1.2-1_amd64.deb
+)
+      supermarket_packages = %Q(  packages:
+    supermarket: /root/dev/chef-packages/supermarket/supermarket_2.5.2-1_amd64.deb
+)
+      open_source_config = %Q(
+chef-server:
+#{open_source_packages.chomp}
+  api_fqdn: chef.lxc
+  topology: open-source
+  servers:
+    osc-chef.lxc:
+      ipaddress: 10.0.3.200
 )
       tiered_chef_config = %Q(
 chef-server:
@@ -184,24 +195,21 @@ chef-server:
 )
       analytics_config = %Q(
 analytics:
-  packages:
-    analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.3.1-1_amd64.deb
+#{analytics_packages.chomp}
   servers:
     analytics.lxc:
       ipaddress: 10.0.3.204
 )
       compliance_config = %Q(
 compliance:
-  packages:
-    compliance: /root/dev/chef-packages/compliance/chef-compliance_1.1.2-1_amd64.deb
+#{compliance_packages.chomp}
   servers:
     compliance.lxc:
       ipaddress: 10.0.3.205
 )
       supermarket_config = %Q(
 supermarket:
-  packages:
-    supermarket: /root/dev/chef-packages/supermarket/supermarket_2.5.2-1_amd64.deb
+#{supermarket_packages.chomp}
   servers:
     supermarket.lxc:
       ipaddress: 10.0.3.206
