@@ -1,5 +1,15 @@
 # dev-lxc Change Log
 
+## 1.6.2 (2016-04-21)
+
+* Sync SSH public keys to /home/dev-lxc/.ssh/authorized_keys
+
+* Improve 'dev-lxc init' header
+
+* Validate dev-lxc.yml hostnames, mounts, packages and ssh-keys
+
+* Consolidate package paths for simpler updating
+
 ## 1.6.1 (2016-04-20)
 
 * Fix for open-source in "dev-lxc init"
