@@ -31,6 +31,8 @@ module DevLXC
       @role ||= 'standalone'
       @mounts = cluster_config[@server_type]["mounts"]
       @mounts ||= cluster_config["mounts"]
+      @ssh_keys = cluster_config[@server_type]["ssh-keys"]
+      @ssh_keys ||= cluster_config["ssh-keys"]
       @platform_image_name = cluster_config[@server_type]["platform_image"]
       @platform_image_name ||= cluster_config["platform_image"]
       @platform_image_options = cluster_config[@server_type]["platform_image_options"]
@@ -98,6 +100,7 @@ module DevLXC
       end
       @server.sync_mounts(@mounts)
       @server.start
+      @server.sync_ssh_keys(@ssh_keys)
     end
 
     def stop

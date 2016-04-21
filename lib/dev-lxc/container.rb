@@ -64,6 +64,27 @@ module DevLXC
       self.save_config
     end
 
+    def sync_ssh_keys(ssh_keys)
+      dot_ssh_path = "/home/dev-lxc/.ssh"
+      unless File.exist?("#{config_item('lxc.rootfs')}#{dot_ssh_path}/authorized_keys")
+        run_command("sudo -u dev-lxc mkdir -p #{dot_ssh_path}")
+        run_command("sudo -u dev-lxc chmod 700 #{dot_ssh_path}")
+        run_command("sudo -u dev-lxc touch #{dot_ssh_path}/authorized_keys")
+        run_command("sudo -u dev-lxc chmod 600 #{dot_ssh_path}/authorized_keys")
+      end
+      authorized_keys = IO.read("#{config_item('lxc.rootfs')}#{dot_ssh_path}/authorized_keys").split("\n")
+      authorized_keys.delete_if { |m| m.end_with?("## dev-lxc ##") }
+      unless ssh_keys.nil?
+        ssh_keys.each do |ssh_key|
+          puts "Adding SSH key #{ssh_key} to #{dot_ssh_path}/authorized_keys"
+          authorized_keys << IO.read(ssh_key).chomp + "     ## dev-lxc ##"
+        end
+      end
+      authorized_keys_content = String.new
+      authorized_keys_content = authorized_keys.join("\n") + "\n" unless authorized_keys.empty?
+      IO.write("#{config_item('lxc.rootfs')}#{dot_ssh_path}/authorized_keys", authorized_keys_content)
+    end
+
     def run_command(command)
       unless running?
         puts "ERROR: Container '#{self.name}' must be running first"
