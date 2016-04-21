@@ -10,8 +10,10 @@ module DevLXC::CLI
         hostnames = Array.new
         mounts = Array.new
         packages = Array.new
+        ssh_keys = Array.new
 
         mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
+        ssh_keys.concat(cluster_config['ssh-keys']) unless cluster_config['ssh-keys'].nil?
 
         %w(chef-server analytics compliance supermarket adhoc).each do |server_type|
           unless cluster_config[server_type].nil?
@@ -20,6 +22,7 @@ module DevLXC::CLI
             hostnames.concat(cluster_config[server_type]['servers'].keys) unless cluster_config[server_type]['servers'].nil?
             mounts.concat(cluster_config[server_type]['mounts']) unless cluster_config[server_type]['mounts'].nil?
             packages.concat(cluster_config[server_type]['packages'].values) unless cluster_config[server_type]['packages'].nil?
+            ssh_keys.concat(cluster_config[server_type]['ssh-keys']) unless cluster_config[server_type]['ssh-keys'].nil?
           end
         end
         unless hostnames.empty?
@@ -42,6 +45,14 @@ module DevLXC::CLI
           packages.each do |package|
             unless File.exists?(package)
               puts "ERROR: Package #{package} does not exist."
+              exit 1
+            end
+          end
+        end
+        unless ssh_keys.empty?
+          ssh_keys.each do |ssh_key|
+            unless File.exists?(ssh_key)
+              puts "ERROR: SSH key #{ssh_key} does not exist."
               exit 1
             end
           end
