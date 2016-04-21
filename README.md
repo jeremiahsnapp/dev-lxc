@@ -497,26 +497,17 @@ dev-lxc init
 ```
 ## platform_image can be one of the following:
 ## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1504
-
-## platform_image_options can be set to provide additional arguments to the LXC create command.
-## reference arg examples: https://github.com/lxc/lxc/blob/lxc-2.0.0/templates/lxc-download.in#L200-L207
-## for example:
-## platform_image_options: --no-validate --keyserver http://my.key.server.com
-
-## Make sure all mount source directories exist in the LXC host
-
-## Make sure all package paths are correct
-
-## All FQDNs and server names must end with the `.lxc` domain
-
-## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
-
-## topology can be one of the following:
-## standalone (default), tier or open-source (for the old open source 11 chef server)
-
 platform_image: p-ubuntu-1404
+
+## platform_image_options can be set to provide additional arguments to the LXC create command
+## reference arg examples: https://github.com/lxc/lxc/blob/lxc-2.0.0/templates/lxc-download.in#L200-L207
+#platform_image_options: --no-validate
+
+## list any host directories you want mounted into the servers
 mounts:
   - /root/dev root/dev
+
+## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 
 chef-server:
   packages:
