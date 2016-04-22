@@ -405,7 +405,7 @@ adhoc:
       print_elapsed_time(Time.now - start_time)
     end
 
-    desc "up [SERVER_NAME_REGEX]", "Start servers - This is the default if no subcommand is given"
+    desc "up [SERVER_NAME_REGEX] [optional flags passed to template]", "Start servers - This is the default if no subcommand is given"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def up(server_name_regex=nil)
       start_time = Time.now
