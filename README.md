@@ -163,14 +163,12 @@ dev-lxc status
 This is an example of the output.
 
 ```
-Chef Server: https://chef.lxc
+Chef Server: chef.lxc
+Analytics:   analytics.lxc
 
-Analytics:   https://analytics.lxc
-
-      chef-be.lxc     running         10.0.3.203
-     chef-fe1.lxc     running         10.0.3.204
- analytics-be.lxc     running         10.0.3.206
-analytics-fe1.lxc     running         10.0.3.207
+      chef-be.lxc     running         10.0.3.201
+     chef-fe1.lxc     running         10.0.3.202
+    analytics.lxc     running         10.0.3.204
 ```
 
 #### cluster-view, tks, tls commands
