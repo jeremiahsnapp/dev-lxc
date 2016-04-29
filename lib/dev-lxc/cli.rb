@@ -195,27 +195,21 @@ mounts:
 
 ## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 )
-      open_source_packages = %Q(  packages:
-    server: /root/dev/chef-packages/osc/chef-server_11.1.6-1_amd64.deb
-)
-      chef_server_packages = %Q(  packages:
-    server: /root/dev/chef-packages/cs/chef-server-core_12.5.0-1_amd64.deb
-    manage: /root/dev/chef-packages/manage/chef-manage_2.2.1-1_amd64.deb
-    reporting: /root/dev/chef-packages/reporting/opscode-reporting_1.5.6-1_amd64.deb
-    push-jobs-server: /root/dev/chef-packages/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb
-)
-      analytics_packages = %Q(  packages:
-    analytics: /root/dev/chef-packages/analytics/opscode-analytics_1.3.1-1_amd64.deb
-)
-      compliance_packages = %Q(  packages:
-    compliance: /root/dev/chef-packages/compliance/chef-compliance_1.1.2-1_amd64.deb
-)
-      supermarket_packages = %Q(  packages:
-    supermarket: /root/dev/chef-packages/supermarket/supermarket_2.5.2-1_amd64.deb
-)
+
+      chef_packages_path = "/root/dev/chef-packages"
+      open_source_package = "server: #{chef_packages_path}/osc/chef-server_11.1.6-1_amd64.deb"
+      chef_server_package = "server: #{chef_packages_path}/cs/chef-server-core_12.6.0-1_amd64.deb"
+      manage_package = "manage: #{chef_packages_path}/manage/chef-manage_2.3.0-1_amd64.deb"
+      reporting_package = "reporting: #{chef_packages_path}/reporting/opscode-reporting_1.5.6-1_amd64.deb"
+      push_jobs_server_package = "push-jobs-server: #{chef_packages_path}/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb"
+      analytics_package = "analytics: #{chef_packages_path}/analytics/opscode-analytics_1.4.0-1_amd64.deb"
+      compliance_package = "compliance: #{chef_packages_path}/compliance/chef-compliance_1.1.9-1_amd64.deb"
+      supermarket_package = "supermarket: #{chef_packages_path}/supermarket/supermarket_2.5.2-1_amd64.deb"
+
       open_source_config = %Q(
 chef-server:
-#{open_source_packages.chomp}
+  packages:
+    #{open_source_package}
   api_fqdn: chef.lxc
   topology: open-source
   servers:
@@ -224,7 +218,11 @@ chef-server:
 )
       tiered_chef_config = %Q(
 chef-server:
-#{chef_server_packages.chomp}
+  packages:
+    #{chef_server_package}
+    #{manage_package}
+    #{reporting_package}
+    #{push_jobs_server_package}
   topology: tier
   api_fqdn: chef.lxc
   servers:
@@ -238,28 +236,35 @@ chef-server:
 )
       chef_config = %Q(
 chef-server:
-#{chef_server_packages.chomp}
+  packages:
+    #{chef_server_package}
+    #{manage_package}
+    #{reporting_package}
+    #{push_jobs_server_package}
   servers:
     chef.lxc:
       ipaddress: 10.0.3.203
 )
       analytics_config = %Q(
 analytics:
-#{analytics_packages.chomp}
+  packages:
+    #{analytics_package}
   servers:
     analytics.lxc:
       ipaddress: 10.0.3.204
 )
       compliance_config = %Q(
 compliance:
-#{compliance_packages.chomp}
+  packages:
+    #{compliance_package}
   servers:
     compliance.lxc:
       ipaddress: 10.0.3.205
 )
       supermarket_config = %Q(
 supermarket:
-#{supermarket_packages.chomp}
+  packages:
+    #{supermarket_package}
   servers:
     supermarket.lxc:
       ipaddress: 10.0.3.206
