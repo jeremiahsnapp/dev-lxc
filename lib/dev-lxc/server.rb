@@ -320,6 +320,8 @@ module DevLXC
     end
 
     def configure_reporting
+      FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/var/opt/opscode-reporting")
+      FileUtils.touch("#{@server.config_item('lxc.rootfs')}/var/opt/opscode-reporting/.license.accepted")
       if @role == 'frontend'
         puts "Copying /etc/opscode-reporting from bootstrap backend '#{@chef_server_bootstrap_backend}'"
         FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-reporting",
@@ -335,6 +337,8 @@ module DevLXC
     end
 
     def configure_manage
+      FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/var/opt/chef-manage")
+      FileUtils.touch("#{@server.config_item('lxc.rootfs')}/var/opt/chef-manage/.license.accepted")
       if @chef_server_type == 'private-chef'
         puts "Disabling old opscode-webui in /etc/opscode/private-chef.rb"
         DevLXC.search_file_delete_line("#{@server.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", /opscode_webui[.enable.]/)
@@ -345,6 +349,8 @@ module DevLXC
     end
 
     def configure_analytics
+      FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/var/opt/opscode-analytics")
+      FileUtils.touch("#{@server.config_item('lxc.rootfs')}/var/opt/opscode-analytics/.license.accepted")
       case @role
       when "standalone", "backend"
         puts "Copying /etc/opscode-analytics from Chef Server bootstrap backend '#{@chef_server_bootstrap_backend}'"
@@ -361,6 +367,8 @@ module DevLXC
     end
 
     def configure_compliance
+      FileUtils.mkdir_p("#{@server.config_item('lxc.rootfs')}/var/opt/chef-compliance")
+      FileUtils.touch("#{@server.config_item('lxc.rootfs')}/var/opt/chef-compliance/.license.accepted")
       run_ctl("chef-compliance", "reconfigure")
     end
 
