@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 1.7.0 (2016-05-04)
+
+* Replace p-ubuntu-1504 with p-ubuntu-1604
+
 ## 1.6.3 (2016-05-04)
 
 * Put adhoc servers at the end of the servers list
