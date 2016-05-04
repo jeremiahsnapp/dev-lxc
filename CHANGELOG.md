@@ -1,5 +1,17 @@
 # dev-lxc Change Log
 
+## 1.6.3 (2016-05-04)
+
+* Put adhoc servers at the end of the servers list
+
+* Only destroy a shared image if it has a name
+
+* Auto accept license agreements
+
+* Define default package names more cleanly
+
+* Minor update to README.md
+
 ## 1.6.2 (2016-04-21)
 
 * Sync SSH public keys to /home/dev-lxc/.ssh/authorized_keys
