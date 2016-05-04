@@ -66,12 +66,6 @@ module DevLXC
     end
 
     def servers
-      adhoc_servers = Array.new
-      if @adhoc_servers
-        @adhoc_servers.each do |name|
-          adhoc_servers << Server.new(name, 'adhoc', @cluster_config)
-        end
-      end
       chef_servers = Array.new
       chef_servers << Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config) if @chef_server_bootstrap_backend
       if @chef_server_topology == "tier"
@@ -86,9 +80,16 @@ module DevLXC
           analytics_servers << Server.new(frontend_name, 'analytics', @cluster_config)
         end
       end
-      servers = adhoc_servers + chef_servers + analytics_servers
+      adhoc_servers = Array.new
+      if @adhoc_servers
+        @adhoc_servers.each do |name|
+          adhoc_servers << Server.new(name, 'adhoc', @cluster_config)
+        end
+      end
+      servers = chef_servers + analytics_servers
       servers << Server.new(@compliance_fqdn, 'compliance', @cluster_config) if @compliance_fqdn
       servers << Server.new(@supermarket_fqdn, 'supermarket', @cluster_config) if @supermarket_fqdn
+      servers += adhoc_servers
       servers
     end
 
