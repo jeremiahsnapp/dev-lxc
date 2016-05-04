@@ -494,7 +494,7 @@ dev-lxc init
 
 ```
 ## platform_image can be one of the following:
-## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1504
+## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1604
 platform_image: p-ubuntu-1404
 
 ## platform_image_options can be set to provide additional arguments to the LXC create command

@@ -84,7 +84,7 @@ module DevLXC::CLI
     option :options, :aliases => "-o", :desc => "Specify additional options for the lxc create"
     def create(platform_image_name=nil)
       start_time = Time.now
-      platform_image_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-ubuntu-1504 p-centos-5 p-centos-6 p-centos-7)
+      platform_image_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-ubuntu-1604 p-centos-5 p-centos-6 p-centos-7)
       if platform_image_name.nil? || ! platform_image_names.include?(platform_image_name)
         platform_image_names_with_index = platform_image_names.map.with_index{ |a, i| [i+1, *a]}
         print_table platform_image_names_with_index
@@ -178,7 +178,7 @@ module DevLXC::CLI
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
     def init(unique_string=nil)
       header = %Q(## platform_image can be one of the following:
-## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1504
+## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1604
 platform_image: p-ubuntu-1404
 
 ## platform_image_options can be set to provide additional arguments to the LXC create command

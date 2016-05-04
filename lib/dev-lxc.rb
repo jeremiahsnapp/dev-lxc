@@ -21,8 +21,8 @@ module DevLXC
       options = ["-d", "ubuntu", "-r", "precise", "-a", "amd64"]
     when "p-ubuntu-1404"
       options = ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"]
-    when "p-ubuntu-1504"
-      options = ["-d", "ubuntu", "-r", "vivid", "-a", "amd64"]
+    when "p-ubuntu-1604"
+      options = ["-d", "ubuntu", "-r", "xenial", "-a", "amd64"]
     when "p-centos-5"
       template = "centos"
       options = ["-R", "5"]
@@ -69,10 +69,8 @@ module DevLXC
       platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree openssh-server")
       IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
       FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
-    when "p-ubuntu-1504"
+    when "p-ubuntu-1604"
       platform_image.run_command("apt-get update")
-      # install policykit-1 first Ref: https://bugs.launchpad.net/ubuntu/+source/policykit-1/+bug/1447654/
-      platform_image.run_command("apt-get install -y policykit-1")
       platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs24-nox tree openssh-server")
       IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
       FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
