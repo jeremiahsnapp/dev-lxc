@@ -153,7 +153,7 @@ module DevLXC
       when :unique
         DevLXC::Container.new("u-#{@server.name}", @lxc_config_path).destroy
       when :shared
-        DevLXC::Container.new(@shared_image_name, @lxc_config_path).destroy
+        DevLXC::Container.new(@shared_image_name, @lxc_config_path).destroy unless @shared_image_name.empty?
       when :platform
         DevLXC::Container.new(@platform_image_name, @lxc_config_path).destroy
       end
