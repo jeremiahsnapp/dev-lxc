@@ -314,7 +314,7 @@ module DevLXC
       when "frontend"
         puts "Copying /etc/opscode from bootstrap backend '#{@chef_server_bootstrap_backend}'"
         FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode",
-                       "#{@server.config_item('lxc.rootfs')}/etc")
+                       "#{@server.config_item('lxc.rootfs')}/etc", preserve: true)
       end
       run_ctl(@server_ctl, "reconfigure")
     end
@@ -325,7 +325,7 @@ module DevLXC
       if @role == 'frontend'
         puts "Copying /etc/opscode-reporting from bootstrap backend '#{@chef_server_bootstrap_backend}'"
         FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-reporting",
-                       "#{@server.config_item('lxc.rootfs')}/etc")
+                       "#{@server.config_item('lxc.rootfs')}/etc", preserve: true)
       end
       run_ctl(@server_ctl, "reconfigure")
       run_ctl("opscode-reporting", "reconfigure")
@@ -355,13 +355,13 @@ module DevLXC
       when "standalone", "backend"
         puts "Copying /etc/opscode-analytics from Chef Server bootstrap backend '#{@chef_server_bootstrap_backend}'"
         FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-analytics",
-                       "#{@server.config_item('lxc.rootfs')}/etc")
+                       "#{@server.config_item('lxc.rootfs')}/etc", preserve: true)
 
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode-analytics/opscode-analytics.rb", @analytics_config)
       when "frontend"
         puts "Copying /etc/opscode-analytics from Analytics bootstrap backend '#{@analytics_bootstrap_backend}'"
         FileUtils.cp_r("#{LXC::Container.new(@analytics_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-analytics",
-                       "#{@server.config_item('lxc.rootfs')}/etc")
+                       "#{@server.config_item('lxc.rootfs')}/etc", preserve: true)
       end
       run_ctl("opscode-analytics", "reconfigure")
     end
