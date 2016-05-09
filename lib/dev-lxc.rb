@@ -15,8 +15,6 @@ module DevLXC
     puts "Creating platform image '#{platform_image.name}'"
     template = "download"
     case platform_image.name
-    when "p-ubuntu-1004"
-      options = ["-d", "ubuntu", "-r", "lucid", "-a", "amd64"]
     when "p-ubuntu-1204"
       options = ["-d", "ubuntu", "-r", "precise", "-a", "amd64"]
     when "p-ubuntu-1404"
@@ -54,16 +52,6 @@ module DevLXC
     platform_image.start
     puts "Installing packages in platform image '#{platform_image.name}'"
     case platform_image.name
-    when "p-ubuntu-1004"
-      # Disable certain sysctl.d files in Ubuntu 10.04, they cause `start procps` to fail
-      if File.exist?("#{platform_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf")
-        FileUtils.mv("#{platform_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf",
-                     "#{platform_image.config_item('lxc.rootfs')}/etc/sysctl.d/10-console-messages.conf.orig")
-      end
-      platform_image.run_command("apt-get update")
-      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox curl tree openssh-server")
-      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
-      FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
     when "p-ubuntu-1204", "p-ubuntu-1404"
       platform_image.run_command("apt-get update")
       platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree openssh-server")
