@@ -310,15 +310,6 @@ images if you want to build them from scratch.
 dev-lxc destroy -c -u
 ```
 
-#### Global status of all dev-lxc images and servers
-
-Use the `global-status` command to see the status of all dev-lxc images and servers stored in dev-lxc's
-default LXC config_path `/var/lib/dev-lxc`.
-
-```
-dev-lxc global-status
-```
-
 #### Use commands against specific servers
 You can also run most of these commands against a set of servers by specifying a regular expression
 that matches a set of server names.
