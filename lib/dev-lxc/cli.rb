@@ -365,37 +365,6 @@ adhoc:
       get_cluster(options[:config]).chef_repo(options[:force], options[:pivotal])
     end
 
-    desc "list-images [SERVER_NAME_REGEX]", "List of each servers' images created during the build process"
-    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def list_images(server_name_regex=nil)
-      lxc_config_path = get_cluster(options[:config]).lxc_config_path
-      images = Hash.new { |h,k| h[k] = Array.new }
-      match_server_name_regex(server_name_regex).each do |s|
-        images[s.platform_image_name] << s.server.name
-      end
-      images.each_with_index do |(platform_name, final), images_index|
-        printf "Platform: %28s  %s\n", (LXC::Container.new(platform_name, lxc_config_path).defined? ? "Created" : "Not Created"), platform_name
-        final.each_with_index do |final_name, final_index|
-          final_connector = (final_index + 1 < final.length ? "|" : " ")
-
-          unique_name = "u-#{final_name}"
-          printf "#{final_connector}\\_ Unique: %26s  %s\n", (LXC::Container.new(unique_name, lxc_config_path).defined? ? "Created" : "Not Created"), unique_name
-
-          custom_name = "c-#{final_name}"
-          if LXC::Container.new(custom_name, lxc_config_path).defined?
-            printf "#{final_connector}    \\_ Custom: %22s  %s\n", "Created", custom_name
-            custom_spacing = "    "
-            final_width = 12
-          else
-            final_width = 16
-          end
-          printf "#{final_connector}    #{custom_spacing}\\_ Final Server: %#{final_width}s    %s\n", (LXC::Container.new(final_name, lxc_config_path).defined? ? "Created" : "Not Created"), final_name
-          puts "|" if final_index + 1 < final.length
-        end
-        puts if images_index + 1 < images.length
-      end
-    end
-
     desc "run-command [SERVER_NAME_REGEX] [COMMAND]", "Runs a command in each server"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(server_name_regex=nil, command)

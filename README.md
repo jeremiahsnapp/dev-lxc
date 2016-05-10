@@ -144,14 +144,6 @@ appropriately.
 dev-lxc init --tiered-chef --analytics > dev-lxc.yml
 ```
 
-#### List Images
-
-List of each servers' images created during the build process.
-
-```
-dev-lxc list-images
-```
-
 #### Cluster status
 
 Run the following command to see the status of the cluster.
@@ -191,7 +183,7 @@ updating every 0.5 seconds.
 
 * Top - system's memory usage provided by `free -h`
 * Middle - cluster's status provided by `dev-lxc status`
-* Bottom - list of the cluster's images provided by `dev-lxc list-images`
+* Bottom - to be determined
 
 The session's second window is named "shell". It opens in the same directory as the
 cluster's `dev-lxc.yml` file.
