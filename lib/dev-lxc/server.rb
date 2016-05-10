@@ -13,7 +13,6 @@ module DevLXC
       end
       @server_type = server_type
       cluster = DevLXC::Cluster.new(cluster_config)
-      @lxc_config_path = cluster.lxc_config_path
       @api_fqdn = cluster.api_fqdn
       @analytics_fqdn = cluster.analytics_fqdn
       @compliance_fqdn = cluster.compliance_fqdn
@@ -23,7 +22,7 @@ module DevLXC
       @chef_server_config = cluster.chef_server_config
       @analytics_config = cluster.analytics_config
 
-      @server = DevLXC::Container.new(name, @lxc_config_path)
+      @server = DevLXC::Container.new(name)
       @config = cluster_config[@server_type]["servers"][@server.name]
       @ipaddress = @config["ipaddress"]
       @role = @config["role"]
@@ -103,7 +102,7 @@ module DevLXC
         puts "WARNING: Skipping snapshot of '#{@server.name}' because it is not stopped"
         return
       end
-      custom_image = DevLXC::Container.new("c-#{@server.name}", @lxc_config_path)
+      custom_image = DevLXC::Container.new("c-#{@server.name}")
       if custom_image.defined?
         if force
           custom_image.destroy
@@ -134,11 +133,11 @@ module DevLXC
     def destroy_image(type)
       case type
       when :custom
-        DevLXC::Container.new("c-#{@server.name}", @lxc_config_path).destroy
+        DevLXC::Container.new("c-#{@server.name}").destroy
       when :unique
-        DevLXC::Container.new("u-#{@server.name}", @lxc_config_path).destroy
+        DevLXC::Container.new("u-#{@server.name}").destroy
       when :platform
-        DevLXC::Container.new(@platform_image_name, @lxc_config_path).destroy
+        DevLXC::Container.new(@platform_image_name).destroy
       end
     end
 
@@ -147,30 +146,30 @@ module DevLXC
         puts "Using existing container '#{@server.name}'"
         return
       end
-      custom_image = DevLXC::Container.new("c-#{@server.name}", @lxc_config_path)
-      unique_image = DevLXC::Container.new("u-#{@server.name}", @lxc_config_path)
+      custom_image = DevLXC::Container.new("c-#{@server.name}")
+      unique_image = DevLXC::Container.new("u-#{@server.name}")
       if custom_image.defined?
         puts "Cloning custom image '#{custom_image.name}' into container '#{@server.name}'"
         custom_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
-        @server = DevLXC::Container.new(@server.name, @lxc_config_path)
+        @server = DevLXC::Container.new(@server.name)
         return
       elsif unique_image.defined?
         puts "Cloning unique image '#{unique_image.name}' into container '#{@server.name}'"
         unique_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
-        @server = DevLXC::Container.new(@server.name, @lxc_config_path)
+        @server = DevLXC::Container.new(@server.name)
         return
       else
         puts "Creating container '#{@server.name}'"
-        if @chef_server_bootstrap_backend && ! DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?
+        if @chef_server_bootstrap_backend && ! DevLXC::Container.new(@chef_server_bootstrap_backend).defined?
           if @server_type == 'supermarket' || (@server_type == 'chef-server' && @role == 'frontend')
             puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
             exit 1
           end
         end
-        platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options, @lxc_config_path)
+        platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options)
         puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
         platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
-        @server = DevLXC::Container.new(@server.name, @lxc_config_path)
+        @server = DevLXC::Container.new(@server.name)
         puts "Deleting SSH Server Host Keys"
         FileUtils.rm_f(Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
         puts "Adding lxc.hook.post-stop hook"
@@ -263,7 +262,7 @@ module DevLXC
         end
       when "frontend"
         puts "Copying /etc/opscode from bootstrap backend '#{@chef_server_bootstrap_backend}'"
-        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode",
+        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode",
                        "#{@server.config_item('lxc.rootfs')}/etc", preserve: true)
       end
       run_ctl(@server_ctl, "reconfigure")
@@ -274,7 +273,7 @@ module DevLXC
       FileUtils.touch("#{@server.config_item('lxc.rootfs')}/var/opt/opscode-reporting/.license.accepted")
       if @role == 'frontend'
         puts "Copying /etc/opscode-reporting from bootstrap backend '#{@chef_server_bootstrap_backend}'"
-        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-reporting",
+        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-reporting",
                        "#{@server.config_item('lxc.rootfs')}/etc", preserve: true)
       end
       run_ctl(@server_ctl, "reconfigure")
@@ -304,13 +303,13 @@ module DevLXC
       case @role
       when "standalone", "backend"
         puts "Copying /etc/opscode-analytics from Chef Server bootstrap backend '#{@chef_server_bootstrap_backend}'"
-        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-analytics",
+        FileUtils.cp_r("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-analytics",
                        "#{@server.config_item('lxc.rootfs')}/etc", preserve: true)
 
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/opscode-analytics/opscode-analytics.rb", @analytics_config)
       when "frontend"
         puts "Copying /etc/opscode-analytics from Analytics bootstrap backend '#{@analytics_bootstrap_backend}'"
-        FileUtils.cp_r("#{LXC::Container.new(@analytics_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode-analytics",
+        FileUtils.cp_r("#{LXC::Container.new(@analytics_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode-analytics",
                        "#{@server.config_item('lxc.rootfs')}/etc", preserve: true)
       end
       run_ctl("opscode-analytics", "reconfigure")
@@ -323,8 +322,8 @@ module DevLXC
     end
 
     def configure_supermarket
-      if @chef_server_bootstrap_backend && DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?
-        chef_server_supermarket_config = JSON.parse(IO.read("#{LXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).config_item('lxc.rootfs')}/etc/opscode/oc-id-applications/supermarket.json"))
+      if @chef_server_bootstrap_backend && DevLXC::Container.new(@chef_server_bootstrap_backend).defined?
+        chef_server_supermarket_config = JSON.parse(IO.read("#{LXC::Container.new(@chef_server_bootstrap_backend).config_item('lxc.rootfs')}/etc/opscode/oc-id-applications/supermarket.json"))
         supermarket_config = {
           'chef_server_url' => "https://#{@api_fqdn}/",
           'chef_oauth2_app_id' => chef_server_supermarket_config['uid'],

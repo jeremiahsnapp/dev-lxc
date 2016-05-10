@@ -118,7 +118,7 @@ module DevLXC::CLI
       validation_key = options[:validation_key]
       if chef_server_url.nil? && validation_client_name.nil? && validation_key.nil?
         cluster = get_cluster(options[:config])
-        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend, cluster.lxc_config_path)
+        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend)
         unless chef_server_bootstrap_backend.defined?
           puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' is not created."
           exit 1
@@ -150,7 +150,7 @@ module DevLXC::CLI
       validation_key = options[:validation_key]
       if chef_server_url.nil? && validation_client_name.nil? && validation_key.nil?
         cluster = get_cluster(options[:config])
-        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend, cluster.lxc_config_path)
+        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend)
         unless chef_server_bootstrap_backend.defined?
           puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' is not created."
           exit 1
@@ -388,10 +388,9 @@ adhoc:
       start_time = Time.now
       non_stopped_servers = Array.new
       existing_custom_images = Array.new
-      lxc_config_path = get_cluster(options[:config]).lxc_config_path
       match_server_name_regex(server_name_regex).each do |s|
         non_stopped_servers << s.server.name if s.server.state != :stopped
-        existing_custom_images << s.server.name if LXC::Container.new("c-#{s.server.name}", lxc_config_path).defined?
+        existing_custom_images << s.server.name if LXC::Container.new("c-#{s.server.name}").defined?
       end
       unless non_stopped_servers.empty?
         puts "ERROR: Aborting snapshot because the following servers are not stopped"

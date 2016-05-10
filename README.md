@@ -609,12 +609,6 @@ Images are then cloned using the btrfs filesystem to very quickly provide a ligh
 of the image. This clone is either used to build the next image in the build process or the final
 container that will actually be run.
 
-By default, the cluster's images and final server containers are all stored in `/var/lib/dev-lxc`
-so they don't clutter the containers stored in the default LXC config_path `/var/lib/lxc`.
-
-The cluster's LXC config_path can be configured by setting `lxc_config_path` at the top of the
-`dev-lxc.yml` file to the desired directory.
-
 There are four image categories.
 
 1. Platform Image

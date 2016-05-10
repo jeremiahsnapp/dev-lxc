@@ -6,8 +6,8 @@ require "dev-lxc/server"
 require "dev-lxc/cluster"
 
 module DevLXC
-  def self.create_platform_image(platform_image_name, platform_image_options, lxc_config_path='/var/lib/lxc')
-    platform_image = DevLXC::Container.new(platform_image_name, lxc_config_path)
+  def self.create_platform_image(platform_image_name, platform_image_options)
+    platform_image = DevLXC::Container.new(platform_image_name)
     if platform_image.defined?
       puts "Using existing platform image '#{platform_image.name}'"
       return platform_image
