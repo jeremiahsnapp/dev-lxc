@@ -144,6 +144,37 @@ appropriately.
 dev-lxc init --tiered-chef --analytics > dev-lxc.yml
 ```
 
+Be sure to set `platform_image` in the `dev-lxc.yml` to an existing container's name.  
+This container will be cloned to create each container in the cluster.  
+If you don't already have a container to use as a `platform_image` then you can follow the instructions in the  
+[Create a dev-lxc Platform Image section](https://github.com/jeremiahsnapp/dev-lxc#create-a-dev-lxc-platform-image) to create one.
+
+#### Create a dev-lxc Platform Image
+
+dev-lxc is able to create platform images that have openssh-server installed and running with unique SSH Host Keys.
+
+dev-lxc platform images have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
+
+You can see a menu of platform images that `dev-lxc` can create by using the following command.
+
+```
+dev-lxc create
+```
+
+The initial creation of platform images can take awhile so let's go ahead and start creating
+an Ubuntu 14.04 image now.
+
+```
+dev-lxc create p-ubuntu-1404
+```
+
+Note: It is possible to pass additional arguments to the underlying LXC create command.
+For example:
+
+```
+dev-lxc create p-ubuntu-1404 -o -- '--no-validate --keyserver http://my.key.server.com'
+```
+
 #### Cluster status
 
 Run the following command to see the status of the cluster.
@@ -352,35 +383,6 @@ dl up
 
 ### Managing Node Containers
 
-#### Manually Create a Platform Image
-
-Platform images can be used for purposes other than building clusters. For example, they can
-be used as Chef nodes for testing purposes.
-
-Platform images have openssh-server installed and running with unique SSH Host Keys.
-
-Platform images have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
-
-You can see a menu of platform images this tool can create by using the following command.
-
-```
-dev-lxc create
-```
-
-The initial creation of platform images can take awhile so let's go ahead and start creating
-an Ubuntu 14.04 image now.
-
-```
-dev-lxc create p-ubuntu-1404
-```
-
-Note: It is possible to pass additional arguments to the underlying LXC create command.
-For example:
-
-```
-dev-lxc create p-ubuntu-1404 -o -- '--no-validate --keyserver http://my.key.server.com'
-```
-
 #### Install Chef Client in a Container
 
 Use the `-v` option to specify a particular version of Chef Client.
@@ -476,13 +478,8 @@ dev-lxc init
 `dev-lxc init --tiered-chef --analytics > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
 
 ```
-## platform_image can be one of the following:
-## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1604
+## platform_image must be the name of an existing container
 platform_image: p-ubuntu-1404
-
-## platform_image_options can be set to provide additional arguments to the LXC create command
-## reference arg examples: https://github.com/lxc/lxc/blob/lxc-2.0.0/templates/lxc-download.in#L200-L207
-#platform_image_options: --no-validate
 
 ## list any host directories you want mounted into the servers
 mounts:
@@ -602,8 +599,8 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 
 One of the key things this tool uses is the concept of images.
 
-`dev-lxc` creates images with a "p-", "u-" or "c-" prefix on the name to distinguish
-it as a "platform", "unique" or "custom" image.
+`dev-lxc` creates images with a "u-" or "c-" prefix on the name to distinguish
+it as a "unique" or "custom" image.
 
 Images are then cloned using the btrfs filesystem to very quickly provide a lightweight duplicate
 of the image. This clone is either used to build the next image in the build process or the final
@@ -613,12 +610,12 @@ There are four image categories.
 
 1. Platform Image
 
-    The platform image is the first to get created and is identified by the
-	"p-" prefix on the image name.
+    The container that is used as the platform image for a cluster's containers must exist before
+	the cluster can be built. The cluster's containers are cloned from the platform image container.
 
-    `DevLXC#create_platform_image` controls the creation of a platform image.
-
-    This image provides the chosen OS platform and version (e.g. p-ubuntu-1404).
+    If you don't already have a container to use as a platform image then you can use the instructions in the
+	[Create a dev-lxc Platform Image section](https://github.com/jeremiahsnapp/dev-lxc#create-a-dev-lxc-platform-image) to create one.
+	This image provides the chosen OS platform and version (e.g. p-ubuntu-1404).
 	A typical LXC container has minimal packages installed so `dev-lxc` makes sure that the
 	same packages used in Chef's [bento boxes](https://github.com/opscode/bento) are
 	installed to provide a more typical server environment.

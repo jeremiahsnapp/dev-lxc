@@ -188,13 +188,8 @@ module DevLXC::CLI
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
     def init(unique_string=nil)
-      header = %Q(## platform_image can be one of the following:
-## p-centos-5, p-centos-6, p-centos-7, p-ubuntu-1204, p-ubuntu-1404 or p-ubuntu-1604
+      header = %Q(## platform_image must be the name of an existing container
 platform_image: p-ubuntu-1404
-
-## platform_image_options can be set to provide additional arguments to the LXC create command
-## reference arg examples: https://github.com/lxc/lxc/blob/lxc-2.0.0/templates/lxc-download.in#L200-L207
-#platform_image_options: --no-validate
 
 ## list any host directories you want mounted into the servers
 mounts:
@@ -422,14 +417,12 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     option :custom, :aliases => "-c", :type => :boolean, :desc => "Also destroy the custom images"
     option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique images"
-    option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform images"
     def destroy(server_name_regex=nil)
       start_time = Time.now
       match_server_name_regex(server_name_regex).reverse_each do |s|
         s.destroy
         s.destroy_image(:custom) if options[:custom]
         s.destroy_image(:unique) if options[:unique]
-        s.destroy_image(:platform) if options[:platform]
         puts
       end
       print_elapsed_time(Time.now - start_time)

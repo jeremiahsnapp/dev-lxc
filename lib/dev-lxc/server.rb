@@ -4,7 +4,7 @@ require "dev-lxc/cluster"
 
 module DevLXC
   class Server
-    attr_reader :server, :platform_image_name, :platform_image_options
+    attr_reader :server, :platform_image_name
 
     def initialize(name, server_type, cluster_config)
       unless cluster_config[server_type]["servers"].keys.include?(name)
@@ -34,8 +34,6 @@ module DevLXC
       @ssh_keys ||= cluster_config["ssh-keys"]
       @platform_image_name = cluster_config[@server_type]["platform_image"]
       @platform_image_name ||= cluster_config["platform_image"]
-      @platform_image_options = cluster_config[@server_type]["platform_image_options"]
-      @platform_image_options ||= cluster_config["platform_image_options"]
       @packages = cluster_config[@server_type]["packages"]
 
       if @server_type == 'chef-server'
@@ -136,8 +134,6 @@ module DevLXC
         DevLXC::Container.new("c-#{@server.name}").destroy
       when :unique
         DevLXC::Container.new("u-#{@server.name}").destroy
-      when :platform
-        DevLXC::Container.new(@platform_image_name).destroy
       end
     end
 
@@ -148,6 +144,7 @@ module DevLXC
       end
       custom_image = DevLXC::Container.new("c-#{@server.name}")
       unique_image = DevLXC::Container.new("u-#{@server.name}")
+      platform_image = DevLXC::Container.new(@platform_image_name)
       if custom_image.defined?
         puts "Cloning custom image '#{custom_image.name}' into container '#{@server.name}'"
         custom_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
@@ -166,7 +163,6 @@ module DevLXC
             exit 1
           end
         end
-        platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options)
         puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
         platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         @server = DevLXC::Container.new(@server.name)
