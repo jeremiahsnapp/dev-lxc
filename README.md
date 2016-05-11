@@ -316,29 +316,49 @@ Attach the terminal to a server in the cluster that matches the REGEX pattern gi
 dev-lxc attach chef-be
 ```
 
-#### Make a snapshot of the servers
+#### Create a snapshot of the servers
 
-Save the changes in the servers to custom images.
+Save the changes in the servers to snapshots with a comment.
 
 ```
 dev-lxc halt
-dev-lxc snapshot
+dev-lxc snapshot -c 'this is a snapshot comment'
 ```
 
-Now the servers can be destroyed and recreated with the same changes captured at the time of the snapshot.
+#### List snapshots
 
 ```
-dev-lxc destroy
+dev-lxc snapshot -l
+```
+
+#### Restore snapshots
+
+Restore snapshots by name.
+
+Leave out the snapshot name or specify `LAST` to restore the most recent snapshot.
+
+```
+dev-lxc snapshot -r
 dev-lxc up
+```
+
+#### Destroy snapshots
+
+Destroy snapshots by name or destroy all snapshots by specifying `ALL`.
+
+Leave out the snapshot name or specify `LAST` to destroy the most recent snapshots.
+
+```
+dev-lxc snapshot -d
 ```
 
 #### Destroy cluster
 
-Use the following command to destroy the cluster's servers and also destroy their custom and unique
+Use the following command to destroy the cluster's servers and also destroy their unique
 images if you want to build them from scratch.
 
 ```
-dev-lxc destroy -c -u
+dev-lxc destroy -u
 ```
 
 #### Use commands against specific servers
@@ -599,8 +619,7 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 
 One of the key things this tool uses is the concept of images.
 
-`dev-lxc` creates images with a "u-" or "c-" prefix on the name to distinguish
-it as a "unique" or "custom" image.
+`dev-lxc` creates images with a "u-" prefix on the name to distinguish it as a "unique" image.
 
 Images are then cloned using the btrfs filesystem to very quickly provide a lightweight duplicate
 of the image. This clone is either used to build the next image in the build process or the final
@@ -646,17 +665,6 @@ There are four image categories.
     After each server is fully configured a clone of it is made resulting in the server's
 	unique image. These unique images make it very easy to quickly recreate
 	a Chef cluster from a clean starting point.
-
-3. Custom Image
-
-    The custom image is only created when the `snapshot` command is used and is identified
-	by the "c-" prefix on the image name.
-
-    `DevLXC::Server#snapshot` controls the creation of a custom image.
-
-    Custom images can be used to save the changes that have been made in servers.
-	Later, when the servers are destroyed and recreated, they will start running with the changes
-	that were captured at the time of the snapshot.
 
 ### Destroying Images
 

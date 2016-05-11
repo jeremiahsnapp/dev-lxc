@@ -91,7 +91,7 @@ module DevLXC
       deregister_from_dnsmasq(hwaddr)
     end
 
-    def snapshot(force=nil)
+    def snapshot(comment=nil)
       unless @server.defined?
         puts "WARNING: Skipping snapshot of '#{@server.name}' because it is not created"
         return
@@ -100,21 +100,92 @@ module DevLXC
         puts "WARNING: Skipping snapshot of '#{@server.name}' because it is not stopped"
         return
       end
-      custom_image = DevLXC::Container.new("c-#{@server.name}")
-      if custom_image.defined?
-        if force
-          custom_image.destroy
+      puts "Creating snapshot of container '#{@server.name}'"
+      snapname = @server.snapshot
+      unless comment.nil?
+        snapshot = @server.snapshot_list.select { |sn| sn.first == snapname }
+        snapshot_comment_file = snapshot.flatten[1]
+        IO.write(snapshot_comment_file, comment) unless snapshot_comment_file.nil?
+      end
+    end
+
+    def snapshot_destroy(snapname=nil)
+      unless @server.defined?
+        puts "Skipping container '#{@server.name}' because it is not created"
+        return
+      end
+      if snapname == "ALL"
+        if @server.snapshot_list.empty?
+          puts "Container '#{@server.name}' does not have any snapshots"
         else
-          puts "WARNING: Skipping snapshot of '#{@server.name}' because a custom image already exists"
-          return
+          @server.snapshot_list.each do |snapshot|
+            puts "Destroying snapshot '#{snapshot.first}' of container '#{@server.name}'"
+            @server.snapshot_destroy(snapshot.first)
+          end
+        end
+      elsif snapname == "LAST"
+        if @server.snapshot_list.empty?
+          puts "Container '#{@server.name}' does not have any snapshots"
+        else
+          snapname = @server.snapshot_list.last.first
+          puts "Destroying snapshot '#{snapname}' of container '#{@server.name}'"
+          @server.snapshot_destroy(snapname)
+        end
+      else
+        snapshot = @server.snapshot_list.select { |sn| sn.first == snapname }
+        if snapshot.flatten.empty?
+          puts "Container '#{@server.name}' does not have a '#{snapname}' snapshot"
+        else
+          puts "Destroying snapshot '#{snapname}' of container '#{@server.name}'"
+          @server.snapshot_destroy(snapname)
         end
       end
-      puts "Creating snapshot of container '#{@server.name}' in custom image '#{custom_image.name}'"
-      @server.clone("#{custom_image.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+    end
+
+    def snapshot_list
+      snapshots = Array.new
+      return snapshots unless @server.defined?
+      @server.snapshot_list.each do |snapshot|
+        (snapname, snap_comment_file, snaptime) = snapshot
+        snap_comment = IO.read(snap_comment_file).chomp if File.exist?(snap_comment_file)
+        snapshots << [snapname, snaptime, snap_comment]
+      end
+      snapshots
+    end
+
+    def snapshot_restore(snapname=nil)
+      unless @server.defined?
+        puts "WARNING: Skipping container '#{@server.name}' because it is not created"
+        return
+      end
+      if @server.state != :stopped
+        puts "WARNING: Skipping container '#{@server.name}' because it is not stopped"
+        return
+      end
+      if snapname == "LAST"
+        if @server.snapshot_list.empty?
+          puts "WARNING: Skipping container '#{@server.name}' because it does not have any snapshots"
+        else
+          snapname = @server.snapshot_list.last.first
+          puts "Restoring snapshot '#{snapname}' of container '#{@server.name}'"
+          @server.snapshot_restore(snapname)
+        end
+      else
+        snapshot = @server.snapshot_list.select { |sn| sn.first == snapname }
+        if snapshot.flatten.empty?
+          puts "WARNING: Skipping container '#{@server.name}' because it does not have a '#{snapname}' snapshot"
+        else
+          puts "Restoring snapshot '#{snapname}' of container '#{@server.name}'"
+          @server.snapshot_restore(snapname)
+        end
+      end
     end
 
     def destroy
-      hwaddr = @server.config_item("lxc.network.0.hwaddr") if @server.defined?
+      if @server.defined?
+        hwaddr = @server.config_item("lxc.network.0.hwaddr")
+        @server.snapshot_list.each { |snapshot| @server.snapshot_destroy(snapshot.first) }
+      end
       @server.destroy
       deregister_from_dnsmasq(hwaddr)
     end
@@ -130,8 +201,6 @@ module DevLXC
 
     def destroy_image(type)
       case type
-      when :custom
-        DevLXC::Container.new("c-#{@server.name}").destroy
       when :unique
         DevLXC::Container.new("u-#{@server.name}").destroy
       end
@@ -142,15 +211,9 @@ module DevLXC
         puts "Using existing container '#{@server.name}'"
         return
       end
-      custom_image = DevLXC::Container.new("c-#{@server.name}")
       unique_image = DevLXC::Container.new("u-#{@server.name}")
       platform_image = DevLXC::Container.new(@platform_image_name)
-      if custom_image.defined?
-        puts "Cloning custom image '#{custom_image.name}' into container '#{@server.name}'"
-        custom_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
-        @server = DevLXC::Container.new(@server.name)
-        return
-      elsif unique_image.defined?
+      if unique_image.defined?
         puts "Cloning unique image '#{unique_image.name}' into container '#{@server.name}'"
         unique_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
         @server = DevLXC::Container.new(@server.name)

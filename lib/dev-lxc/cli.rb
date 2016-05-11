@@ -387,41 +387,61 @@ adhoc:
       print_elapsed_time(Time.now - start_time)
     end
 
-    desc "snapshot [SERVER_NAME_REGEX]", "Create a snapshot of servers"
+    desc "snapshot [SERVER_NAME_REGEX]", "Manage a cluster's snapshots"
+    option :comment, :aliases => "-c", :desc => "Add snapshot comment"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    option :force, :aliases => "-f", :type => :boolean, :desc => "Overwrite existing custom images"
+    option :destroy, :aliases => "-d", :desc => "Destroy snapshot - use ALL to destroy all snapshots"
+    option :list, :aliases => "-l", :type => :boolean, :desc => "List snapshots"
+    option :restore, :aliases => "-r", :desc => "Restore snapshots"
     def snapshot(server_name_regex=nil)
       start_time = Time.now
-      non_stopped_servers = Array.new
-      existing_custom_images = Array.new
-      match_server_name_regex(server_name_regex).each do |s|
-        non_stopped_servers << s.server.name if s.server.state != :stopped
-        existing_custom_images << s.server.name if LXC::Container.new("c-#{s.server.name}").defined?
+      servers = match_server_name_regex(server_name_regex)
+      if options[:list]
+        servers.each_with_index do |s, server_index|
+          puts s.name
+          s.snapshot_list.each do |snapname, snaptime, snap_comment|
+            printf "  |_ %s %s %s\n", snapname, snaptime, snap_comment
+          end
+          puts if server_index + 1 < servers.length
+        end
+        return
+      elsif options[:destroy]
+        snapname = options[:destroy] == 'destroy' ? "LAST" : options[:destroy]
+        servers.each { |s| s.snapshot_destroy(snapname); puts }
+      elsif options[:restore]
+        non_stopped_servers = Array.new
+        servers.each do |s|
+          non_stopped_servers << s.server.name if s.server.state != :stopped
+        end
+        unless non_stopped_servers.empty?
+          puts "ERROR: Aborting snapshot restore because the following servers are not stopped"
+          puts non_stopped_servers
+          exit 1
+        end
+        snapname = options[:restore] == 'restore' ? "LAST" : options[:restore]
+        servers.each { |s| s.snapshot_restore(snapname); puts }
+      else
+        non_stopped_servers = Array.new
+        servers.each do |s|
+          non_stopped_servers << s.server.name if s.server.state != :stopped
+        end
+        unless non_stopped_servers.empty?
+          puts "ERROR: Aborting snapshot because the following servers are not stopped"
+          puts non_stopped_servers
+          exit 1
+        end
+        servers.each { |s| s.snapshot(options[:comment]); puts }
       end
-      unless non_stopped_servers.empty?
-        puts "ERROR: Aborting snapshot because the following servers are not stopped"
-        puts non_stopped_servers
-        exit 1
-      end
-      unless existing_custom_images.empty? || options[:force]
-        puts "ERROR: The following servers already have a custom image"
-        puts "         Use the `--force` or `-f` option to overwrite existing custom images"
-        puts existing_custom_images
-        exit 1
-      end
-      match_server_name_regex(server_name_regex).each { |s| s.snapshot(options[:force]); puts }
       print_elapsed_time(Time.now - start_time)
     end
 
     desc "destroy [SERVER_NAME_REGEX]", "Destroy servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    option :custom, :aliases => "-c", :type => :boolean, :desc => "Also destroy the custom images"
     option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique images"
     def destroy(server_name_regex=nil)
       start_time = Time.now
       match_server_name_regex(server_name_regex).reverse_each do |s|
         s.destroy
-        s.destroy_image(:custom) if options[:custom]
         s.destroy_image(:unique) if options[:unique]
         puts
       end
