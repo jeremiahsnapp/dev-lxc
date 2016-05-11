@@ -10,19 +10,30 @@ module DevLXC::CLI
         hostnames = Array.new
         mounts = Array.new
         packages = Array.new
+        platform_image_names = Array.new
         ssh_keys = Array.new
 
+        platform_image_names << cluster_config['platform_image'] unless cluster_config['platform_image'].nil?
         mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
         ssh_keys.concat(cluster_config['ssh-keys']) unless cluster_config['ssh-keys'].nil?
 
         %w(chef-server analytics compliance supermarket adhoc).each do |server_type|
           unless cluster_config[server_type].nil?
+            platform_image_names << cluster_config[server_type]['platform_image'] unless cluster_config[server_type]['platform_image'].nil?
             hostnames << cluster_config[server_type]['api_fqdn'] unless cluster_config[server_type]['api_fqdn'].nil?
             hostnames << cluster_config[server_type]['analytics_fqdn'] unless cluster_config[server_type]['analytics_fqdn'].nil?
             hostnames.concat(cluster_config[server_type]['servers'].keys) unless cluster_config[server_type]['servers'].nil?
             mounts.concat(cluster_config[server_type]['mounts']) unless cluster_config[server_type]['mounts'].nil?
             packages.concat(cluster_config[server_type]['packages'].values) unless cluster_config[server_type]['packages'].nil?
             ssh_keys.concat(cluster_config[server_type]['ssh-keys']) unless cluster_config[server_type]['ssh-keys'].nil?
+          end
+        end
+        unless platform_image_names.empty?
+          platform_image_names.each do |platform_image_name|
+            unless ::DevLXC::Container.new(platform_image_name).defined?
+              puts "ERROR: Platform image #{platform_image_name} does not exist."
+              exit 1
+            end
           end
         end
         unless hostnames.empty?
