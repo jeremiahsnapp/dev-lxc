@@ -127,7 +127,7 @@ module DevLXC
       end
     end
 
-    def servers
+    def servers(server_name_regex=nil)
       chef_servers = Array.new
       chef_servers << Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config) if @chef_server_bootstrap_backend
       if @chef_server_topology == "tier"
@@ -152,7 +152,7 @@ module DevLXC
       servers << Server.new(@compliance_fqdn, 'compliance', @cluster_config) if @compliance_fqdn
       servers << Server.new(@supermarket_fqdn, 'supermarket', @cluster_config) if @supermarket_fqdn
       servers += adhoc_servers
-      servers
+      servers.select { |s| s.server.name =~ /#{server_name_regex}/ }
     end
 
     def chef_repo(force=false, pivotal=false)
