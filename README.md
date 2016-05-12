@@ -29,7 +29,7 @@ Its containers, standard init, networking and build process are designed to be s
 to what you would build if you follow the online installation documentation so the end
 result is a cluster that is relatively similar to a more traditionally built cluster.
 
-The Btrfs backed clones provide a quick clean slate which is helpful especially for
+The Btrfs backed snapshots provide a quick clean slate which is helpful especially for
 experimenting and troubleshooting. Or it can be used to build a customized cluster
 for demo purposes and be able to bring it up quickly and reliably.
 
@@ -270,17 +270,6 @@ knife ssl fetch
 knife client list
 ```
 
-#### Cheap cluster rebuilds
-
-Clones of the servers as they existed immediately after initial installation, configuration and
-test org and user creation are available so you can destroy the cluster and "rebuild" it within
-seconds effectively starting with a clean slate very easily.
-
-```
-dev-lxc destroy
-dev-lxc up
-```
-
 #### Stop and start the cluster
 
 ```
@@ -354,11 +343,10 @@ dev-lxc snapshot -d
 
 #### Destroy cluster
 
-Use the following command to destroy the cluster's servers and also destroy their unique
-images if you want to build them from scratch.
+Use the following command to destroy the cluster's servers.
 
 ```
-dev-lxc destroy -u
+dev-lxc destroy
 ```
 
 #### Use commands against specific servers
@@ -615,73 +603,27 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 	
     Use unique IP's from that range when configuring clusters.
 
-## Images
+## Platform Images
 
-One of the key things this tool uses is the concept of images.
+The container that is used as the platform image for a cluster's containers must exist before
+the cluster can be built. The cluster's containers are cloned from the platform image container.
 
-`dev-lxc` creates images with a "u-" prefix on the name to distinguish it as a "unique" image.
+Platform images are cloned using the btrfs filesystem to very quickly provide a lightweight duplicate
+of the image.
 
-Images are then cloned using the btrfs filesystem to very quickly provide a lightweight duplicate
-of the image. This clone is either used to build the next image in the build process or the final
-container that will actually be run.
+If you don't already have a container to use as a platform image then you can use the instructions in the
+[Create a dev-lxc Platform Image section](https://github.com/jeremiahsnapp/dev-lxc#create-a-dev-lxc-platform-image) to create one.
+This image provides the chosen OS platform and version (e.g. p-ubuntu-1404).
+A typical LXC container has minimal packages installed so `dev-lxc` makes sure that the
+same packages used in Chef's [bento boxes](https://github.com/opscode/bento) are
+installed to provide a more typical server environment.
+A few additional packages are also installed.
 
-There are four image categories.
+Platform images have openssh-server installed and running with unique SSH Host Keys.
 
-1. Platform Image
+Platform images have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
 
-    The container that is used as the platform image for a cluster's containers must exist before
-	the cluster can be built. The cluster's containers are cloned from the platform image container.
-
-    If you don't already have a container to use as a platform image then you can use the instructions in the
-	[Create a dev-lxc Platform Image section](https://github.com/jeremiahsnapp/dev-lxc#create-a-dev-lxc-platform-image) to create one.
-	This image provides the chosen OS platform and version (e.g. p-ubuntu-1404).
-	A typical LXC container has minimal packages installed so `dev-lxc` makes sure that the
-	same packages used in Chef's [bento boxes](https://github.com/opscode/bento) are
-	installed to provide a more typical server environment.
-	A few additional packages are also installed.
-
-    Platform images have openssh-server installed and running with unique SSH Host Keys.
-
-    Platform images have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
-
-    *Once this platform image is created there is rarely a need to delete it.*
-
-2. Unique Image
-
-    The unique image is the last to get created and is identified by the
-	"u-" prefix on the image name.
-
-    `DevLXC::Server#create` controls the creation of a unique image.
-
-    Each unique Chef server (e.g. standalone, backend or frontend) is created.
-
-    * The specified hostname is assigned.
-	* dnsmasq is configured to reserve the specified IP address for the image's MAC address.
-	* A DNS entry is created in dnsmasq if appropriate.
-	* All installed Chef packages are configured.
-	* Test users and orgs are created.
-	* The opscode-manage package is installed and configured if specified.
-
-    After each server is fully configured a clone of it is made resulting in the server's
-	unique image. These unique images make it very easy to quickly recreate
-	a Chef cluster from a clean starting point.
-
-### Destroying Images
-
-When using `dev-lxc destroy` to destroy servers you have the option to also destroy any or all of
-the four types of images associated with the servers.
-
-The following command will list the options available.
-
-```
-dev-lxc help destroy
-```
-
-Of course, you can also just use the standard LXC commands to destroy any container.
-
-```
-lxc-destroy -n [NAME]
-```
+*Once this platform image is created there is rarely a need to delete it.*
 
 ## Contributing
 

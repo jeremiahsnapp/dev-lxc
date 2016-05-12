@@ -437,14 +437,9 @@ adhoc:
 
     desc "destroy [SERVER_NAME_REGEX]", "Destroy servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique images"
     def destroy(server_name_regex=nil)
       start_time = Time.now
-      match_server_name_regex(server_name_regex).reverse_each do |s|
-        s.destroy
-        s.destroy_image(:unique) if options[:unique]
-        puts
-      end
+      match_server_name_regex(server_name_regex).reverse_each { |s| s.destroy; puts }
       print_elapsed_time(Time.now - start_time)
     end
 

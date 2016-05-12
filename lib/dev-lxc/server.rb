@@ -199,107 +199,92 @@ module DevLXC
       DevLXC.reload_dnsmasq
     end
 
-    def destroy_image(type)
-      case type
-      when :unique
-        DevLXC::Container.new("u-#{@server.name}").destroy
-      end
-    end
-
     def create
       if @server.defined?
         puts "Using existing container '#{@server.name}'"
         return
       end
-      unique_image = DevLXC::Container.new("u-#{@server.name}")
       platform_image = DevLXC::Container.new(@platform_image_name)
-      if unique_image.defined?
-        puts "Cloning unique image '#{unique_image.name}' into container '#{@server.name}'"
-        unique_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
-        @server = DevLXC::Container.new(@server.name)
-        return
-      else
-        puts "Creating container '#{@server.name}'"
-        if @chef_server_bootstrap_backend && ! DevLXC::Container.new(@chef_server_bootstrap_backend).defined?
-          if @server_type == 'supermarket' || (@server_type == 'chef-server' && @role == 'frontend')
-            puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
-            exit 1
-          end
-        end
-        puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
-        platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
-        @server = DevLXC::Container.new(@server.name)
-        puts "Deleting SSH Server Host Keys"
-        FileUtils.rm_f(Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
-        puts "Adding lxc.hook.post-stop hook"
-        @server.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
-        @server.save_config
-        hwaddr = @server.config_item("lxc.network.0.hwaddr")
-        if hwaddr.empty?
-          puts "ERROR: '#{@server.name}' needs to have an lxc.network.hwaddr entry"
+      puts "Creating container '#{@server.name}'"
+      if @chef_server_bootstrap_backend && ! DevLXC::Container.new(@chef_server_bootstrap_backend).defined?
+        if @server_type == 'supermarket' || (@server_type == 'chef-server' && @role == 'frontend')
+          puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
           exit 1
         end
-        DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
-        unless @role == 'backend'
-          case @server_type
-          when 'analytics'
-            DevLXC.create_dns_record(@analytics_fqdn, @server.name, @ipaddress)
-          when 'chef-server'
-            DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress)
-          when 'compliance'
-            DevLXC.create_dns_record(@compliance_fqdn, @server.name, @ipaddress)
-          when 'supermarket'
-            DevLXC.create_dns_record(@supermarket_fqdn, @server.name, @ipaddress)
-          end
-        end
-        @server.sync_mounts(@mounts)
-        # if platform image is centos then `/etc/hosts` file needs to be modified so `hostname -f`
-        # provides the FQDN instead of `localhost`
-        if @platform_image_name.start_with?('p-centos-')
-          IO.write("#{@server.config_item('lxc.rootfs')}/etc/hosts", "127.0.0.1 localhost\n127.0.1.1 #{@server.name}\n")
-        end
-        @server.start
-        # Allow adhoc servers time to generate SSH Server Host Keys
-        sleep 5 if @server_type == 'adhoc'
+      end
+      puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
+      platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
+      @server = DevLXC::Container.new(@server.name)
+      puts "Deleting SSH Server Host Keys"
+      FileUtils.rm_f(Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
+      puts "Adding lxc.hook.post-stop hook"
+      @server.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
+      @server.save_config
+      hwaddr = @server.config_item("lxc.network.0.hwaddr")
+      if hwaddr.empty?
+        puts "ERROR: '#{@server.name}' needs to have an lxc.network.hwaddr entry"
+        exit 1
+      end
+      DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
+      unless @role == 'backend'
         case @server_type
         when 'analytics'
-          unless @packages["analytics"].nil?
-            @server.install_package(@packages["analytics"])
-            configure_analytics
-          end
+          DevLXC.create_dns_record(@analytics_fqdn, @server.name, @ipaddress)
         when 'chef-server'
-          unless @packages["server"].nil?
-            @server.install_package(@packages["server"])
-            configure_server
-            create_users if @server.name == @chef_server_bootstrap_backend
-            unless @role == 'open-source'
-              unless @packages["reporting"].nil?
-                @server.install_package(@packages["reporting"])
-                configure_reporting
-              end
-              unless @packages["push-jobs-server"].nil?
-                @server.install_package(@packages["push-jobs-server"])
-                configure_push_jobs_server
-              end
-              unless @packages["manage"].nil?
-                if %w(standalone frontend).include?(@role)
-                  @server.install_package(@packages["manage"])
-                  configure_manage
-                end
+          DevLXC.create_dns_record(@api_fqdn, @server.name, @ipaddress)
+        when 'compliance'
+          DevLXC.create_dns_record(@compliance_fqdn, @server.name, @ipaddress)
+        when 'supermarket'
+          DevLXC.create_dns_record(@supermarket_fqdn, @server.name, @ipaddress)
+        end
+      end
+      @server.sync_mounts(@mounts)
+      # if platform image is centos then `/etc/hosts` file needs to be modified so `hostname -f`
+      # provides the FQDN instead of `localhost`
+      if @platform_image_name.start_with?('p-centos-')
+        IO.write("#{@server.config_item('lxc.rootfs')}/etc/hosts", "127.0.0.1 localhost\n127.0.1.1 #{@server.name}\n")
+      end
+      @server.start
+      # Allow adhoc servers time to generate SSH Server Host Keys
+      sleep 5 if @server_type == 'adhoc'
+      case @server_type
+      when 'analytics'
+        unless @packages["analytics"].nil?
+          @server.install_package(@packages["analytics"])
+          configure_analytics
+        end
+      when 'chef-server'
+        unless @packages["server"].nil?
+          @server.install_package(@packages["server"])
+          configure_server
+          create_users if @server.name == @chef_server_bootstrap_backend
+          unless @role == 'open-source'
+            unless @packages["reporting"].nil?
+              @server.install_package(@packages["reporting"])
+              configure_reporting
+            end
+            unless @packages["push-jobs-server"].nil?
+              @server.install_package(@packages["push-jobs-server"])
+              configure_push_jobs_server
+            end
+            unless @packages["manage"].nil?
+              if %w(standalone frontend).include?(@role)
+                @server.install_package(@packages["manage"])
+                configure_manage
               end
             end
           end
-        when 'compliance'
-          @server.install_package(@packages["compliance"]) unless @packages["compliance"].nil?
-          configure_compliance
-        when 'supermarket'
-          @server.install_package(@packages["supermarket"]) unless @packages["supermarket"].nil?
-          configure_supermarket
         end
-        @server.stop
-        puts "Cloning container '#{@server.name}' into unique image '#{unique_image.name}'"
-        @server.clone("#{unique_image.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
+      when 'compliance'
+        @server.install_package(@packages["compliance"]) unless @packages["compliance"].nil?
+        configure_compliance
+      when 'supermarket'
+        @server.install_package(@packages["supermarket"]) unless @packages["supermarket"].nil?
+        configure_supermarket
       end
+      @server.stop
+      puts "Creating snapshot of container '#{@server.name}'"
+      @server.snapshot
     end
 
     def configure_server
