@@ -169,7 +169,7 @@ module DevLXC
       puts "Creating chef-repo with pem files and knife.rb in the current directory"
       FileUtils.mkdir_p("./chef-repo/.chef")
 
-      pem_files = Dir.glob("#{chef_server.realpath('/root/chef-repo/.chef')}/*.pem")
+      pem_files = Dir.glob("#{chef_server.config_item('lxc.rootfs')}/root/chef-repo/.chef/*.pem")
       if pem_files.empty?
         puts "The pem files can not be copied because they do not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
       else
@@ -189,7 +189,7 @@ module DevLXC
           if File.exists?("./chef-repo/.chef/pivotal.rb") && ! force
             puts "Skipping pivotal.rb because it already exists in `./chef-repo/.chef`"
           else
-            pivotal_rb_path = "#{chef_server.realpath('/root/chef-repo/.chef')}/pivotal.rb"
+            pivotal_rb_path = "#{chef_server.config_item('lxc.rootfs')}/root/chef-repo/.chef/pivotal.rb"
             if File.exists?(pivotal_rb_path)
               pivotal_rb = IO.read(pivotal_rb_path)
               pivotal_rb.sub!(/^chef_server_root .*/, "chef_server_root \"#{chef_server_root}\"")
@@ -205,7 +205,7 @@ module DevLXC
       if File.exists?("./chef-repo/.chef/knife.rb") && ! force
         puts "Skipping knife.rb because it already exists in `./chef-repo/.chef`"
       else
-        knife_rb_path = "#{chef_server.realpath('/root/chef-repo/.chef')}/knife.rb"
+        knife_rb_path = "#{chef_server.config_item('lxc.rootfs')}/root/chef-repo/.chef/knife.rb"
         if File.exists?(knife_rb_path)
           knife_rb = IO.read(knife_rb_path)
           knife_rb.sub!(/^chef_server_url .*/, "chef_server_url \"#{chef_server_url}\"")
