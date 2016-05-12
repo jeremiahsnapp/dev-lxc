@@ -4,7 +4,7 @@ require "dev-lxc/cluster"
 
 module DevLXC
   class Server
-    attr_reader :server, :platform_image_name
+    attr_reader :server, :base_container_name
 
     def initialize(name, server_type, cluster_config)
       unless cluster_config[server_type]["servers"].keys.include?(name)
@@ -32,8 +32,8 @@ module DevLXC
       @mounts ||= cluster_config["mounts"]
       @ssh_keys = cluster_config[@server_type]["ssh-keys"]
       @ssh_keys ||= cluster_config["ssh-keys"]
-      @platform_image_name = cluster_config[@server_type]["platform_image"]
-      @platform_image_name ||= cluster_config["platform_image"]
+      @base_container_name = cluster_config[@server_type]["base_container"]
+      @base_container_name ||= cluster_config["base_container"]
       @packages = cluster_config[@server_type]["packages"]
 
       if @server_type == 'chef-server'
@@ -207,9 +207,9 @@ module DevLXC
           exit 1
         end
       end
-      platform_image = DevLXC::Container.new(@platform_image_name)
-      puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
-      platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
+      base_container = DevLXC::Container.new(@base_container_name)
+      puts "Cloning base container '#{base_container.name}' into container '#{@server.name}'"
+      base_container.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
       @server = DevLXC::Container.new(@server.name)
       puts "Deleting SSH Server Host Keys"
       FileUtils.rm_f(Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
@@ -235,9 +235,9 @@ module DevLXC
         end
       end
       @server.sync_mounts(@mounts)
-      # if platform image is centos then `/etc/hosts` file needs to be modified so `hostname -f`
+      # if base container is centos then `/etc/hosts` file needs to be modified so `hostname -f`
       # provides the FQDN instead of `localhost`
-      if @platform_image_name.start_with?('p-centos-')
+      if @base_container_name.start_with?('b-centos-')
         IO.write("#{@server.config_item('lxc.rootfs')}/etc/hosts", "127.0.0.1 localhost\n127.0.1.1 #{@server.name}\n")
       end
       @server.start

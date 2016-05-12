@@ -6,87 +6,87 @@ require "dev-lxc/server"
 require "dev-lxc/cluster"
 
 module DevLXC
-  def self.create_platform_image(platform_image_name, platform_image_options)
-    platform_image = DevLXC::Container.new(platform_image_name)
-    if platform_image.defined?
-      puts "Using existing platform image '#{platform_image.name}'"
-      return platform_image
+  def self.create_base_container(base_container_name, base_container_options)
+    base_container = DevLXC::Container.new(base_container_name)
+    if base_container.defined?
+      puts "Using existing base container '#{base_container.name}'"
+      return base_container
     end
-    puts "Creating platform image '#{platform_image.name}'"
+    puts "Creating base container '#{base_container.name}'"
     template = "download"
-    case platform_image.name
-    when "p-ubuntu-1204"
+    case base_container.name
+    when "b-ubuntu-1204"
       options = ["-d", "ubuntu", "-r", "precise", "-a", "amd64"]
-    when "p-ubuntu-1404"
+    when "b-ubuntu-1404"
       options = ["-d", "ubuntu", "-r", "trusty", "-a", "amd64"]
-    when "p-ubuntu-1604"
+    when "b-ubuntu-1604"
       options = ["-d", "ubuntu", "-r", "xenial", "-a", "amd64"]
-    when "p-centos-5"
+    when "b-centos-5"
       template = "centos"
       options = ["-R", "5"]
-    when "p-centos-6"
+    when "b-centos-6"
       options = ["-d", "centos", "-r", "6", "-a", "amd64"]
-    when "p-centos-7"
+    when "b-centos-7"
       options = ["-d", "centos", "-r", "7", "-a", "amd64"]
     end
-    options.concat(platform_image_options.split) unless platform_image_options.nil?
-    platform_image.create(template, "btrfs", {}, 0, options)
-    if platform_image.name == "p-centos-7"
+    options.concat(base_container_options.split) unless base_container_options.nil?
+    base_container.create(template, "btrfs", {}, 0, options)
+    if base_container.name == "b-centos-7"
       # Centos 7 needs setpcap capabilities
       # ref: https://bugzilla.redhat.com/show_bug.cgi?id=1176816
       # ref: https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1339781
       # ref: http://vfamilyserver.org/blog/2015/05/centos-7-lxc-container-slow-boot/
-      DevLXC.search_file_replace(platform_image.config_file_name, /centos.common.conf/, 'fedora.common.conf')
-      platform_image.clear_config
-      platform_image.load_config
+      DevLXC.search_file_replace(base_container.config_file_name, /centos.common.conf/, 'fedora.common.conf')
+      base_container.clear_config
+      base_container.load_config
     end
-    unless platform_image.config_item("lxc.mount.auto").nil?
-      platform_image.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
+    unless base_container.config_item("lxc.mount.auto").nil?
+      base_container.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
     end
-    if platform_image.config_item("lxc.network.0.hwaddr").nil?
+    if base_container.config_item("lxc.network.0.hwaddr").nil?
       hwaddr = '00:16:3e:' + Digest::SHA1.hexdigest(Time.now.to_s).slice(0..5).unpack('a2a2a2').join(':')
-      puts "Setting '#{platform_image.name}' platform image's lxc.network.hwaddr to #{hwaddr}"
-      platform_image.set_config_item("lxc.network.hwaddr", hwaddr)
+      puts "Setting '#{base_container.name}' base container's lxc.network.hwaddr to #{hwaddr}"
+      base_container.set_config_item("lxc.network.hwaddr", hwaddr)
     end
-    platform_image.save_config
-    platform_image.start
-    puts "Installing packages in platform image '#{platform_image.name}'"
-    case platform_image.name
-    when "p-ubuntu-1204", "p-ubuntu-1404"
-      platform_image.run_command("apt-get update")
-      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree openssh-server")
-      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
-      FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
-    when "p-ubuntu-1604"
-      platform_image.run_command("apt-get update")
-      platform_image.run_command("apt-get install -y standard^ server^ vim-nox emacs24-nox tree openssh-server")
-      IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
-      FileUtils.chmod(0755, "#{platform_image.config_item('lxc.rootfs')}/etc/rc.local")
-    when "p-centos-5"
+    base_container.save_config
+    base_container.start
+    puts "Installing packages in base container '#{base_container.name}'"
+    case base_container.name
+    when "b-ubuntu-1204", "b-ubuntu-1404"
+      base_container.run_command("apt-get update")
+      base_container.run_command("apt-get install -y standard^ server^ vim-nox emacs23-nox tree openssh-server")
+      IO.write("#{base_container.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
+      FileUtils.chmod(0755, "#{base_container.config_item('lxc.rootfs')}/etc/rc.local")
+    when "b-ubuntu-1604"
+      base_container.run_command("apt-get update")
+      base_container.run_command("apt-get install -y standard^ server^ vim-nox emacs24-nox tree openssh-server")
+      IO.write("#{base_container.config_item('lxc.rootfs')}/etc/rc.local", "#!/usr/bin/env bash\n\n/usr/sbin/dpkg-reconfigure openssh-server\n")
+      FileUtils.chmod(0755, "#{base_container.config_item('lxc.rootfs')}/etc/rc.local")
+    when "b-centos-5"
       # downgrade openssl temporarily to overcome an install bug
       # reference: http://www.hack.net.br/blog/2014/02/12/openssl-conflicts-with-file-from-package-openssl/
-      platform_image.run_command("yum downgrade -y openssl")
-      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
-      FileUtils.mkdir_p("#{platform_image.config_item('lxc.rootfs')}/etc/sudoers.d")
-      FileUtils.chmod(0750, "#{platform_image.config_item('lxc.rootfs')}/etc/sudoers.d")
-      append_line_to_file("#{platform_image.config_item('lxc.rootfs')}/etc/sudoers", "\n#includedir /etc/sudoers.d\n")
-    when "p-centos-6"
-      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
-    when "p-centos-7"
-      platform_image.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
+      base_container.run_command("yum downgrade -y openssl")
+      base_container.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
+      FileUtils.mkdir_p("#{base_container.config_item('lxc.rootfs')}/etc/sudoers.d")
+      FileUtils.chmod(0750, "#{base_container.config_item('lxc.rootfs')}/etc/sudoers.d")
+      append_line_to_file("#{base_container.config_item('lxc.rootfs')}/etc/sudoers", "\n#includedir /etc/sudoers.d\n")
+    when "b-centos-6"
+      base_container.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
+    when "b-centos-7"
+      base_container.run_command("yum install -y @base @core vim-enhanced emacs-nox tree openssh-server")
     end
-    platform_image.run_command("useradd --create-home --shell /bin/bash --password $6$q3FDMpMZ$zfahCxEWHbzuEV98QPzhGZ7fLtGcLNZrbKK7OAYGXmJXZc07WbcxVnDwrMyX/cL6vSp4/IjlrVUZFBp7Orhyu1 dev-lxc")
+    base_container.run_command("useradd --create-home --shell /bin/bash --password $6$q3FDMpMZ$zfahCxEWHbzuEV98QPzhGZ7fLtGcLNZrbKK7OAYGXmJXZc07WbcxVnDwrMyX/cL6vSp4/IjlrVUZFBp7Orhyu1 dev-lxc")
 
-    FileUtils.mkdir_p("#{platform_image.config_item('lxc.rootfs')}/home/dev-lxc/.ssh")
-    FileUtils.chmod(0700, "#{platform_image.config_item('lxc.rootfs')}/home/dev-lxc/.ssh")
-    FileUtils.touch("#{platform_image.config_item('lxc.rootfs')}/home/dev-lxc/.ssh/authorized_keys")
-    FileUtils.chmod(0600, "#{platform_image.config_item('lxc.rootfs')}/home/dev-lxc/.ssh/authorized_keys")
-    platform_image.run_command("chown -R dev-lxc:dev-lxc /home/dev-lxc/.ssh")
+    FileUtils.mkdir_p("#{base_container.config_item('lxc.rootfs')}/home/dev-lxc/.ssh")
+    FileUtils.chmod(0700, "#{base_container.config_item('lxc.rootfs')}/home/dev-lxc/.ssh")
+    FileUtils.touch("#{base_container.config_item('lxc.rootfs')}/home/dev-lxc/.ssh/authorized_keys")
+    FileUtils.chmod(0600, "#{base_container.config_item('lxc.rootfs')}/home/dev-lxc/.ssh/authorized_keys")
+    base_container.run_command("chown -R dev-lxc:dev-lxc /home/dev-lxc/.ssh")
 
-    IO.write("#{platform_image.config_item('lxc.rootfs')}/etc/sudoers.d/dev-lxc", "dev-lxc   ALL=NOPASSWD:ALL\n")
-    FileUtils.chmod(0440, "#{platform_image.config_item('lxc.rootfs')}/etc/sudoers.d/dev-lxc")
-    platform_image.stop
-    return platform_image
+    IO.write("#{base_container.config_item('lxc.rootfs')}/etc/sudoers.d/dev-lxc", "dev-lxc   ALL=NOPASSWD:ALL\n")
+    FileUtils.chmod(0440, "#{base_container.config_item('lxc.rootfs')}/etc/sudoers.d/dev-lxc")
+    base_container.stop
+    return base_container
   end
 
   def self.assign_ip_address(ipaddress, container_name, hwaddr)

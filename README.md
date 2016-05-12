@@ -17,7 +17,7 @@ for demo purposes, as well as general experimentation and exploration of Chef pr
 1. LXC 1.0 Containers - Resource efficient servers with fast start/stop times and standard init
 2. Btrfs - Efficient, persistent storage backend provides fast, lightweight container cloning
 3. Dnsmasq - DHCP networking and DNS resolution
-4. Platform Images - Images that are built to resemble a traditional server
+4. Base Containers - Containers that are built to resemble a traditional server
 5. ruby-lxc - Ruby bindings for liblxc
 6. YAML - Simple, customizable definition of clusters; No more setting ENV variables
 7. Build process closely follows online installation documentation
@@ -143,35 +143,35 @@ appropriately.
 dev-lxc init --tiered-chef --analytics > dev-lxc.yml
 ```
 
-Be sure to set `platform_image` in the `dev-lxc.yml` to an existing container's name.  
+Be sure to set `base_container` in the `dev-lxc.yml` to an existing container's name.  
 This container will be cloned to create each container in the cluster.  
-If you don't already have a container to use as a `platform_image` then you can follow the instructions in the  
-[Create a dev-lxc Platform Image section](https://github.com/jeremiahsnapp/dev-lxc#create-a-dev-lxc-platform-image) to create one.
+If you don't already have a container to use as a `base_container` then you can follow the instructions in the  
+[Create a dev-lxc Base Container section](https://github.com/jeremiahsnapp/dev-lxc#create-a-dev-lxc-base-container) to create one.
 
-#### Create a dev-lxc Platform Image
+#### Create a dev-lxc Base Container
 
-dev-lxc is able to create platform images that have openssh-server installed and running with unique SSH Host Keys.
+dev-lxc is able to create base containers that have openssh-server installed and running with unique SSH Host Keys.
 
-dev-lxc platform images have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
+dev-lxc base containers have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
 
-You can see a menu of platform images that `dev-lxc` can create by using the following command.
+You can see a menu of base containers that `dev-lxc` can create by using the following command.
 
 ```
 dev-lxc create
 ```
 
-The initial creation of platform images can take awhile so let's go ahead and start creating
-an Ubuntu 14.04 image now.
+The initial creation of base containers can take awhile so let's go ahead and start creating
+an Ubuntu 14.04 container now.
 
 ```
-dev-lxc create p-ubuntu-1404
+dev-lxc create b-ubuntu-1404
 ```
 
 Note: It is possible to pass additional arguments to the underlying LXC create command.
 For example:
 
 ```
-dev-lxc create p-ubuntu-1404 -o -- '--no-validate --keyserver http://my.key.server.com'
+dev-lxc create b-ubuntu-1404 -o -- '--no-validate --keyserver http://my.key.server.com'
 ```
 
 #### Cluster status
@@ -364,8 +364,8 @@ dev-lxc up chef
 
 dev-lxc can also manage an adhoc cluster of servers.
 
-An adhoc cluster is just a set of managed servers cloned from the specified platform
-image. The servers have SSH server running, a "dev-lxc" user with "dev-lxc" password and
+An adhoc cluster is just a set of managed servers cloned from the specified base
+container. The servers have SSH server running, a "dev-lxc" user with "dev-lxc" password and
 passwordless sudo access.
 
 This is particularly useful when you want to use something else, such as chef-provisioning,
@@ -479,8 +479,8 @@ dev-lxc init
 `dev-lxc init --tiered-chef --analytics > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
 
 ```
-# platform_image must be the name of an existing container
-platform_image: p-ubuntu-1404
+# base_container must be the name of an existing container
+base_container: b-ubuntu-1404
 
 # list any host directories you want mounted into the servers
 mounts:
@@ -524,7 +524,7 @@ frontend then both frontends will be created and dnsmasq will resolve the `api_f
 [chef.lxc](chef.lxc) to both frontends using a round-robin policy.
 
 The config file is very customizable. You can add or remove mounts, packages or servers,
-change ip addresses, change server names, change the platform_image and more.
+change ip addresses, change server names, change the base_container and more.
 
 The `mounts` list describes what directories get mounted from the Vagrant VM platform into
 each container. You need to make sure that you configure the mount entries to be
@@ -590,27 +590,27 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 	
     Use unique IP's from that range when configuring clusters.
 
-## Platform Images
+## Base Containers
 
-The container that is used as the platform image for a cluster's containers must exist before
-the cluster can be built. The cluster's containers are cloned from the platform image container.
+The container that is used as the base container for a cluster's containers must exist before
+the cluster can be built. The cluster's containers are cloned from the base container.
 
-Platform images are cloned using the btrfs filesystem to very quickly provide a lightweight duplicate
-of the image.
+Base containers are cloned using the btrfs filesystem to very quickly provide a lightweight duplicate
+of the container.
 
-If you don't already have a container to use as a platform image then you can use the instructions in the
-[Create a dev-lxc Platform Image section](https://github.com/jeremiahsnapp/dev-lxc#create-a-dev-lxc-platform-image) to create one.
-This image provides the chosen OS platform and version (e.g. p-ubuntu-1404).
+If you don't already have a container to use as a base container then you can use the instructions in the
+[Create a dev-lxc Base Container section](https://github.com/jeremiahsnapp/dev-lxc#create-a-dev-lxc-base-container) to create one.
+This container provides the chosen OS platform and version (e.g. b-ubuntu-1404).
 A typical LXC container has minimal packages installed so `dev-lxc` makes sure that the
 same packages used in Chef's [bento boxes](https://github.com/opscode/bento) are
 installed to provide a more typical server environment.
 A few additional packages are also installed.
 
-Platform images have openssh-server installed and running with unique SSH Host Keys.
+Base containers have openssh-server installed and running with unique SSH Host Keys.
 
-Platform images have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
+Base containers have a "dev-lxc" user with "dev-lxc" password and passwordless sudo.
 
-*Once this platform image is created there is rarely a need to delete it.*
+*Once this base container is created there is rarely a need to delete it.*
 
 ## Contributing
 

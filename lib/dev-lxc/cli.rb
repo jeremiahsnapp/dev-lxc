@@ -10,16 +10,16 @@ module DevLXC::CLI
         hostnames = Array.new
         mounts = Array.new
         packages = Array.new
-        platform_image_names = Array.new
+        base_container_names = Array.new
         ssh_keys = Array.new
 
-        platform_image_names << cluster_config['platform_image'] unless cluster_config['platform_image'].nil?
+        base_container_names << cluster_config['base_container'] unless cluster_config['base_container'].nil?
         mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
         ssh_keys.concat(cluster_config['ssh-keys']) unless cluster_config['ssh-keys'].nil?
 
         %w(chef-server analytics compliance supermarket adhoc).each do |server_type|
           unless cluster_config[server_type].nil?
-            platform_image_names << cluster_config[server_type]['platform_image'] unless cluster_config[server_type]['platform_image'].nil?
+            base_container_names << cluster_config[server_type]['base_container'] unless cluster_config[server_type]['base_container'].nil?
             hostnames << cluster_config[server_type]['api_fqdn'] unless cluster_config[server_type]['api_fqdn'].nil?
             hostnames << cluster_config[server_type]['analytics_fqdn'] unless cluster_config[server_type]['analytics_fqdn'].nil?
             hostnames.concat(cluster_config[server_type]['servers'].keys) unless cluster_config[server_type]['servers'].nil?
@@ -28,10 +28,10 @@ module DevLXC::CLI
             ssh_keys.concat(cluster_config[server_type]['ssh-keys']) unless cluster_config[server_type]['ssh-keys'].nil?
           end
         end
-        unless platform_image_names.empty?
-          platform_image_names.each do |platform_image_name|
-            unless ::DevLXC::Container.new(platform_image_name).defined?
-              puts "ERROR: Platform image #{platform_image_name} does not exist."
+        unless base_container_names.empty?
+          base_container_names.each do |base_container_name|
+            unless ::DevLXC::Container.new(base_container_name).defined?
+              puts "ERROR: Base container #{base_container_name} does not exist."
               exit 1
             end
           end
@@ -91,18 +91,18 @@ module DevLXC::CLI
       end
     }
 
-    desc "create [PLATFORM_IMAGE_NAME]", "Create a platform image"
+    desc "create [BASE_CONTAINER_NAME]", "Create a base container"
     option :options, :aliases => "-o", :desc => "Specify additional options for the lxc create"
-    def create(platform_image_name=nil)
+    def create(base_container_name=nil)
       start_time = Time.now
-      platform_image_names = %w(p-ubuntu-1204 p-ubuntu-1404 p-ubuntu-1604 p-centos-5 p-centos-6 p-centos-7)
-      if platform_image_name.nil? || ! platform_image_names.include?(platform_image_name)
-        platform_image_names_with_index = platform_image_names.map.with_index{ |a, i| [i+1, *a]}
-        print_table platform_image_names_with_index
-        selection = ask("Which platform image do you want to create?", :limited_to => platform_image_names_with_index.map{|c| c[0].to_s})
-        platform_image_name = platform_image_names[selection.to_i - 1]
+      base_container_names = %w(b-ubuntu-1204 b-ubuntu-1404 b-ubuntu-1604 b-centos-5 b-centos-6 b-centos-7)
+      if base_container_name.nil? || ! base_container_names.include?(base_container_name)
+        base_container_names_with_index = base_container_names.map.with_index{ |a, i| [i+1, *a]}
+        print_table base_container_names_with_index
+        selection = ask("Which base container do you want to create?", :limited_to => base_container_names_with_index.map{|c| c[0].to_s})
+        base_container_name = base_container_names[selection.to_i - 1]
       end
-      ::DevLXC.create_platform_image(platform_image_name, options[:options])
+      ::DevLXC.create_base_container(base_container_name, options[:options])
       puts
       print_elapsed_time(Time.now - start_time)
     end
@@ -188,8 +188,8 @@ module DevLXC::CLI
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
     def init
-      header = %Q(# platform_image must be the name of an existing container
-platform_image: p-ubuntu-1404
+      header = %Q(# base_container must be the name of an existing container
+base_container: b-ubuntu-1404
 
 # list any host directories you want mounted into the servers
 mounts:
