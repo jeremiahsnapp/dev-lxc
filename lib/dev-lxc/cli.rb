@@ -179,7 +179,7 @@ module DevLXC::CLI
       print_elapsed_time(Time.now - start_time)
     end
 
-    desc "init [UNIQUE_STRING]", "Provide a cluster config file with optional uniqueness in server names and FQDNs"
+    desc "init", "Provide a cluster config file"
     option :open_source, :type => :boolean, :desc => "Standalone Old Open Source Chef Server"
     option :tiered_chef, :type => :boolean, :desc => "Tiered Chef Server"
     option :chef, :type => :boolean, :desc => "Standalone Chef Server"
@@ -187,19 +187,19 @@ module DevLXC::CLI
     option :compliance, :type => :boolean, :desc => "Compliance Server"
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
-    def init(unique_string=nil)
-      header = %Q(## platform_image must be the name of an existing container
+    def init
+      header = %Q(# platform_image must be the name of an existing container
 platform_image: p-ubuntu-1404
 
-## list any host directories you want mounted into the servers
+# list any host directories you want mounted into the servers
 mounts:
   - /root/dev root/dev
 
-## list any SSH public keys you want added to /home/dev-lxc/.ssh/authorized_keys
+# list any SSH public keys you want added to /home/dev-lxc/.ssh/authorized_keys
 #ssh-keys:
 #  - /root/dev/clusters/id_rsa.pub
 
-## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
+# DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 )
 
       chef_packages_path = "/root/dev/chef-packages"
@@ -289,18 +289,6 @@ adhoc:
       config += compliance_config if options[:compliance]
       config += supermarket_config if options[:supermarket]
       config += adhoc_config if options[:adhoc]
-      unless unique_string.nil?
-        config_hash = YAML.load(config.gsub(/^#/, ''))
-        config.gsub!(/api_fqdn:\s+#{config_hash['api_fqdn']}/, "api_fqdn: #{unique_string}#{config_hash['api_fqdn']}")
-        config.gsub!(/analytics_fqdn:\s+#{config_hash['analytics_fqdn']}/, "analytics_fqdn: #{unique_string}#{config_hash['analytics_fqdn']}")
-        %w(chef-server analytics compliance supermarket adhoc).each do |server_type|
-          if config_hash[server_type]
-            config_hash[server_type]['servers'].keys.each do |server_name|
-              config.gsub!(/ #{server_name}:/, " #{unique_string}#{server_name}:")
-            end
-          end
-        end
-      end
       puts config
     end
 

@@ -479,18 +479,18 @@ dev-lxc init
 `dev-lxc init --tiered-chef --analytics > dev-lxc.yml` creates a `dev-lxc.yml` file with the following content:
 
 ```
-## platform_image must be the name of an existing container
+# platform_image must be the name of an existing container
 platform_image: p-ubuntu-1404
 
-## list any host directories you want mounted into the servers
+# list any host directories you want mounted into the servers
 mounts:
   - /root/dev root/dev
 
-## list any SSH public keys you want added to /home/dev-lxc/.ssh/authorized_keys
+# list any SSH public keys you want added to /home/dev-lxc/.ssh/authorized_keys
 #ssh-keys:
 #  - /root/dev/clusters/id_rsa.pub
 
-## DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
+# DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 
 chef-server:
   packages:
@@ -576,12 +576,6 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 
     If cluster B is started with the same `api_fqdn` or `analytics_fqdn` as an already running cluster A,
 	then cluster B will overwrite cluster A's DNS resolution of `api_fqdn` or `analytics_fqdn`.
-
-    It is easy to provide uniqueness in the server names, `api_fqdn` and `analytics_fqdn`.
-	For example, you can use the following command to prefix the servers names with `1234-` when
-	generating a cluster's config.
-
-        dev-lxc init --tiered-chef 1234- > dev-lxc.yml
 
 * IP Addresses
 
