@@ -425,9 +425,21 @@ adhoc:
 
     desc "destroy [SERVER_NAME_REGEX]", "Destroy servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :force, :aliases => "-f", :type => :boolean, :desc => "Destroy servers without confirmation"
     def destroy(server_name_regex=nil)
+      servers = match_server_name_regex(server_name_regex)
+      if servers.empty?
+        puts "No matching server names were found"
+        exit
+      end
+      unless options[:force]
+        confirmation_string = String.new
+        servers.reverse_each { |s| confirmation_string += "#{s.server.name}\n" }
+        confirmation_string += "Are you sure you want to destroy these servers? (y/N)\n"
+        return unless yes?(confirmation_string)
+      end
       start_time = Time.now
-      match_server_name_regex(server_name_regex).reverse_each { |s| s.destroy; puts }
+      servers.reverse_each { |s| s.destroy; puts }
       print_elapsed_time(Time.now - start_time)
     end
 
