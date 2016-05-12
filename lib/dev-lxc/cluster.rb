@@ -97,7 +97,7 @@ module DevLXC
       end
       chef_server = Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config)
       if ! chef_server.server.defined?
-        puts "ERROR: The '#{chef_server.server.name}' Chef Server does not exist. Please create it first."
+        puts "ERROR: The '#{chef_server.server.name}' Chef Server does not exist."
         exit 1
       end
 

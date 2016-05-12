@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = DevLXC::VERSION
   spec.authors       = ["Jeremiah Snapp"]
   spec.email         = ["jeremiah@getchef.com"]
-  spec.description   = %q{A tool for creating Chef server clusters using LXC containers}
+  spec.description   = %q{A tool for building Chef server clusters using LXC containers}
   spec.summary       = spec.description
   spec.licenses	     = "Apache2"
   spec.homepage      = "https://github.com/jeremiahsnapp/dev-lxc"

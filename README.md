@@ -1,11 +1,10 @@
 # dev-lxc
 
-A tool for creating Chef Server clusters and Chef Analytics clusters using LXC containers.
+A tool for building Chef Server clusters and Chef Analytics clusters using LXC containers.
 
-Using [ruby-lxc](https://github.com/lxc/ruby-lxc) it builds a standalone Chef Server or
-tier Chef Server cluster composed of a backend and multiple frontends with round-robin
-DNS resolution. It can also build a standalone or tier Chef Analytics server and connect
-it with the Chef Server.
+Using [ruby-lxc](https://github.com/lxc/ruby-lxc) it builds servers and optionally installs and
+configures many Chef products including a standalone Chef Server or tier Chef Server cluster
+composed of a backend and multiple frontends with round-robin DNS resolution.
 
 dev-lxc also has commands to manipulate Chef node containers. For example, dev-lxc can bootstrap a
 container by installing Chef Client, configuring it for a Chef Server and running a specified run_list.
@@ -22,7 +21,7 @@ for demo purposes, as well as general experimentation and exploration of Chef pr
 5. ruby-lxc - Ruby bindings for liblxc
 6. YAML - Simple, customizable definition of clusters; No more setting ENV variables
 7. Build process closely follows online installation documentation
-8. Images - Images are created during the cluster's build process which makes rebuilding
+8. Snapshots - Snapshots are created during the cluster's build process which makes rebuilding
    a cluster very fast.
 
 Its containers, standard init, networking and build process are designed to be similar
@@ -125,7 +124,7 @@ dev-lxc destroy
 dl d
 ```
 
-### Create and Manage a Cluster
+### Build and Manage a Cluster
 
 The following instructions will build a tier Chef Server with an Analytics server
 for demonstration purposes.
@@ -235,9 +234,6 @@ Use the keyboard shortcuts Alt-Up/Down to easily switch between tmux/byobu sessi
 #### Start cluster
 
 Starting the cluster the first time takes awhile since it has a lot to build.
-
-The tool automatically creates images at appropriate times so future creation of the
-cluster's servers is very quick.
 
 ```
 dev-lxc up
@@ -377,9 +373,6 @@ to configure the servers.
 
 The number of servers, their names and their IP addresses can be changed to fit your
 particular requirements.
-
-The "adhoc" template provides an example cluster configuration suitable for creating a
-Chef Delivery cluster.
 
 ```
 mkdir -p /root/dev/clusters/delivery

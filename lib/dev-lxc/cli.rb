@@ -131,7 +131,7 @@ module DevLXC::CLI
         cluster = get_cluster(options[:config])
         chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend)
         unless chef_server_bootstrap_backend.defined?
-          puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' is not created."
+          puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' does not exist."
           exit 1
         end
         chef_server_url = "https://#{cluster.api_fqdn}/organizations/demo"
@@ -163,7 +163,7 @@ module DevLXC::CLI
         cluster = get_cluster(options[:config])
         chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend)
         unless chef_server_bootstrap_backend.defined?
-          puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' is not created."
+          puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' does not exist."
           exit 1
         end
         chef_server_url = "https://#{cluster.api_fqdn}/organizations/demo"

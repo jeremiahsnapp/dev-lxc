@@ -65,7 +65,7 @@ module DevLXC
     end
 
     def start
-      create
+      build unless @server.defined?
       hwaddr = @server.config_item("lxc.network.0.hwaddr")
       DevLXC.assign_ip_address(@ipaddress, @server.name, hwaddr)
       unless @role == 'backend'
@@ -93,7 +93,7 @@ module DevLXC
 
     def snapshot(comment=nil)
       unless @server.defined?
-        puts "WARNING: Skipping snapshot of '#{@server.name}' because it is not created"
+        puts "WARNING: Skipping snapshot of '#{@server.name}' because it does not exist"
         return
       end
       if @server.state != :stopped
@@ -111,7 +111,7 @@ module DevLXC
 
     def snapshot_destroy(snapname=nil)
       unless @server.defined?
-        puts "Skipping container '#{@server.name}' because it is not created"
+        puts "Skipping container '#{@server.name}' because it does not exist"
         return
       end
       if snapname == "ALL"
@@ -155,7 +155,7 @@ module DevLXC
 
     def snapshot_restore(snapname=nil)
       unless @server.defined?
-        puts "WARNING: Skipping container '#{@server.name}' because it is not created"
+        puts "WARNING: Skipping container '#{@server.name}' because it does not exist"
         return
       end
       if @server.state != :stopped
@@ -199,19 +199,15 @@ module DevLXC
       DevLXC.reload_dnsmasq
     end
 
-    def create
-      if @server.defined?
-        puts "Using existing container '#{@server.name}'"
-        return
-      end
-      platform_image = DevLXC::Container.new(@platform_image_name)
-      puts "Creating container '#{@server.name}'"
+    def build
+      puts "Building container '#{@server.name}'"
       if @chef_server_bootstrap_backend && ! DevLXC::Container.new(@chef_server_bootstrap_backend).defined?
         if @server_type == 'supermarket' || (@server_type == 'chef-server' && @role == 'frontend')
-          puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
+          puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be built first."
           exit 1
         end
       end
+      platform_image = DevLXC::Container.new(@platform_image_name)
       puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
       platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
       @server = DevLXC::Container.new(@server.name)
