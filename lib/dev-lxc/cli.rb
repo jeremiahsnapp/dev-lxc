@@ -119,6 +119,16 @@ module DevLXC::CLI
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
     def init
+      chef_packages_path = "/root/dev/chef-packages"
+      open_source_package = "server: #{chef_packages_path}/osc/chef-server_11.1.6-1_amd64.deb"
+      chef_server_package = "server: #{chef_packages_path}/cs/chef-server-core_12.6.0-1_amd64.deb"
+      manage_package = "manage: #{chef_packages_path}/manage/chef-manage_2.3.0-1_amd64.deb"
+      reporting_package = "reporting: #{chef_packages_path}/reporting/opscode-reporting_1.6.0-1_amd64.deb"
+      push_jobs_server_package = "push-jobs-server: #{chef_packages_path}/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb"
+      analytics_package = "analytics: #{chef_packages_path}/analytics/opscode-analytics_1.4.0-1_amd64.deb"
+      compliance_package = "compliance: #{chef_packages_path}/compliance/chef-compliance_1.1.9-1_amd64.deb"
+      supermarket_package = "supermarket: #{chef_packages_path}/supermarket/supermarket_2.5.2-1_amd64.deb"
+
       header = %Q(# base_container must be the name of an existing container
 base_container: b-ubuntu-1404
 
@@ -132,17 +142,6 @@ mounts:
 
 # DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 )
-
-      chef_packages_path = "/root/dev/chef-packages"
-      open_source_package = "server: #{chef_packages_path}/osc/chef-server_11.1.6-1_amd64.deb"
-      chef_server_package = "server: #{chef_packages_path}/cs/chef-server-core_12.6.0-1_amd64.deb"
-      manage_package = "manage: #{chef_packages_path}/manage/chef-manage_2.3.0-1_amd64.deb"
-      reporting_package = "reporting: #{chef_packages_path}/reporting/opscode-reporting_1.6.0-1_amd64.deb"
-      push_jobs_server_package = "push-jobs-server: #{chef_packages_path}/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb"
-      analytics_package = "analytics: #{chef_packages_path}/analytics/opscode-analytics_1.4.0-1_amd64.deb"
-      compliance_package = "compliance: #{chef_packages_path}/compliance/chef-compliance_1.1.9-1_amd64.deb"
-      supermarket_package = "supermarket: #{chef_packages_path}/supermarket/supermarket_2.5.2-1_amd64.deb"
-
       open_source_config = %Q(
 chef-server:
   packages:
