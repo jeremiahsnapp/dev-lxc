@@ -6,70 +6,6 @@ module DevLXC::CLI
   class DevLXC < Thor
 
     no_commands{
-      def validate_cluster_config(cluster_config)
-        hostnames = Array.new
-        mounts = Array.new
-        packages = Array.new
-        base_container_names = Array.new
-        ssh_keys = Array.new
-
-        base_container_names << cluster_config['base_container'] unless cluster_config['base_container'].nil?
-        mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
-        ssh_keys.concat(cluster_config['ssh-keys']) unless cluster_config['ssh-keys'].nil?
-
-        %w(chef-server analytics compliance supermarket adhoc).each do |server_type|
-          unless cluster_config[server_type].nil?
-            base_container_names << cluster_config[server_type]['base_container'] unless cluster_config[server_type]['base_container'].nil?
-            hostnames << cluster_config[server_type]['api_fqdn'] unless cluster_config[server_type]['api_fqdn'].nil?
-            hostnames << cluster_config[server_type]['analytics_fqdn'] unless cluster_config[server_type]['analytics_fqdn'].nil?
-            hostnames.concat(cluster_config[server_type]['servers'].keys) unless cluster_config[server_type]['servers'].nil?
-            mounts.concat(cluster_config[server_type]['mounts']) unless cluster_config[server_type]['mounts'].nil?
-            packages.concat(cluster_config[server_type]['packages'].values) unless cluster_config[server_type]['packages'].nil?
-            ssh_keys.concat(cluster_config[server_type]['ssh-keys']) unless cluster_config[server_type]['ssh-keys'].nil?
-          end
-        end
-        unless base_container_names.empty?
-          base_container_names.each do |base_container_name|
-            unless ::DevLXC::Container.new(base_container_name).defined?
-              puts "ERROR: Base container #{base_container_name} does not exist."
-              exit 1
-            end
-          end
-        end
-        unless hostnames.empty?
-          hostnames.each do |hostname|
-            unless hostname.end_with?(".lxc")
-              puts "ERROR: Hostname #{hostname} does not end with '.lxc'."
-              exit 1
-            end
-          end
-        end
-        unless mounts.empty?
-          mounts.each do |mount|
-            unless File.exists?(mount.split.first)
-              puts "ERROR: Mount source #{mount.split.first} does not exist."
-              exit 1
-            end
-          end
-        end
-        unless packages.empty?
-          packages.each do |package|
-            unless File.exists?(package)
-              puts "ERROR: Package #{package} does not exist."
-              exit 1
-            end
-          end
-        end
-        unless ssh_keys.empty?
-          ssh_keys.each do |ssh_key|
-            unless File.exists?(ssh_key)
-              puts "ERROR: SSH key #{ssh_key} does not exist."
-              exit 1
-            end
-          end
-        end
-      end
-
       def get_cluster(config_file=nil)
         config_file ||= "dev-lxc.yml"
         if ! File.exists?(config_file)
@@ -78,7 +14,6 @@ module DevLXC::CLI
           exit 1
         end
         cluster_config = YAML.load(IO.read(config_file))
-        validate_cluster_config(cluster_config)
         ::DevLXC::Cluster.new(cluster_config)
       end
 
