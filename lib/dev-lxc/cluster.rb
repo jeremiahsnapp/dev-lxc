@@ -309,11 +309,11 @@ module DevLXC
     end
 
     def chef_repo(force=false, pivotal=false)
-      if @chef_server_bootstrap_backend.nil?
+      if @config['chef-server'][:bootstrap_backend].nil?
         puts "ERROR: A bootstrap backend Chef Server is not defined in the cluster's config. Please define it first."
         exit 1
       end
-      chef_server = Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config)
+      chef_server = get_server(@config['chef-server'][:bootstrap_backend])
       if ! chef_server.server.defined?
         puts "ERROR: The '#{chef_server.server.name}' Chef Server does not exist."
         exit 1
@@ -330,8 +330,8 @@ module DevLXC
         FileUtils.cp( pem_files, "./chef-repo/.chef" )
       end
 
-      chef_server_root = "https://#{@api_fqdn}"
-      chef_server_url = "https://#{@api_fqdn}/organizations/demo"
+      chef_server_root = "https://#{@config['chef-server'][:fqdn]}"
+      chef_server_url = "https://#{@config['chef-server'][:fqdn]}/organizations/demo"
       validator_name = "demo-validator"
 
       if pivotal
@@ -365,42 +365,42 @@ module DevLXC
     end
 
     def chef_server_config
-      chef_server_config = %Q(api_fqdn "#{@api_fqdn}"\n)
-      if @chef_server_topology == 'tier'
+      chef_server_config = %Q(api_fqdn "#{@config['chef-server'][:fqdn]}"\n)
+      if @config['chef-server'][:topology] == 'tier'
         chef_server_config += %Q(
-topology "#{@chef_server_topology}"
+topology "#{@config['chef-server'][:topology]}"
 
-server "#{@chef_server_bootstrap_backend}",
-  :ipaddress => "#{@chef_server_servers[@chef_server_bootstrap_backend]["ipaddress"]}",
+server "#{@config['chef-server'][:bootstrap_backend]}",
+  :ipaddress => "#{@server_configs[@config['chef-server'][:bootstrap_backend]][:ipaddress]}",
   :role => "backend",
   :bootstrap => true
 
-backend_vip "#{@chef_server_bootstrap_backend}",
-  :ipaddress => "#{@chef_server_servers[@chef_server_bootstrap_backend]["ipaddress"]}"
+backend_vip "#{@config['chef-server'][:bootstrap_backend]}",
+  :ipaddress => "#{@server_configs[@config['chef-server'][:bootstrap_backend]][:ipaddress]}"
 )
-        @chef_server_frontends.each do |frontend_name|
+        @config['chef-server'][:frontends].each do |frontend_name|
           chef_server_config += %Q(
 server "#{frontend_name}",
-  :ipaddress => "#{@chef_server_servers[frontend_name]["ipaddress"]}",
+  :ipaddress => "#{@server_configs[frontend_name][:ipaddress]}",
   :role => "frontend"
 )
         end
       end
-      if @analytics_fqdn
+      if @config['analytics'][:fqdn]
         chef_server_config += %Q(
 oc_id['applications'] ||= {}
 oc_id['applications']['analytics'] = {
-  'redirect_uri' => 'https://#{@analytics_fqdn}/'
+  'redirect_uri' => 'https://#{@config['analytics'][:fqdn]}/'
 }
-rabbitmq['vip'] = '#{@chef_server_bootstrap_backend}'
+rabbitmq['vip'] = '#{@config['chef-server'][:bootstrap_backend]}'
 rabbitmq['node_ip_address'] = '0.0.0.0'
 )
       end
-      if @supermarket_fqdn
+      if @config['supermarket'][:fqdn]
         chef_server_config += %Q(
 oc_id['applications'] ||= {}
 oc_id['applications']['supermarket'] = {
-  'redirect_uri' => 'https://#{@supermarket_fqdn}/auth/chef_oauth2/callback'
+  'redirect_uri' => 'https://#{@config['supermarket'][:fqdn]}/auth/chef_oauth2/callback'
 }
 )
       end
@@ -408,23 +408,23 @@ oc_id['applications']['supermarket'] = {
     end
 
     def analytics_config
-      analytics_config = %Q(analytics_fqdn "#{@analytics_fqdn}"
-topology "#{@analytics_topology}"
+      analytics_config = %Q(analytics_fqdn "#{@config['analytics'][:fqdn]}"
+topology "#{@config['analytics'][:topology]}"
 )
-      if @analytics_topology == 'tier'
+      if @config['analytics'][:topology] == 'tier'
         analytics_config += %Q(
-server "#{@analytics_bootstrap_backend}",
-  :ipaddress => "#{@analytics_servers[@analytics_bootstrap_backend]["ipaddress"]}",
+server "#{@config['analytics'][:bootstrap_backend]}",
+  :ipaddress => "#{@server_configs[@config['analytics'][:bootstrap_backend]][:ipaddress]}",
   :role => "backend",
   :bootstrap => true
 
-backend_vip "#{@analytics_bootstrap_backend}",
-  :ipaddress => "#{@analytics_servers[@analytics_bootstrap_backend]["ipaddress"]}"
+backend_vip "#{@config['analytics'][:bootstrap_backend]}",
+  :ipaddress => "#{@server_configs[@config['analytics'][:bootstrap_backend]][:ipaddress]}"
 )
-        @analytics_frontends.each do |frontend_name|
+        @config['analytics'][:frontends].each do |frontend_name|
           analytics_config += %Q(
 server "#{frontend_name}",
-  :ipaddress => "#{@analytics_servers[frontend_name]["ipaddress"]}",
+  :ipaddress => "#{@server_configs[frontend_name][:ipaddress]}",
   :role => "frontend"
 )
         end
