@@ -190,32 +190,29 @@ module DevLXC
       Server.new(server_name, ipaddress, additional_fqdn, mounts, ssh_keys)
     end
 
-    def servers(server_name_regex=nil)
-      chef_servers = Array.new
-      chef_servers << Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config) if @chef_server_bootstrap_backend
-      if @chef_server_topology == "tier"
-        @chef_server_frontends.each do |frontend_name|
-          chef_servers << Server.new(frontend_name, 'chef-server', @cluster_config)
+    def get_sorted_servers(server_name_regex=nil)
+      servers = Array.new
+
+      # the order of this list of server_types matters
+      # it determines the order in which actions are applied to each server_type
+      %w(chef-server analytics compliance supermarket adhoc).each do |server_type|
+        unless @config[server_type].empty?
+          case server_type
+          when "analytics", "chef-server"
+            if @config[server_type][:bootstrap_backend]
+              server_name = @config[server_type][:bootstrap_backend]
+              servers << get_server(server_name)
+            end
+            @config[server_type][:frontends].each do |frontend_name|
+              servers << get_server(frontend_name)
+            end
+          when "adhoc", "compliance", "supermarket"
+            server_configs = @server_configs.select { |server_name, server_config| server_config[:server_type] == server_type }
+            server_configs.each_key { |server_name| servers << get_server(server_name) }
+          end
         end
       end
-      analytics_servers = Array.new
-      analytics_servers << Server.new(@analytics_bootstrap_backend, 'analytics', @cluster_config) if @analytics_bootstrap_backend
-      if @analytics_topology == "tier"
-        @analytics_frontends.each do |frontend_name|
-          analytics_servers << Server.new(frontend_name, 'analytics', @cluster_config)
-        end
-      end
-      adhoc_servers = Array.new
-      if @adhoc_servers
-        @adhoc_servers.each do |name|
-          adhoc_servers << Server.new(name, 'adhoc', @cluster_config)
-        end
-      end
-      servers = chef_servers + analytics_servers
-      servers << Server.new(@compliance_fqdn, 'compliance', @cluster_config) if @compliance_fqdn
-      servers << Server.new(@supermarket_fqdn, 'supermarket', @cluster_config) if @supermarket_fqdn
-      servers += adhoc_servers
-      servers.select { |s| s.server.name =~ /#{server_name_regex}/ }
+      servers.select { |s| s.name =~ /#{server_name_regex}/ }
     end
 
     def get_product_url(server, product_name, product_options)

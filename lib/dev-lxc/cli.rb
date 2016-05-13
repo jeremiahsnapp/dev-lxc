@@ -214,7 +214,7 @@ adhoc:
       puts "Supermarket FQDN: #{cluster.config['supermarket'][:fqdn]}\n" if cluster.config['supermarket'][:fqdn]
       puts
       servers = Array.new
-      cluster.servers(server_name_regex).map { |s| servers << s.server.status }
+      cluster.get_sorted_servers(server_name_regex).map { |s| servers << s.server.status }
       max_server_name_length = servers.max_by { |s| s['name'].length }['name'].length unless servers.empty?
       servers.each { |s| printf "%#{max_server_name_length}s     %-15s %s\n", s['name'], s['state'], s['ip_addresses'] }
     end
@@ -223,14 +223,14 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def realpath(server_name_regex=nil, rootfs_path)
       realpath = Array.new
-      get_cluster(options[:config]).servers(server_name_regex).map { |s| realpath << s.realpath(rootfs_path) }
+      get_cluster(options[:config]).get_sorted_servers(server_name_regex).map { |s| realpath << s.realpath(rootfs_path) }
       puts realpath.compact
     end
 
     desc "attach [SERVER_NAME_REGEX]", "Attach the terminal to a single server"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def attach(server_name_regex)
-      servers = get_cluster(options[:config]).servers(server_name_regex)
+      servers = get_cluster(options[:config]).get_sorted_servers(server_name_regex)
       if servers.length > 1
         puts "ERROR: The following servers matched '#{server_name_regex}'"
         servers.map { |s| puts "       #{s.server.name}" }
@@ -267,7 +267,7 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(server_name_regex=nil, command)
       start_time = Time.now
-      get_cluster(options[:config]).servers(server_name_regex).each { |s| s.run_command(command); puts }
+      get_cluster(options[:config]).get_sorted_servers(server_name_regex).each { |s| s.run_command(command); puts }
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -275,7 +275,7 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def up(server_name_regex=nil)
       start_time = Time.now
-      get_cluster(options[:config]).servers(server_name_regex).each { |s| s.start; puts }
+      get_cluster(options[:config]).get_servers(server_name_regex).each { |s| s.start; puts }
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -283,7 +283,7 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def halt(server_name_regex=nil)
       start_time = Time.now
-      get_cluster(options[:config]).servers(server_name_regex).reverse_each { |s| s.stop; puts }
+      get_cluster(options[:config]).get_sorted_servers(server_name_regex).reverse_each { |s| s.stop; puts }
       print_elapsed_time(Time.now - start_time)
     end
 
@@ -295,7 +295,7 @@ adhoc:
     option :restore, :aliases => "-r", :desc => "Restore snapshots"
     def snapshot(server_name_regex=nil)
       start_time = Time.now
-      servers = get_cluster(options[:config]).servers(server_name_regex)
+      servers = get_cluster(options[:config]).get_sorted_servers(server_name_regex)
       if options[:list]
         servers.each_with_index do |s, server_index|
           puts s.name
@@ -339,7 +339,7 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     option :force, :aliases => "-f", :type => :boolean, :desc => "Destroy servers without confirmation"
     def destroy(server_name_regex=nil)
-      servers = get_cluster(options[:config]).servers(server_name_regex)
+      servers = get_cluster(options[:config]).get_sorted_servers(server_name_regex)
       if servers.empty?
         puts "No matching server names were found"
         exit
