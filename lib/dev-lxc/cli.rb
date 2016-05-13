@@ -280,7 +280,8 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def up(server_name_regex=nil)
       start_time = Time.now
-      get_cluster(options[:config]).get_servers(server_name_regex).each { |s| s.start; puts }
+      get_cluster(options[:config]).up(server_name_regex)
+      puts
       print_elapsed_time(Time.now - start_time)
     end
 

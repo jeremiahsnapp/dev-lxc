@@ -215,6 +215,64 @@ module DevLXC
       servers.select { |s| s.name =~ /#{server_name_regex}/ }
     end
 
+    def up(server_name_regex=nil)
+      abort_up = false
+      configured_servers = Array.new
+      servers = get_sorted_servers(server_name_regex)
+      servers.each do |server|
+        next if server.container.defined?
+        if (@config['chef-server'][:frontends] && @config['chef-server'][:frontends].include?(server.name)) || server.name == @config['analytics'][:bootstrap_backend]
+          if @config['chef-server'][:bootstrap_backend].nil?
+            puts "ERROR: '#{server.name}' requires a Chef Server bootstrap backend to be configured first."
+            abort_up = true
+          elsif !get_server(@config['chef-server'][:bootstrap_backend]).container.defined? && servers.select { |s| s.name == @config['chef-server'][:bootstrap_backend] }.empty?
+            puts "ERROR: '#{server.name}' requires '#{@config['chef-server'][:bootstrap_backend]}' to be configured first."
+            abort_up = true
+          end
+        end
+        if @config['chef-server'][:bootstrap_backend] && @server_configs[server.name][:server_type] == 'supermarket'
+          if !get_server(@config['chef-server'][:bootstrap_backend]).container.defined? && servers.select { |s| s.name == @config['chef-server'][:bootstrap_backend] }.empty?
+            puts "ERROR: '#{server.name}' requires '#{@config['chef-server'][:bootstrap_backend]}' to be configured first."
+            abort_up = true
+          end
+        end
+        if @config['analytics'][:frontends] && @config['analytics'][:frontends].include?(server.name)
+          if @config['analytics'][:bootstrap_backend].nil?
+            puts "ERROR: '#{server.name}' requires an Analytics Server bootstrap backend to be configured first."
+            abort_up = true
+          elsif !get_server(@config['analytics'][:bootstrap_backend]).container.defined? && servers.select { |s| s.name == @config['analytics'][:bootstrap_backend] }.empty?
+            puts "ERROR: '#{server.name}' requires '#{@config['analytics'][:bootstrap_backend]}' to be configured first."
+            abort_up = true
+          end
+        end
+      end
+      exit 1 if abort_up
+      prep_product_cache(servers)
+      servers.each do |server|
+        clone_from_base_container(server) unless server.container.defined?
+      end
+      servers = get_sorted_servers(server_name_regex)
+      servers.each do |server|
+        install_products(server) unless @server_configs[server.name][:required_products].empty?
+      end
+      servers.each do |server|
+        if server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: completed") }.empty?
+          configure_products(server)
+          configured_servers << server.name
+        end
+        server.start unless server.container.running?
+      end
+      configured_servers.reverse_each do |server_name|
+        server = get_server(server_name)
+        server.stop if server.container.running?
+        server.snapshot("dev-lxc build: completed")
+      end
+      configured_servers.each do |server_name|
+        server = get_server(server_name)
+        server.start if server.container.defined?
+      end
+    end
+
     def clone_from_base_container(server)
       server_type = @server_configs[server.name][:server_type]
       base_container = DevLXC::Container.new(@config[server_type][:base_container_name])
