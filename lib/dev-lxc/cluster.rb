@@ -182,6 +182,14 @@ module DevLXC
       end
     end
 
+    def get_server(server_name)
+      ipaddress = @server_configs[server_name][:ipaddress]
+      additional_fqdn = @server_configs[server_name][:additional_fqdn]
+      mounts = @server_configs[server_name][:mounts]
+      ssh_keys = @server_configs[server_name][:ssh_keys]
+      Server.new(server_name, ipaddress, additional_fqdn, mounts, ssh_keys)
+    end
+
     def servers(server_name_regex=nil)
       chef_servers = Array.new
       chef_servers << Server.new(@chef_server_bootstrap_backend, 'chef-server', @cluster_config) if @chef_server_bootstrap_backend
