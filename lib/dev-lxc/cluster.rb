@@ -2,63 +2,123 @@ require "dev-lxc/server"
 
 module DevLXC
   class Cluster
-    attr_reader :api_fqdn, :chef_server_bootstrap_backend, :analytics_fqdn, :analytics_bootstrap_backend, :compliance_fqdn, :supermarket_fqdn
+    attr_reader :config
 
     def initialize(cluster_config)
       validate_cluster_config(cluster_config)
-      @cluster_config = cluster_config
 
-      if @cluster_config["adhoc"]
-        @adhoc_servers = @cluster_config["adhoc"]["servers"].keys
-      end
+      @config = Hash.new { |hash, key| hash[key] = {} }
+      @server_configs = Hash.new
 
-      if @cluster_config["chef-server"]
-        @chef_server_topology = @cluster_config["chef-server"]["topology"]
-        @chef_server_topology ||= 'standalone'
-        @api_fqdn = @cluster_config["chef-server"]["api_fqdn"]
-        @chef_server_servers = @cluster_config["chef-server"]["servers"]
-        @chef_server_frontends = Array.new
-        @chef_server_servers.each do |name, config|
-          case @chef_server_topology
-          when 'open-source', 'standalone'
-            @chef_server_bootstrap_backend = name if config["role"].nil?
-            @api_fqdn ||= @chef_server_bootstrap_backend
-          when 'tier'
-            @chef_server_bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
-            @chef_server_frontends << name if config["role"] == "frontend"
+      %w(adhoc analytics chef-server compliance supermarket).each do |server_type|
+        if cluster_config[server_type]
+          @config[server_type][:mounts] = cluster_config[server_type]["mounts"]
+          @config[server_type][:mounts] ||= cluster_config["mounts"]
+          @config[server_type][:ssh_keys] = cluster_config[server_type]["ssh-keys"]
+          @config[server_type][:ssh_keys] ||= cluster_config["ssh-keys"]
+          @config[server_type][:base_container_name] = cluster_config[server_type]["base_container"]
+          @config[server_type][:base_container_name] ||= cluster_config["base_container"]
+
+          case server_type
+          when "adhoc"
+            if cluster_config[server_type]["servers"]
+              cluster_config[server_type]["servers"].each do |server_name, server_config|
+                products = server_config['products']
+                products ||= Hash.new
+                @server_configs[server_name] = {
+                  server_type: server_type,
+                  products: products,
+                  ipaddress: server_config['ipaddress'],
+                  additional_fqdn: nil,
+                  mounts: @config[server_type][:mounts],
+                  ssh_keys: @config[server_type][:ssh_keys]
+                }
+              end
+            end
+          when "analytics"
+            @config[server_type][:topology] = cluster_config[server_type]["topology"]
+            @config[server_type][:topology] ||= 'standalone'
+            @config[server_type][:fqdn] = cluster_config[server_type]["analytics_fqdn"]
+            @config[server_type][:frontends] = Array.new
+
+            if cluster_config[server_type]["servers"]
+              cluster_config[server_type]["servers"].each do |server_name, server_config|
+                additional_fqdn = nil
+                products = server_config['products']
+                products ||= Hash.new
+                @server_configs[server_name] = server_config
+                case @config[server_type][:topology]
+                when 'standalone'
+                  @config[server_type][:bootstrap_backend] = server_name if server_config["role"].nil?
+                  @config[server_type][:fqdn] ||= @config[server_type][:bootstrap_backend]
+                when 'tier'
+                  @config[server_type][:bootstrap_backend] = server_name if server_config["role"] == "backend" && server_config["bootstrap"] == true
+                  if server_config["role"] == "frontend"
+                    additional_fqdn = @config[server_type][:fqdn]
+                    @config[server_type][:frontends] << server_name
+                  end
+                end
+                @server_configs[server_name] = {
+                  server_type: server_type,
+                  products: products,
+                  ipaddress: server_config['ipaddress'],
+                  additional_fqdn: additional_fqdn,
+                  mounts: @config[server_type][:mounts],
+                  ssh_keys: @config[server_type][:ssh_keys]
+                }
+              end
+            end
+          when "chef-server"
+            @config[server_type][:topology] = cluster_config[server_type]["topology"]
+            @config[server_type][:topology] ||= 'standalone'
+            @config[server_type][:fqdn] = cluster_config[server_type]["api_fqdn"]
+            @config[server_type][:frontends] = Array.new
+
+            if cluster_config[server_type]["servers"]
+              cluster_config[server_type]["servers"].each do |server_name, server_config|
+                additional_fqdn = nil
+                products = server_config['products']
+                products ||= Hash.new
+                chef_server_type = 'private-chef' if products.has_key?('private-chef')
+                chef_server_type = 'chef-server' if products.has_key?('chef-server') || @config[server_type][:topology] == 'open-source'
+                case @config[server_type][:topology]
+                when 'open-source', 'standalone'
+                  @config[server_type][:bootstrap_backend] = server_name if server_config["role"].nil?
+                  @config[server_type][:fqdn] ||= @config[server_type][:bootstrap_backend]
+                when 'tier'
+                  @config[server_type][:bootstrap_backend] = server_name if server_config["role"] == "backend" && server_config["bootstrap"] == true
+                  if server_config["role"] == "frontend"
+                    additional_fqdn = @config[server_type][:fqdn]
+                    @config[server_type][:frontends] << server_name
+                  end
+                end
+                @server_configs[server_name] = {
+                  server_type: server_type,
+                  products: products,
+                  ipaddress: server_config['ipaddress'],
+                  additional_fqdn: additional_fqdn,
+                  mounts: @config[server_type][:mounts],
+                  ssh_keys: @config[server_type][:ssh_keys],
+                  chef_server_type: chef_server_type
+                }
+              end
+            end
+          when "compliance", "supermarket"
+            unless cluster_config[server_type]["servers"].first.nil?
+              (server_name, server_config) = cluster_config[server_type]["servers"].first
+              @config[server_type][:fqdn] = server_name
+              products = server_config['products']
+              products ||= Hash.new
+              @server_configs[server_name] = {
+                server_type: server_type,
+                products: products,
+                ipaddress: server_config['ipaddress'],
+                additional_fqdn: nil,
+                mounts: @config[server_type][:mounts],
+                ssh_keys: @config[server_type][:ssh_keys]
+              }
+            end
           end
-        end
-      end
-
-      if @cluster_config["analytics"]
-        @analytics_topology = @cluster_config["analytics"]["topology"]
-        @analytics_topology ||= 'standalone'
-        @analytics_fqdn = @cluster_config["analytics"]["analytics_fqdn"]
-        @analytics_servers = @cluster_config["analytics"]["servers"]
-        @analytics_frontends = Array.new
-        @analytics_servers.each do |name, config|
-          case @analytics_topology
-          when 'standalone'
-            @analytics_bootstrap_backend = name if config["role"].nil?
-            @analytics_fqdn ||= @analytics_bootstrap_backend
-          when 'tier'
-            @analytics_bootstrap_backend = name if config["role"] == "backend" && config["bootstrap"] == true
-            @analytics_frontends << name if config["role"] == "frontend"
-          end
-        end
-      end
-
-      if @cluster_config["compliance"]
-        compliance_servers = @cluster_config["compliance"]["servers"]
-        compliance_servers.each_key do |name|
-          @compliance_fqdn = name
-        end
-      end
-
-      if @cluster_config["supermarket"]
-        supermarket_servers = @cluster_config["supermarket"]["servers"]
-        supermarket_servers.each_key do |name|
-          @supermarket_fqdn = name
         end
       end
     end

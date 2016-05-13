@@ -60,12 +60,12 @@ module DevLXC::CLI
       validation_key = options[:validation_key]
       if chef_server_url.nil? && validation_client_name.nil? && validation_key.nil?
         cluster = get_cluster(options[:config])
-        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend)
+        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.config['chef-server'][:bootstrap_backend])
         unless chef_server_bootstrap_backend.defined?
           puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' does not exist."
           exit 1
         end
-        chef_server_url = "https://#{cluster.api_fqdn}/organizations/demo"
+        chef_server_url = "https://#{cluster.config['chef-server'][:fqdn]}/organizations/demo"
         validation_client_name = 'demo-validator'
         validation_key = "#{chef_server_bootstrap_backend.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
       elsif chef_server_url.nil? || validation_client_name.nil? || validation_key.nil?
@@ -92,12 +92,12 @@ module DevLXC::CLI
       validation_key = options[:validation_key]
       if chef_server_url.nil? && validation_client_name.nil? && validation_key.nil?
         cluster = get_cluster(options[:config])
-        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.chef_server_bootstrap_backend)
+        chef_server_bootstrap_backend = ::DevLXC::Container.new(cluster.config['chef-server'][:bootstrap_backend])
         unless chef_server_bootstrap_backend.defined?
           puts "ERROR: Can not copy validation key because Chef Server '#{chef_server_bootstrap_backend.name}' does not exist."
           exit 1
         end
-        chef_server_url = "https://#{cluster.api_fqdn}/organizations/demo"
+        chef_server_url = "https://#{cluster.config['chef-server'][:fqdn]}/organizations/demo"
         validation_client_name = 'demo-validator'
         validation_key = "#{chef_server_bootstrap_backend.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
       elsif chef_server_url.nil? || validation_client_name.nil? || validation_key.nil?
@@ -226,10 +226,10 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def status(server_name_regex=nil)
       cluster = get_cluster(options[:config])
-      puts "Chef Server FQDN: #{cluster.api_fqdn}\n" if cluster.api_fqdn
-      puts "Analytics FQDN:   #{cluster.analytics_fqdn}\n" if cluster.analytics_fqdn
-      puts "Compliance FQDN:  #{cluster.compliance_fqdn}\n" if cluster.compliance_fqdn
-      puts "Supermarket FQDN: #{cluster.supermarket_fqdn}\n" if cluster.supermarket_fqdn
+      puts "Chef Server FQDN: #{cluster.config['chef-server'][:fqdn]}\n" if cluster.config['chef-server'][:fqdn]
+      puts "Analytics FQDN:   #{cluster.config['analytics'][:fqdn]}\n" if cluster.config['analytics'][:fqdn]
+      puts "Compliance FQDN:  #{cluster.config['compliance'][:fqdn]}\n" if cluster.config['compliance'][:fqdn]
+      puts "Supermarket FQDN: #{cluster.config['supermarket'][:fqdn]}\n" if cluster.config['supermarket'][:fqdn]
       puts
       servers = Array.new
       cluster.servers(server_name_regex).map { |s| servers << s.server.status }
