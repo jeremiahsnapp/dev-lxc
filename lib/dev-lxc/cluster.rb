@@ -215,6 +215,19 @@ module DevLXC
       servers.select { |s| s.name =~ /#{server_name_regex}/ }
     end
 
+    def clone_from_base_container(server)
+      server_type = @server_configs[server.name][:server_type]
+      base_container = DevLXC::Container.new(@config[server_type][:base_container_name])
+      puts "Cloning base container '#{base_container.name}' into container '#{server.name}'"
+      base_container.clone(server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
+      server.container.load_config
+      puts "Deleting SSH Server Host Keys"
+      FileUtils.rm_f(Dir.glob("#{server.container.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
+      puts "Adding lxc.hook.post-stop hook"
+      server.container.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
+      server.container.save_config
+    end
+
     def get_product_url(server, product_name, product_options)
       server_type = @server_configs[server.name][:server_type]
       base_container = DevLXC::Container.new(@config[server_type][:base_container_name])
@@ -303,6 +316,198 @@ module DevLXC
       server.stop
       server.snapshot("dev-lxc build: products installed")
       server.start if server_was_running
+    end
+
+    def configure_products(server)
+      puts "Configuring container '#{server.name}'"
+      server.start unless server.container.running?
+      required_products = @server_configs[server.name][:required_products].keys if @server_configs[server.name][:required_products]
+      required_products ||= Array.new
+      server_type = @server_configs[server.name][:server_type]
+      case server_type
+      when 'adhoc'
+        # Allow adhoc servers time to generate SSH Server Host Keys
+        sleep 5
+      when 'analytics'
+        configure_analytics(server) if required_products.include?('analytics')
+      when 'chef-server'
+        if required_products.include?('chef-server') || required_products.include?('private-chef')
+          configure_chef_server(server)
+          create_users(server) if server.name == @config['chef-server'][:bootstrap_backend]
+        end
+        configure_reporting(server) if required_products.include?('reporting')
+        configure_push_jobs_server(server) if required_products.include?('push-jobs-server')
+        configure_manage(server) if required_products.include?('manage')
+      when 'compliance'
+        configure_compliance(server) if required_products.include?('compliance')
+      when 'supermarket'
+        configure_supermarket(server) if required_products.include?('supermarket')
+      end
+    end
+
+    def configure_chef_server(server)
+      if @config['chef-server'][:topology] == "standalone" || @config['chef-server'][:bootstrap_backend] == server.name
+        case @server_configs[server.name][:chef_server_type]
+        when 'private-chef'
+          puts "Creating /etc/opscode/private-chef.rb"
+          FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/opscode")
+          IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", chef_server_config)
+        when 'chef-server'
+          puts "Creating /etc/opscode/chef-server.rb"
+          FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/opscode")
+          IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb", chef_server_config)
+        end
+      elsif @config['chef-server'][:frontends].include?(server.name)
+        puts "Copying /etc/opscode from bootstrap backend '#{@config['chef-server'][:bootstrap_backend]}'"
+        FileUtils.cp_r("#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/etc/opscode",
+                       "#{server.container.config_item('lxc.rootfs')}/etc", preserve: true)
+      end
+      run_ctl(server, @server_configs[server.name][:chef_server_type], "reconfigure")
+    end
+
+    def configure_reporting(server)
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/var/opt/opscode-reporting")
+      FileUtils.touch("#{server.container.config_item('lxc.rootfs')}/var/opt/opscode-reporting/.license.accepted")
+      if @config['chef-server'][:frontends].include?(server.name)
+        puts "Copying /etc/opscode-reporting from bootstrap backend '#{@config['chef-server'][:bootstrap_backend]}'"
+        FileUtils.cp_r("#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/etc/opscode-reporting",
+                       "#{server.container.config_item('lxc.rootfs')}/etc", preserve: true)
+      end
+      run_ctl(server, @server_configs[server.name][:chef_server_type], "reconfigure")
+      run_ctl(server, "opscode-reporting", "reconfigure")
+    end
+
+    def configure_push_jobs_server(server)
+      run_ctl(server, "opscode-push-jobs-server", "reconfigure")
+      run_ctl(server, @server_configs[server.name][:chef_server_type], "reconfigure")
+    end
+
+    def configure_manage(server)
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-manage")
+      FileUtils.touch("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-manage/.license.accepted")
+      if @server_configs[server.name][:chef_server_type] == 'private-chef'
+        puts "Disabling old opscode-webui in /etc/opscode/private-chef.rb"
+        DevLXC.search_file_delete_line("#{server.container.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", /opscode_webui[.enable.]/)
+        DevLXC.append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", "\nopscode_webui['enable'] = false\n")
+        run_ctl(server, @server_configs[server.name][:chef_server_type], "reconfigure")
+      end
+      run_ctl(server, "opscode-manage", "reconfigure")
+    end
+
+    def configure_analytics(server)
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/var/opt/opscode-analytics")
+      FileUtils.touch("#{server.container.config_item('lxc.rootfs')}/var/opt/opscode-analytics/.license.accepted")
+      if @config['analytics'][:topology] == "standalone" || @config['analytics'][:bootstrap_backend] == server.name
+        puts "Copying /etc/opscode-analytics from Chef Server bootstrap backend '#{@config['chef-server'][:bootstrap_backend]}'"
+        FileUtils.cp_r("#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/etc/opscode-analytics",
+                       "#{server.container.config_item('lxc.rootfs')}/etc", preserve: true)
+
+        IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode-analytics/opscode-analytics.rb", analytics_config)
+      elsif @config['analytics'][:frontends].include?(server.name)
+        puts "Copying /etc/opscode-analytics from Analytics bootstrap backend '#{@config['analytics'][:bootstrap_backend]}'"
+        FileUtils.cp_r("#{get_server(@config['analytics'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/etc/opscode-analytics",
+                       "#{server.container.config_item('lxc.rootfs')}/etc", preserve: true)
+      end
+      run_ctl(server, "opscode-analytics", "reconfigure")
+    end
+
+    def configure_compliance(server)
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-compliance")
+      FileUtils.touch("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-compliance/.license.accepted")
+      run_ctl(server, "chef-compliance", "reconfigure")
+    end
+
+    def configure_supermarket(server)
+      if @config['chef-server'][:bootstrap_backend] && get_server(@config['chef-server'][:bootstrap_backend]).container.defined?
+        chef_server_supermarket_config = JSON.parse(IO.read("#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/etc/opscode/oc-id-applications/supermarket.json"))
+        supermarket_config = {
+          'chef_server_url' => "https://#{@config['chef-server'][:fqdn]}/",
+          'chef_oauth2_app_id' => chef_server_supermarket_config['uid'],
+          'chef_oauth2_secret' => chef_server_supermarket_config['secret'],
+          'chef_oauth2_verify_ssl' => false
+        }
+        FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/supermarket")
+        IO.write("#{server.container.config_item('lxc.rootfs')}/etc/supermarket/supermarket.json", JSON.pretty_generate(supermarket_config))
+      end
+      run_ctl(server, "supermarket", "reconfigure")
+    end
+
+    def run_ctl(server, component, subcommand)
+      server.run_command("#{component}-ctl #{subcommand}")
+    end
+
+    def create_users(server)
+      puts "Creating org, user, keys and knife.rb in /root/chef-repo/.chef"
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/root/chef-repo/.chef")
+
+      chef_server_root = "https://127.0.0.1"
+      chef_server_url = "https://127.0.0.1/organizations/demo"
+      admin_username = "mary-admin"
+      username = "joe-user"
+      validator_name = "demo-validator"
+
+      FileUtils.cp( "#{server.container.config_item('lxc.rootfs')}/etc/opscode/pivotal.pem", "#{server.container.config_item('lxc.rootfs')}/root/chef-repo/.chef" )
+
+      pivotal_rb = %Q(
+current_dir = File.dirname(__FILE__)
+
+chef_server_root "#{chef_server_root}"
+chef_server_url "#{chef_server_root}"
+
+node_name "pivotal"
+client_key "\#{current_dir}/pivotal.pem"
+
+cookbook_path Dir.pwd + "/cookbooks"
+knife[:chef_repo_path] = Dir.pwd
+
+ssl_verify_mode :verify_none
+)
+      IO.write("#{server.container.config_item('lxc.rootfs')}/root/chef-repo/.chef/pivotal.rb", pivotal_rb)
+
+      knife_rb = %Q(
+current_dir = File.dirname(__FILE__)
+
+chef_server_url "#{chef_server_url}"
+
+node_name "#{admin_username}"
+client_key "\#{current_dir}/#{admin_username}.pem"
+)
+
+      knife_rb += %Q(
+#node_name "#{username}"
+#client_key "\#{current_dir}/#{username}.pem"
+) unless username.nil?
+
+      knife_rb += %Q(
+validation_client_name "#{validator_name}"
+validation_key "\#{current_dir}/#{validator_name}.pem"
+
+cookbook_path Dir.pwd + "/cookbooks"
+knife[:chef_repo_path] = Dir.pwd
+
+ssl_verify_mode :verify_none
+)
+      IO.write("#{server.container.config_item('lxc.rootfs')}/root/chef-repo/.chef/knife.rb", knife_rb)
+
+      case @server_configs[server.name][:chef_server_type]
+      when 'private-chef'
+        # give time for all services to come up completely
+        sleep 60
+        server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc")
+        server.run_command("/opt/opscode/embedded/bin/knife opc org create demo demo --filename /root/chef-repo/.chef/demo-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
+        server.run_command("/opt/opscode/embedded/bin/knife opc user create mary-admin mary admin mary-admin@noreply.com mary-admin --filename /root/chef-repo/.chef/mary-admin.pem -c /root/chef-repo/.chef/pivotal.rb")
+        server.run_command("/opt/opscode/embedded/bin/knife opc org user add demo mary-admin --admin -c /root/chef-repo/.chef/pivotal.rb")
+        server.run_command("/opt/opscode/embedded/bin/knife opc user create joe-user joe user joe-user@noreply.com joe-user --filename /root/chef-repo/.chef/joe-user.pem -c /root/chef-repo/.chef/pivotal.rb")
+        server.run_command("/opt/opscode/embedded/bin/knife opc org user add demo joe-user -c /root/chef-repo/.chef/pivotal.rb")
+      when 'chef-server'
+        # give time for all services to come up completely
+        sleep 10
+        run_ctl(server, "chef-server", "org-create demo demo --filename /root/chef-repo/.chef/demo-validator.pem")
+        run_ctl(server, "chef-server", "user-create mary-admin mary admin mary-admin@noreply.com mary-admin --filename /root/chef-repo/.chef/mary-admin.pem")
+        run_ctl(server, "chef-server", "org-user-add demo mary-admin --admin")
+        run_ctl(server, "chef-server", "user-create joe-user joe user joe-user@noreply.com joe-user --filename /root/chef-repo/.chef/joe-user.pem")
+        run_ctl(server, "chef-server", "org-user-add demo joe-user")
+      end
     end
 
     def chef_repo(force=false, pivotal=false)
