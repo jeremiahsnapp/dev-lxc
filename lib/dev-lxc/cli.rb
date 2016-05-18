@@ -214,7 +214,14 @@ adhoc:
       servers = Array.new
       cluster.get_sorted_servers(server_name_regex).map { |s| servers << s.status }
       max_server_name_length = servers.max_by { |s| s['name'].length }['name'].length unless servers.empty?
-      servers.each { |s| printf "%#{max_server_name_length}s     %-15s %s\n", s['name'], s['state'], s['ip_addresses'] }
+      servers.each_with_index do |s, server_index|
+        printf "%-#{max_server_name_length}s     %-15s %s\n", s['name'], s['state'].upcase, s['ip_addresses']
+        server = cluster.get_server(s['name'])
+        server.snapshot_list.each do |snapname, snaptime, snap_comment|
+          printf "  |_ %s %s %s\n", snapname, snaptime, snap_comment
+        end
+        puts if server_index + 1 < servers.length
+      end
     end
 
     desc "realpath [SERVER_NAME_REGEX] [ROOTFS_PATH]", "Returns the real path to a file in each server"
