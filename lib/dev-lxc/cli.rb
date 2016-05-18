@@ -117,6 +117,7 @@ module DevLXC::CLI
     option :compliance, :type => :boolean, :desc => "Compliance Server"
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
+    option :chef_backend, :type => :boolean, :desc => "Chef Backend Cluster"
     def init
       header = %Q(# base_container must be the name of an existing container
 base_container: b-ubuntu-1404
@@ -194,6 +195,37 @@ adhoc:
     adhoc.lxc:
       ipaddress: 10.0.3.207
 )
+      chef_backend_config = %Q(
+chef-backend:
+  api_fqdn: chef.lxc
+  servers:
+    chef-backend1.lxc:
+      ipaddress: 10.0.3.208
+      role: backend
+      leader: true
+      products:
+        chef-backend:
+          channel: current
+    chef-backend2.lxc:
+      ipaddress: 10.0.3.209
+      role: backend
+      products:
+        chef-backend:
+          channel: current
+    chef-backend3.lxc:
+      ipaddress: 10.0.3.210
+      role: backend
+      products:
+        chef-backend:
+          channel: current
+    chef-frontend1.lxc:
+      ipaddress: 10.0.3.211
+      role: frontend
+      bootstrap: true
+      products:
+        chef-server:
+        manage:
+)
       config = header
       config += chef_config if options[:chef]
       config += tiered_chef_config if options[:tiered_chef]
@@ -201,6 +233,7 @@ adhoc:
       config += compliance_config if options[:compliance]
       config += supermarket_config if options[:supermarket]
       config += adhoc_config if options[:adhoc]
+      config += chef_backend_config if options[:chef_backend]
       puts config
     end
 
@@ -210,6 +243,9 @@ adhoc:
       cluster = get_cluster(options[:config])
       if cluster.config['chef-server'][:topology] == "tier" && cluster.config['chef-server'][:fqdn]
         printf "Chef Server FQDN: %s\n\n", cluster.config['chef-server'][:fqdn]
+      end
+      if cluster.config['chef-backend'][:fqdn]
+        printf "Chef Server FQDN: %s\n\n", cluster.config['chef-backend'][:fqdn]
       end
       servers = Array.new
       cluster.get_sorted_servers(server_name_regex).map { |s| servers << s.status }
