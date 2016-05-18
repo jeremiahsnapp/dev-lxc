@@ -208,11 +208,9 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def status(server_name_regex=nil)
       cluster = get_cluster(options[:config])
-      puts "Chef Server FQDN: #{cluster.config['chef-server'][:fqdn]}\n" if cluster.config['chef-server'][:fqdn]
-      puts "Analytics FQDN:   #{cluster.config['analytics'][:fqdn]}\n" if cluster.config['analytics'][:fqdn]
-      puts "Compliance FQDN:  #{cluster.config['compliance'][:fqdn]}\n" if cluster.config['compliance'][:fqdn]
-      puts "Supermarket FQDN: #{cluster.config['supermarket'][:fqdn]}\n" if cluster.config['supermarket'][:fqdn]
-      puts
+      if cluster.config['chef-server'][:topology] == "tier" && cluster.config['chef-server'][:fqdn]
+        printf "Chef Server FQDN: %s\n\n", cluster.config['chef-server'][:fqdn]
+      end
       servers = Array.new
       cluster.get_sorted_servers(server_name_regex).map { |s| servers << s.status }
       max_server_name_length = servers.max_by { |s| s['name'].length }['name'].length unless servers.empty?
