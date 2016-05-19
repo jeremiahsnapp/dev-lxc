@@ -470,6 +470,13 @@ module DevLXC
         sleep 5
       when 'analytics'
         configure_analytics(server) if required_products.include?('analytics')
+      when 'chef-backend'
+        configure_chef_backend(server) if required_products.include?('chef-backend')
+        if required_products.include?('chef-server')
+          configure_chef_frontend(server)
+          create_users(server) if server.name == @config['chef-backend'][:bootstrap_frontend]
+        end
+        configure_manage(server) if required_products.include?('manage')
       when 'chef-server'
         if required_products.include?('chef-server') || required_products.include?('private-chef')
           configure_chef_server(server)
@@ -483,6 +490,43 @@ module DevLXC
       when 'supermarket'
         configure_supermarket(server) if required_products.include?('supermarket')
       end
+    end
+
+    def configure_chef_backend(server)
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-backend")
+      FileUtils.touch("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-backend/.license.accepted")
+      if server.name == @config['chef-backend'][:leader_backend]
+        puts "Creating /etc/chef-backend/chef-backend.rb"
+        FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/chef-backend")
+        chef_backend_config = "publish_address '#{@server_configs[server.name][:ipaddress]}'\n"
+        IO.write("#{server.container.config_item('lxc.rootfs')}/etc/chef-backend/chef-backend.rb", chef_backend_config)
+        run_ctl(server, "chef-backend", "bootstrap --yes")
+      else
+        puts "Joining #{server.name} to the chef-backend cluster"
+        leader_backend = get_server(@config['chef-backend'][:leader_backend])
+        FileUtils.cp("#{leader_backend.container.config_item('lxc.rootfs')}/etc/chef-backend/secrets.json",
+                     "#{server.container.config_item('lxc.rootfs')}/root/")
+        run_ctl(server, "chef-backend", "join-cluster #{@server_configs[leader_backend.name][:ipaddress]} -p #{@server_configs[server.name][:ipaddress]} -s /root/secrets.json --yes")
+      end
+    end
+
+    def configure_chef_frontend(server)
+      puts "Creating /etc/opscode/chef-server.rb"
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/opscode")
+      leader_backend = get_server(@config['chef-backend'][:leader_backend])
+      run_ctl(leader_backend, "chef-backend", "gen-server-config #{server.name} --filename /tmp/#{server.name}.rb")
+      FileUtils.cp("#{leader_backend.container.config_item('lxc.rootfs')}/tmp/#{server.name}.rb",
+                   "#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb")
+      unless server.name == @config['chef-backend'][:bootstrap_frontend]
+        bootstrap_frontend = get_server(@config['chef-backend'][:bootstrap_frontend])
+        puts "Copying /etc/opscode/private-chef-secrets.json from bootstrap frontend '#{bootstrap_frontend.name}'"
+        FileUtils.cp("#{bootstrap_frontend.container.config_item('lxc.rootfs')}/etc/opscode/private-chef-secrets.json",
+                     "#{server.container.config_item('lxc.rootfs')}/etc/opscode/")
+        puts "Copying /etc/opscode/pivotal.pem from bootstrap frontend '#{bootstrap_frontend.name}'"
+        FileUtils.cp("#{bootstrap_frontend.container.config_item('lxc.rootfs')}/etc/opscode/pivotal.pem",
+                     "#{server.container.config_item('lxc.rootfs')}/etc/opscode/")
+      end
+      run_ctl(server, "chef-server", "reconfigure")
     end
 
     def configure_chef_server(server)
