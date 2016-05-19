@@ -138,7 +138,7 @@ module DevLXC
       mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
       ssh_keys.concat(cluster_config['ssh-keys']) unless cluster_config['ssh-keys'].nil?
 
-      %w(adhoc analytics chef-server compliance supermarket).each do |server_type|
+      %w(adhoc analytics chef-backend chef-server compliance supermarket).each do |server_type|
         unless cluster_config[server_type].nil?
           base_container_names << cluster_config[server_type]['base_container'] unless cluster_config[server_type]['base_container'].nil?
           hostnames << cluster_config[server_type]['api_fqdn'] unless cluster_config[server_type]['api_fqdn'].nil?
