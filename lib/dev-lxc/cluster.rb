@@ -228,9 +228,16 @@ module DevLXC
 
       # the order of this list of server_types matters
       # it determines the order in which actions are applied to each server_type
-      %w(chef-server analytics compliance supermarket adhoc).each do |server_type|
+      %w(chef-backend chef-server analytics compliance supermarket adhoc).each do |server_type|
         unless @config[server_type].empty?
           case server_type
+          when "chef-backend"
+            @config[server_type][:backends].each do |backend_name|
+              servers << get_server(backend_name)
+            end
+            @config[server_type][:frontends].each do |frontend_name|
+              servers << get_server(frontend_name)
+            end
           when "analytics", "chef-server"
             if @config[server_type][:bootstrap_backend]
               server_name = @config[server_type][:bootstrap_backend]
