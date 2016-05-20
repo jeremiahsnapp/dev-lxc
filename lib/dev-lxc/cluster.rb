@@ -13,7 +13,7 @@ module DevLXC
       @config = Hash.new { |hash, key| hash[key] = {} }
       @server_configs = Hash.new
 
-      %w(adhoc analytics chef-server compliance supermarket).each do |server_type|
+      %w(adhoc analytics chef-backend chef-server compliance supermarket).each do |server_type|
         if cluster_config[server_type]
           @config[server_type][:mounts] = cluster_config[server_type]["mounts"]
           @config[server_type][:mounts] ||= cluster_config["mounts"]
@@ -70,6 +70,39 @@ module DevLXC
                   additional_fqdn: additional_fqdn,
                   mounts: @config[server_type][:mounts],
                   ssh_keys: @config[server_type][:ssh_keys]
+                }
+              end
+            end
+          when "chef-backend"
+            @config[server_type][:fqdn] = cluster_config[server_type]["api_fqdn"]
+            @config[server_type][:backends] = Array.new
+            @config[server_type][:frontends] = Array.new
+
+            servers = cluster_config[server_type]["servers"]
+            if servers
+              @config[server_type][:leader_backend] = servers.select { |s,sc| sc['role'] == 'backend' && sc['leader'] == true }.keys.first
+              @config[server_type][:bootstrap_frontend] = servers.select { |s,sc| sc['role'] == 'frontend' && sc['bootstrap'] == true }.keys.first
+              @config[server_type][:backends] << @config[server_type][:leader_backend]
+              @config[server_type][:frontends] << @config[server_type][:bootstrap_frontend]
+              servers.each do |server_name, server_config|
+                additional_fqdn = nil
+                products = server_config['products']
+                products ||= Hash.new
+                case server_config["role"]
+                when "backend"
+                  @config[server_type][:backends] << server_name unless server_name == @config[server_type][:leader_backend]
+                when "frontend"
+                  additional_fqdn = @config[server_type][:fqdn]
+                  @config[server_type][:frontends] << server_name unless server_name == @config[server_type][:bootstrap_frontend]
+                end
+                @server_configs[server_name] = {
+                  server_type: server_type,
+                  products: products,
+                  ipaddress: server_config['ipaddress'],
+                  additional_fqdn: additional_fqdn,
+                  mounts: @config[server_type][:mounts],
+                  ssh_keys: @config[server_type][:ssh_keys],
+                  chef_server_type: 'chef-server'
                 }
               end
             end
