@@ -247,6 +247,9 @@ chef-backend:
       if cluster.config['chef-backend'][:fqdn]
         printf "Chef Server FQDN: %s\n\n", cluster.config['chef-backend'][:fqdn]
       end
+      if cluster.config['analytics'][:topology] == "tier" && cluster.config['analytics'][:fqdn]
+        printf "Analytics FQDN: %s\n\n", cluster.config['analytics'][:fqdn]
+      end
       servers = Array.new
       cluster.get_sorted_servers(server_name_regex).map { |s| servers << s.status }
       max_server_name_length = servers.max_by { |s| s['name'].length }['name'].length unless servers.empty?
