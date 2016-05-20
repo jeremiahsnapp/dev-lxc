@@ -286,7 +286,7 @@ chef-backend:
         exit 1
       end
       container = servers.first.container
-      unless container.defined? && container.running?
+      if !container.defined? || !container.running?
         puts "ERROR: Server '#{container.name}' is not running"
         exit 1
       end
