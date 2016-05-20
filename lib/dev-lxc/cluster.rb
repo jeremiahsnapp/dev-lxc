@@ -285,6 +285,27 @@ module DevLXC
             abort_up = true
           end
         end
+        if @config['chef-backend'][:frontends] && @config['chef-backend'][:frontends].include?(server.name) && server.name != @config['chef-backend'][:bootstrap_frontend]
+          if @config['chef-backend'][:bootstrap_frontend].nil?
+            puts "ERROR: '#{server.name}' requires a Chef Server bootstrap frontend to be configured first."
+            abort_up = true
+          elsif !get_server(@config['chef-backend'][:bootstrap_frontend]).container.defined? && servers.select { |s| s.name == @config['chef-backend'][:bootstrap_frontend] }.empty?
+            puts "ERROR: '#{server.name}' requires '#{@config['chef-backend'][:bootstrap_frontend]}' to be configured first."
+            abort_up = true
+          end
+        end
+        if server.name == @config['chef-backend'][:bootstrap_frontend]
+          if (@config['chef-backend'][:backends].select { |s| get_server(s).container.running? }.length + servers.select { |s| @config['chef-backend'][:backends].include?(s.name) }.length) < 2
+            puts "ERROR: '#{server.name}' requires at least two nodes in the backend cluster to be running first."
+            abort_up = true
+          end
+        end
+        if @config['chef-backend'][:backends] && @config['chef-backend'][:backends].include?(server.name) && server.name != @config['chef-backend'][:leader_backend]
+          if !get_server(@config['chef-backend'][:leader_backend]).container.running? && servers.select { |s| s.name == @config['chef-backend'][:leader_backend] }.empty?
+            puts "ERROR: '#{server.name}' requires '#{@config['chef-backend'][:leader_backend]}' to be running first."
+            abort_up = true
+          end
+        end
       end
       exit 1 if abort_up
       prep_product_cache(servers)
@@ -297,6 +318,27 @@ module DevLXC
       end
       servers.each do |server|
         if server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: completed") }.empty?
+          if server.name == @config["chef-backend"][:bootstrap_frontend]
+            running_backends = Array.new
+            @config["chef-backend"][:backends].reverse_each do |server_name|
+              backend = get_server(server_name)
+              if backend.container.defined? && backend.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: backend cluster configured but frontend not bootstrapped") }.empty?
+                if backend.container.running?
+                  running_backends << backend.name
+                  backend.stop
+                end
+                backend.snapshot("dev-lxc build: backend cluster configured but frontend not bootstrapped")
+                snapshot = backend.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: completed") }.first
+                backend.snapshot_destroy(snapshot.first) if snapshot
+              end
+            end
+            @config["chef-backend"][:backends].each do |server_name|
+              if running_backends.include?(server_name)
+                get_server(server_name).start
+                configured_servers << server_name unless configured_servers.include?(server_name)
+              end
+            end
+          end
           configure_products(server)
           configured_servers << server.name
         end
