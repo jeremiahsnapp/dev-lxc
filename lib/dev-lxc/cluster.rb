@@ -1,10 +1,13 @@
 require "dev-lxc/server"
+require "mixlib/install"
+require "open-uri"
 
 module DevLXC
   class Cluster
     attr_reader :config
 
     def initialize(cluster_config)
+      FileUtils.mkdir_p('/var/dev-lxc') unless Dir.exist?('/var/dev-lxc')
       validate_cluster_config(cluster_config)
 
       @config = Hash.new { |hash, key| hash[key] = {} }
@@ -14,6 +17,8 @@ module DevLXC
         if cluster_config[server_type]
           @config[server_type][:mounts] = cluster_config[server_type]["mounts"]
           @config[server_type][:mounts] ||= cluster_config["mounts"]
+          @config[server_type][:mounts] ||= Array.new
+          @config[server_type][:mounts] << "/var/dev-lxc var/dev-lxc"
           @config[server_type][:ssh_keys] = cluster_config[server_type]["ssh-keys"]
           @config[server_type][:ssh_keys] ||= cluster_config["ssh-keys"]
           @config[server_type][:base_container_name] = cluster_config[server_type]["base_container"]
@@ -213,6 +218,96 @@ module DevLXC
       servers << Server.new(@supermarket_fqdn, 'supermarket', @cluster_config) if @supermarket_fqdn
       servers += adhoc_servers
       servers.select { |s| s.server.name =~ /#{server_name_regex}/ }
+    end
+
+    def get_product_url(server, product_name, product_options)
+      server_type = @server_configs[server.name][:server_type]
+      base_container = DevLXC::Container.new(@config[server_type][:base_container_name])
+      mixlib_install_platform_detection_path = "#{base_container.config_item('lxc.rootfs')}/mixlib-install-platform-detection"
+      IO.write(mixlib_install_platform_detection_path, Mixlib::Install::Generator::Bourne.detect_platform_sh)
+      platform_results = `chroot #{base_container.config_item('lxc.rootfs')} bash mixlib-install-platform-detection`
+      File.unlink(mixlib_install_platform_detection_path)
+      if platform_results.empty?
+        puts "ERROR: Unable to detect the platform of container '#{base_container.name}'"
+        exit 1
+      end
+      (platform, platform_version, architecture) = platform_results.split
+      product_version = product_options['version'] if product_options
+      product_version ||= 'latest'
+      channel = product_options['channel'] if product_options
+      channel ||= 'stable'
+      channel = channel.to_sym
+      options = {
+        product_name: product_name,
+        product_version: product_version,
+        channel: channel,
+        platform: platform,
+        platform_version: platform_version,
+        architecture: architecture
+      }
+      artifact = Mixlib::Install.new(options).artifact_info
+      if artifact.class != Mixlib::Install::ArtifactInfo
+        puts "ERROR: Unable to find download URL for the following product"
+        puts JSON.pretty_generate(options)
+        exit 1
+      end
+      artifact.url
+    end
+
+    def prep_product_cache(servers)
+      all_required_products = Hash.new
+      servers.each do |server|
+        products = @server_configs[server.name][:products]
+        @server_configs[server.name][:required_products] = Hash.new
+        if !server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: products installed") }.empty?
+          puts "Skipping product cache preparation for container '#{server.name}' because it has a 'products installed' snapshot"
+          next
+        end
+        products.each do |product_name, product_options|
+          if product_options && product_options['package_source']
+            package_source = product_options['package_source']
+            all_required_products[package_source] = product_name
+            @server_configs[server.name][:required_products][product_name] = package_source
+          else
+            package_source = get_product_url(server, product_name, product_options)
+            all_required_products[package_source] = product_name
+            product_cache_path = "/var/dev-lxc/cache/chef-products/#{product_name}/#{File.basename(package_source)}"
+            @server_configs[server.name][:required_products][product_name] = product_cache_path
+          end
+        end
+      end
+      all_required_products.each do |package_source, product_name|
+        if package_source.start_with?('http')
+          product_cache_path = "/var/dev-lxc/cache/chef-products/#{product_name}/#{File.basename(package_source)}"
+          if !File.exist?(product_cache_path)
+            FileUtils.mkdir_p(File.dirname(product_cache_path)) unless Dir.exist?(File.dirname(product_cache_path))
+            puts "Downloading #{package_source} to #{product_cache_path}"
+            open(package_source) { |url| File.open(product_cache_path, 'wb') { |f| f.write(url.read) } }
+          end
+        elsif !File.exist?(package_source)
+          puts "ERROR: Package source #{package_source} does not exist."
+          exit 1
+        end
+      end
+    end
+
+    def install_products(server)
+      if !server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: products installed") }.empty?
+        puts "Skipping product installation for container '#{server.name}' because it already has a 'products installed' snapshot"
+        return
+      end
+      if server.container.running?
+        server_was_running = true
+      else
+        server_was_running = false
+        server.start
+      end
+      @server_configs[server.name][:required_products].each do |product_name, package_source|
+        server.install_package(package_source)
+      end
+      server.stop
+      server.snapshot("dev-lxc build: products installed")
+      server.start if server_was_running
     end
 
     def chef_repo(force=false, pivotal=false)
