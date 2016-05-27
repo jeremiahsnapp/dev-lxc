@@ -80,9 +80,9 @@ module DevLXC
                 products = server_config['products']
                 products ||= Hash.new
                 chef_server_type = 'private-chef' if products.has_key?('private-chef')
-                chef_server_type = 'chef-server' if products.has_key?('chef-server') || @config[server_type][:topology] == 'open-source'
+                chef_server_type = 'chef-server' if products.has_key?('chef-server')
                 case @config[server_type][:topology]
-                when 'open-source', 'standalone'
+                when 'standalone'
                   @config[server_type][:bootstrap_backend] = server_name if server_config["role"].nil?
                   @config[server_type][:fqdn] ||= @config[server_type][:bootstrap_backend]
                 when 'tier'
@@ -237,27 +237,22 @@ module DevLXC
         FileUtils.cp( pem_files, "./chef-repo/.chef" )
       end
 
-      if @chef_server_topology == "open-source"
-        chef_server_url = "https://#{@api_fqdn}"
-        validator_name = "chef-validator"
-      else
-        chef_server_root = "https://#{@api_fqdn}"
-        chef_server_url = "https://#{@api_fqdn}/organizations/demo"
-        validator_name = "demo-validator"
+      chef_server_root = "https://#{@api_fqdn}"
+      chef_server_url = "https://#{@api_fqdn}/organizations/demo"
+      validator_name = "demo-validator"
 
-        if pivotal
-          if File.exists?("./chef-repo/.chef/pivotal.rb") && ! force
-            puts "Skipping pivotal.rb because it already exists in `./chef-repo/.chef`"
+      if pivotal
+        if File.exists?("./chef-repo/.chef/pivotal.rb") && ! force
+          puts "Skipping pivotal.rb because it already exists in `./chef-repo/.chef`"
+        else
+          pivotal_rb_path = "#{chef_server.config_item('lxc.rootfs')}/root/chef-repo/.chef/pivotal.rb"
+          if File.exists?(pivotal_rb_path)
+            pivotal_rb = IO.read(pivotal_rb_path)
+            pivotal_rb.sub!(/^chef_server_root .*/, "chef_server_root \"#{chef_server_root}\"")
+            pivotal_rb.sub!(/^chef_server_url .*/, "chef_server_url \"#{chef_server_root}\"")
+            IO.write("./chef-repo/.chef/pivotal.rb", pivotal_rb)
           else
-            pivotal_rb_path = "#{chef_server.config_item('lxc.rootfs')}/root/chef-repo/.chef/pivotal.rb"
-            if File.exists?(pivotal_rb_path)
-              pivotal_rb = IO.read(pivotal_rb_path)
-              pivotal_rb.sub!(/^chef_server_root .*/, "chef_server_root \"#{chef_server_root}\"")
-              pivotal_rb.sub!(/^chef_server_url .*/, "chef_server_url \"#{chef_server_root}\"")
-              IO.write("./chef-repo/.chef/pivotal.rb", pivotal_rb)
-            else
-              puts "The pivotal.rb file can not be copied because it does not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
-            end
+            puts "The pivotal.rb file can not be copied because it does not exist in '#{chef_server.server.name}' Chef Server's `/root/chef-repo/.chef` directory"
           end
         end
       end

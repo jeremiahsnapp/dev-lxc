@@ -111,7 +111,6 @@ module DevLXC::CLI
     end
 
     desc "init", "Provide a cluster config file"
-    option :open_source, :type => :boolean, :desc => "Standalone Old Open Source Chef Server"
     option :tiered_chef, :type => :boolean, :desc => "Tiered Chef Server"
     option :chef, :type => :boolean, :desc => "Standalone Chef Server"
     option :analytics, :type => :boolean, :desc => "Analytics Server"
@@ -120,7 +119,6 @@ module DevLXC::CLI
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
     def init
       chef_packages_path = "/root/dev/chef-packages"
-      open_source_package = "server: #{chef_packages_path}/osc/chef-server_11.1.6-1_amd64.deb"
       chef_server_package = "server: #{chef_packages_path}/cs/chef-server-core_12.6.0-1_amd64.deb"
       manage_package = "manage: #{chef_packages_path}/manage/chef-manage_2.3.0-1_amd64.deb"
       reporting_package = "reporting: #{chef_packages_path}/reporting/opscode-reporting_1.6.0-1_amd64.deb"
@@ -141,16 +139,6 @@ mounts:
 #  - /root/dev/clusters/id_rsa.pub
 
 # DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
-)
-      open_source_config = %Q(
-chef-server:
-  packages:
-    #{open_source_package}
-  api_fqdn: chef.lxc
-  topology: open-source
-  servers:
-    osc-chef.lxc:
-      ipaddress: 10.0.3.200
 )
       tiered_chef_config = %Q(
 chef-server:
@@ -212,7 +200,6 @@ adhoc:
       ipaddress: 10.0.3.207
 )
       config = header
-      config += open_source_config if options[:open_source]
       config += chef_config if options[:chef]
       config += tiered_chef_config if options[:tiered_chef]
       config += analytics_config if options[:analytics]
