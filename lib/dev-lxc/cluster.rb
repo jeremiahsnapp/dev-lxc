@@ -131,7 +131,6 @@ module DevLXC
     def validate_cluster_config(cluster_config)
       hostnames = Array.new
       mounts = Array.new
-      packages = Array.new
       base_container_names = Array.new
       ssh_keys = Array.new
 
@@ -146,7 +145,6 @@ module DevLXC
           hostnames << cluster_config[server_type]['analytics_fqdn'] unless cluster_config[server_type]['analytics_fqdn'].nil?
           hostnames.concat(cluster_config[server_type]['servers'].keys) unless cluster_config[server_type]['servers'].nil?
           mounts.concat(cluster_config[server_type]['mounts']) unless cluster_config[server_type]['mounts'].nil?
-          packages.concat(cluster_config[server_type]['packages'].values) unless cluster_config[server_type]['packages'].nil?
           ssh_keys.concat(cluster_config[server_type]['ssh-keys']) unless cluster_config[server_type]['ssh-keys'].nil?
         end
       end
@@ -170,14 +168,6 @@ module DevLXC
         mounts.each do |mount|
           unless File.exists?(mount.split.first)
             puts "ERROR: Mount source #{mount.split.first} does not exist."
-            exit 1
-          end
-        end
-      end
-      unless packages.empty?
-        packages.each do |package|
-          unless File.exists?(package)
-            puts "ERROR: Package #{package} does not exist."
             exit 1
           end
         end
