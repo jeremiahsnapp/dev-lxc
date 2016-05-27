@@ -118,21 +118,12 @@ module DevLXC::CLI
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
     def init
-      chef_packages_path = "/root/dev/chef-packages"
-      chef_server_package = "server: #{chef_packages_path}/cs/chef-server-core_12.6.0-1_amd64.deb"
-      manage_package = "manage: #{chef_packages_path}/manage/chef-manage_2.3.0-1_amd64.deb"
-      reporting_package = "reporting: #{chef_packages_path}/reporting/opscode-reporting_1.6.0-1_amd64.deb"
-      push_jobs_server_package = "push-jobs-server: #{chef_packages_path}/push-jobs-server/opscode-push-jobs-server_1.1.6-1_amd64.deb"
-      analytics_package = "analytics: #{chef_packages_path}/analytics/opscode-analytics_1.4.0-1_amd64.deb"
-      compliance_package = "compliance: #{chef_packages_path}/compliance/chef-compliance_1.1.9-1_amd64.deb"
-      supermarket_package = "supermarket: #{chef_packages_path}/supermarket/supermarket_2.5.2-1_amd64.deb"
-
       header = %Q(# base_container must be the name of an existing container
 base_container: b-ubuntu-1404
 
 # list any host directories you want mounted into the servers
-mounts:
-  - /root/dev root/dev
+#mounts:
+#  - /root/dev root/dev
 
 # list any SSH public keys you want added to /home/dev-lxc/.ssh/authorized_keys
 #ssh-keys:
@@ -142,11 +133,6 @@ mounts:
 )
       tiered_chef_config = %Q(
 chef-server:
-  packages:
-    #{chef_server_package}
-    #{manage_package}
-    #{reporting_package}
-    #{push_jobs_server_package}
   topology: tier
   api_fqdn: chef.lxc
   servers:
@@ -154,44 +140,53 @@ chef-server:
       ipaddress: 10.0.3.201
       role: backend
       bootstrap: true
+      products:
+        chef-server:
+        push-jobs-server:
+        reporting:
     chef-fe1.lxc:
       ipaddress: 10.0.3.202
       role: frontend
+      products:
+        chef-server:
+        manage:
+        push-jobs-server:
+        reporting:
 )
       chef_config = %Q(
 chef-server:
-  packages:
-    #{chef_server_package}
-    #{manage_package}
-    #{reporting_package}
-    #{push_jobs_server_package}
   servers:
     chef.lxc:
       ipaddress: 10.0.3.203
+      products:
+        chef-server:
+        manage:
+        push-jobs-server:
+        reporting:
 )
       analytics_config = %Q(
 analytics:
-  packages:
-    #{analytics_package}
   servers:
     analytics.lxc:
       ipaddress: 10.0.3.204
+      products:
+        analytics:
 )
       compliance_config = %Q(
 compliance:
-  packages:
-    #{compliance_package}
   servers:
     compliance.lxc:
       ipaddress: 10.0.3.205
+      products:
+        compliance:
 )
       supermarket_config = %Q(
 supermarket:
-  packages:
-    #{supermarket_package}
   servers:
     supermarket.lxc:
       ipaddress: 10.0.3.206
+      products:
+        supermarket:
 )
       adhoc_config = %Q(
 adhoc:
