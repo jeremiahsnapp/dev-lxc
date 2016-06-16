@@ -31,15 +31,17 @@ module DevLXC
     end
     options.concat(base_container_options.split) unless base_container_options.nil?
     base_container.create(template, "btrfs", {}, 0, options)
+
+    # Centos 7 needs setpcap capabilities
+    # ref: https://bugzilla.redhat.com/show_bug.cgi?id=1176816
+    # ref: https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1339781
+    # ref: http://vfamilyserver.org/blog/2015/05/centos-7-lxc-container-slow-boot/
     if base_container.name == "b-centos-7"
-      # Centos 7 needs setpcap capabilities
-      # ref: https://bugzilla.redhat.com/show_bug.cgi?id=1176816
-      # ref: https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1339781
-      # ref: http://vfamilyserver.org/blog/2015/05/centos-7-lxc-container-slow-boot/
       DevLXC.search_file_replace(base_container.config_file_name, /centos.common.conf/, 'fedora.common.conf')
       base_container.clear_config
       base_container.load_config
     end
+
     unless base_container.config_item("lxc.mount.auto").nil?
       base_container.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
     end
