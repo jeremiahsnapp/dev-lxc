@@ -4,7 +4,7 @@ require "dev-lxc/cluster"
 
 module DevLXC
   class Server
-    attr_reader :server, :platform_image_name, :platform_image_options, :shared_image_name
+    attr_reader :server, :platform_image_name, :platform_image_options
 
     def initialize(name, server_type, cluster_config)
       unless cluster_config[server_type]["servers"].keys.include?(name)
@@ -39,33 +39,18 @@ module DevLXC
       @platform_image_options ||= cluster_config["platform_image_options"]
       @packages = cluster_config[@server_type]["packages"]
 
-      case @server_type
-      when 'adhoc', 'compliance', 'supermarket'
-        @shared_image_name = ''
-      when 'analytics'
-        @shared_image_name = "s#{@platform_image_name[1..-1]}"
-        @shared_image_name += "-analytics-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["analytics"].to_s.match(/[_-]((\d+\.?){3,})/)
-      when 'chef-server'
+      if @server_type == 'chef-server'
         if File.basename(@packages["server"]).match(/^(\w+-\w+.*)[_-]((?:\d+\.?){3,})/)
           @chef_server_type = Regexp.last_match[1]
-          @chef_server_version = Regexp.last_match[2].gsub(".", "-")
+          case @chef_server_type
+          when 'chef-server-core'
+            @server_ctl = 'chef-server'
+          when 'private-chef'
+            @server_ctl = 'private-chef'
+          when 'chef-server'
+            @server_ctl = 'chef-server'
+          end
         end
-
-        @shared_image_name = "s#{@platform_image_name[1..-1]}"
-        case @chef_server_type
-        when 'chef-server-core'
-          @shared_image_name += '-cs'
-          @server_ctl = 'chef-server'
-        when 'private-chef'
-          @shared_image_name += '-ec'
-          @server_ctl = 'private-chef'
-        when 'chef-server'
-          @shared_image_name += '-osc'
-          @server_ctl = 'chef-server'
-        end
-        @shared_image_name += "-#{@chef_server_version}"
-        @shared_image_name += "-reporting-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["reporting"].to_s.match(/[_-]((\d+\.?){3,})/)
-        @shared_image_name += "-pushy-#{Regexp.last_match[1].gsub(".", "-")}" if @packages["push-jobs-server"].to_s.match(/[_-]((\d+\.?){3,})/)
       end
     end
 
@@ -152,8 +137,6 @@ module DevLXC
         DevLXC::Container.new("c-#{@server.name}", @lxc_config_path).destroy
       when :unique
         DevLXC::Container.new("u-#{@server.name}", @lxc_config_path).destroy
-      when :shared
-        DevLXC::Container.new(@shared_image_name, @lxc_config_path).destroy unless @shared_image_name.empty?
       when :platform
         DevLXC::Container.new(@platform_image_name, @lxc_config_path).destroy
       end
@@ -178,23 +161,15 @@ module DevLXC
         return
       else
         puts "Creating container '#{@server.name}'"
-        if %w(adhoc compliance supermarket).include?(@server_type)
-          if @server_type == 'supermarket' && (@chef_server_bootstrap_backend && ! DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?)
+        if @chef_server_bootstrap_backend && ! DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?
+          if @server_type == 'supermarket' || (@server_type == 'chef-server' && @role == 'frontend')
             puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
             exit 1
           end
-          platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options, @lxc_config_path)
-          puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
-          platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
-        else
-          unless @server.name == @chef_server_bootstrap_backend || DevLXC::Container.new(@chef_server_bootstrap_backend, @lxc_config_path).defined?
-            puts "ERROR: The bootstrap backend server '#{@chef_server_bootstrap_backend}' must be created first."
-            exit 1
-          end
-          shared_image = create_shared_image
-          puts "Cloning shared image '#{shared_image.name}' into container '#{@server.name}'"
-          shared_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         end
+        platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options, @lxc_config_path)
+        puts "Cloning platform image '#{platform_image.name}' into container '#{@server.name}'"
+        platform_image.clone(@server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
         @server = DevLXC::Container.new(@server.name, @lxc_config_path)
         puts "Deleting SSH Server Host Keys"
         FileUtils.rm_f(Dir.glob("#{@server.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
@@ -229,61 +204,44 @@ module DevLXC
         # Allow adhoc servers time to generate SSH Server Host Keys
         sleep 5 if @server_type == 'adhoc'
         case @server_type
+        when 'analytics'
+          unless @packages["analytics"].nil?
+            @server.install_package(@packages["analytics"])
+            configure_analytics
+          end
+        when 'chef-server'
+          unless @packages["server"].nil?
+            @server.install_package(@packages["server"])
+            configure_server
+            create_users if @server.name == @chef_server_bootstrap_backend
+            unless @role == 'open-source'
+              unless @packages["reporting"].nil?
+                @server.install_package(@packages["reporting"])
+                configure_reporting
+              end
+              unless @packages["push-jobs-server"].nil?
+                @server.install_package(@packages["push-jobs-server"])
+                configure_push_jobs_server
+              end
+              unless @packages["manage"].nil?
+                if %w(standalone frontend).include?(@role)
+                  @server.install_package(@packages["manage"])
+                  configure_manage
+                end
+              end
+            end
+          end
         when 'compliance'
           @server.install_package(@packages["compliance"]) unless @packages["compliance"].nil?
+          configure_compliance
         when 'supermarket'
           @server.install_package(@packages["supermarket"]) unless @packages["supermarket"].nil?
-        end
-        configure_analytics if @server_type == 'analytics'
-        configure_compliance if @server_type == 'compliance'
-        configure_supermarket if @server_type == 'supermarket'
-        if @server_type == 'chef-server' && ! @packages["server"].nil?
-          configure_server
-          create_users if @server.name == @chef_server_bootstrap_backend
-          if %w(standalone frontend).include?(@role) && ! @packages["manage"].nil?
-            @server.install_package(@packages["manage"])
-            configure_manage
-          end
-          unless @role == 'open-source'
-            configure_reporting unless @packages["reporting"].nil?
-            configure_push_jobs_server unless @packages["push-jobs-server"].nil?
-          end
+          configure_supermarket
         end
         @server.stop
         puts "Cloning container '#{@server.name}' into unique image '#{unique_image.name}'"
         @server.clone("#{unique_image.name}", {:flags => LXC::LXC_CLONE_SNAPSHOT|LXC::LXC_CLONE_KEEPMACADDR})
       end
-    end
-
-    def create_shared_image
-      shared_image = DevLXC::Container.new(@shared_image_name, @lxc_config_path)
-      if shared_image.defined?
-        puts "Using existing shared image '#{shared_image.name}'"
-        return shared_image
-      end
-      platform_image = DevLXC.create_platform_image(@platform_image_name, @platform_image_options, @lxc_config_path)
-      puts "Cloning platform image '#{platform_image.name}' into shared image '#{shared_image.name}'"
-      platform_image.clone(shared_image.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
-      shared_image = DevLXC::Container.new(shared_image.name, @lxc_config_path)
-      puts "Deleting SSH Server Host Keys"
-      FileUtils.rm_f(Dir.glob("#{shared_image.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
-
-      unless shared_image.config_item("lxc.mount.auto").nil?
-        shared_image.set_config_item("lxc.mount.auto", "proc:rw sys:rw")
-        shared_image.save_config
-      end
-      shared_image.sync_mounts(@mounts)
-      shared_image.start
-      case @server_type
-      when 'analytics'
-        shared_image.install_package(@packages["analytics"]) unless @packages["analytics"].nil?
-      when 'chef-server'
-        shared_image.install_package(@packages["server"]) unless @packages["server"].nil?
-        shared_image.install_package(@packages["reporting"]) unless @packages["reporting"].nil?
-        shared_image.install_package(@packages["push-jobs-server"]) unless @packages["push-jobs-server"].nil?
-      end
-      shared_image.stop
-      return shared_image
     end
 
     def configure_server

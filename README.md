@@ -311,11 +311,11 @@ dev-lxc up
 
 #### Destroy cluster
 
-Use the following command to destroy the cluster's servers and also destroy their custom, unique and shared
+Use the following command to destroy the cluster's servers and also destroy their custom and unique
 images if you want to build them from scratch.
 
 ```
-dev-lxc destroy -c -u -s
+dev-lxc destroy -c -u
 ```
 
 #### Global status of all dev-lxc images and servers
@@ -619,8 +619,8 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 
 One of the key things this tool uses is the concept of images.
 
-`dev-lxc` creates images with a "p-", "s-", "u-" or "c-" prefix on the name to distinguish
-it as a "platform", "shared", "unique" or "custom" image.
+`dev-lxc` creates images with a "p-", "u-" or "c-" prefix on the name to distinguish
+it as a "platform", "unique" or "custom" image.
 
 Images are then cloned using the btrfs filesystem to very quickly provide a lightweight duplicate
 of the image. This clone is either used to build the next image in the build process or the final
@@ -653,26 +653,7 @@ There are four image categories.
 
     *Once this platform image is created there is rarely a need to delete it.*
 
-2. Shared Image
-
-    The shared image is the second to get created and is identified by the
-	"s-" prefix on the image name.
-
-    `DevLXC::Server#create_shared_image` controls the creation of a shared image.
-
-    Chef packages that are common to all servers in a Chef cluster, such as chef-server-core,
-	opscode-reporting and opscode-push-jobs-server are installed using `dpkg` or `rpm`.
-
-    Note the manage package will not be installed at this point since it is not common to all
-	servers (i.e. it does not get installed on backend servers).
-
-    The name of this image is built from the names and versions of the Chef packages that
-	get installed which makes this image easy to be reused by another cluster that is
-	configured to use the same Chef packages.
-
-    *Since no configuration actually happens yet there is rarely a need to delete this image.*
-
-3. Unique Image
+2. Unique Image
 
     The unique image is the last to get created and is identified by the
 	"u-" prefix on the image name.
@@ -692,7 +673,7 @@ There are four image categories.
 	unique image. These unique images make it very easy to quickly recreate
 	a Chef cluster from a clean starting point.
 
-4. Custom Image
+3. Custom Image
 
     The custom image is only created when the `snapshot` command is used and is identified
 	by the "c-" prefix on the image name.

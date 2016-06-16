@@ -369,36 +369,30 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def list_images(server_name_regex=nil)
       lxc_config_path = get_cluster(options[:config]).lxc_config_path
-      images = Hash.new { |h,k| h[k] = Hash.new { |h,k| h[k] = Array.new } }
+      images = Hash.new { |h,k| h[k] = Array.new }
       match_server_name_regex(server_name_regex).each do |s|
-        images[s.platform_image_name][s.shared_image_name] << s.server.name
+        images[s.platform_image_name] << s.server.name
       end
-      images.each_with_index do |(platform_name, shared), images_index|
-        shared.each_with_index do |(shared_name, final), shared_index|
-          printf "Platform: %27s  %s\n", (LXC::Container.new(platform_name, lxc_config_path).defined? ? "Created" : "Not Created"), platform_name
-          unless shared_name.empty?
-            puts "|"
-            printf "\\_ Shared: %26s  %s\n", (LXC::Container.new(shared_name, lxc_config_path).defined? ? "Created" : "Not Created"), shared_name
-          end
-          final.each_with_index do |final_name, final_index|
-            puts "   |"
-            unique_name = "u-#{final_name}"
-            printf "   \\_ Unique: %23s  %s\n", (LXC::Container.new(unique_name, lxc_config_path).defined? ? "Created" : "Not Created"), unique_name
+      images.each_with_index do |(platform_name, final), images_index|
+        printf "Platform: %28s  %s\n", (LXC::Container.new(platform_name, lxc_config_path).defined? ? "Created" : "Not Created"), platform_name
+        final.each_with_index do |final_name, final_index|
+          final_connector = (final_index + 1 < final.length ? "|" : " ")
 
-            shared_connector = (final_index + 1 < final.length ? "|" : " ")
+          unique_name = "u-#{final_name}"
+          printf "#{final_connector}\\_ Unique: %26s  %s\n", (LXC::Container.new(unique_name, lxc_config_path).defined? ? "Created" : "Not Created"), unique_name
 
-            custom_name = "c-#{final_name}"
-            if LXC::Container.new(custom_name, lxc_config_path).defined?
-              printf "   #{shared_connector}  \\_ Custom: %20s  %s\n", "Created", custom_name
-              custom_spacing = "   "
-              final_width = 11
-            else
-              final_width = 14
-            end
-            printf "   #{shared_connector}  #{custom_spacing}\\_ Final Server: %#{final_width}s    %s\n", (LXC::Container.new(final_name, lxc_config_path).defined? ? "Created" : "Not Created"), final_name
+          custom_name = "c-#{final_name}"
+          if LXC::Container.new(custom_name, lxc_config_path).defined?
+            printf "#{final_connector}    \\_ Custom: %22s  %s\n", "Created", custom_name
+            custom_spacing = "    "
+            final_width = 12
+          else
+            final_width = 16
           end
-          puts if (shared_index + 1 < shared.length) || (images_index + 1 < images.length)
+          printf "#{final_connector}    #{custom_spacing}\\_ Final Server: %#{final_width}s    %s\n", (LXC::Container.new(final_name, lxc_config_path).defined? ? "Created" : "Not Created"), final_name
+          puts "|" if final_index + 1 < final.length
         end
+        puts if images_index + 1 < images.length
       end
     end
 
@@ -457,7 +451,6 @@ adhoc:
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     option :custom, :aliases => "-c", :type => :boolean, :desc => "Also destroy the custom images"
     option :unique, :aliases => "-u", :type => :boolean, :desc => "Also destroy the unique images"
-    option :shared, :aliases => "-s", :type => :boolean, :desc => "Also destroy the shared images"
     option :platform, :aliases => "-p", :type => :boolean, :desc => "Also destroy the platform images"
     def destroy(server_name_regex=nil)
       start_time = Time.now
@@ -465,7 +458,6 @@ adhoc:
         s.destroy
         s.destroy_image(:custom) if options[:custom]
         s.destroy_image(:unique) if options[:unique]
-        s.destroy_image(:shared) if options[:shared]
         s.destroy_image(:platform) if options[:platform]
         puts
       end
