@@ -32,6 +32,12 @@ module DevLXC
     options.concat(base_container_options.split) unless base_container_options.nil?
     base_container.create(template, "btrfs", {}, 0, options)
 
+    # if base container is centos then `/etc/hosts` file needs to be modified so `hostname -f`
+    # provides the FQDN instead of `localhost`
+    if base_container.name.start_with?('b-centos-')
+      IO.write("#{base_container.config_item('lxc.rootfs')}/etc/hosts", "127.0.0.1 localhost\n127.0.1.1 #{base_container.name}\n")
+    end
+
     # Centos 7 needs setpcap capabilities
     # ref: https://bugzilla.redhat.com/show_bug.cgi?id=1176816
     # ref: https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1339781

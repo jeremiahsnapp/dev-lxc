@@ -235,11 +235,6 @@ module DevLXC
         end
       end
       @server.sync_mounts(@mounts)
-      # if base container is centos then `/etc/hosts` file needs to be modified so `hostname -f`
-      # provides the FQDN instead of `localhost`
-      if @base_container_name.start_with?('b-centos-')
-        IO.write("#{@server.config_item('lxc.rootfs')}/etc/hosts", "127.0.0.1 localhost\n127.0.1.1 #{@server.name}\n")
-      end
       @server.start
       # Allow adhoc servers time to generate SSH Server Host Keys
       sleep 5 if @server_type == 'adhoc'
