@@ -17,6 +17,10 @@ module DevLXC
       @container.name
     end
 
+    def status
+      @container.status
+    end
+
     def realpath(rootfs_path)
       "#{@container.config_item('lxc.rootfs')}#{rootfs_path}" if @container.defined?
     end
