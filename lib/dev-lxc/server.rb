@@ -4,51 +4,14 @@ require "dev-lxc/cluster"
 
 module DevLXC
   class Server
-    attr_reader :server, :base_container_name
+    attr_reader :server
 
-    def initialize(name, server_type, cluster_config)
-      unless cluster_config[server_type]["servers"].keys.include?(name)
-        puts "ERROR: Server '#{name}' is not defined in the cluster config"
-        exit 1
-      end
-      @server_type = server_type
-      cluster = DevLXC::Cluster.new(cluster_config)
-      @api_fqdn = cluster.api_fqdn
-      @analytics_fqdn = cluster.analytics_fqdn
-      @compliance_fqdn = cluster.compliance_fqdn
-      @supermarket_fqdn = cluster.supermarket_fqdn
-      @chef_server_bootstrap_backend = cluster.chef_server_bootstrap_backend
-      @analytics_bootstrap_backend = cluster.analytics_bootstrap_backend
-      @chef_server_config = cluster.chef_server_config
-      @analytics_config = cluster.analytics_config
-
+    def initialize(name, ipaddress, additional_fqdn, mounts, ssh_keys)
       @server = DevLXC::Container.new(name)
-      @config = cluster_config[@server_type]["servers"][@server.name]
-      @ipaddress = @config["ipaddress"]
-      @role = @config["role"]
-      @role ||= cluster_config[@server_type]['topology']
-      @role ||= 'standalone'
-      @mounts = cluster_config[@server_type]["mounts"]
-      @mounts ||= cluster_config["mounts"]
-      @ssh_keys = cluster_config[@server_type]["ssh-keys"]
-      @ssh_keys ||= cluster_config["ssh-keys"]
-      @base_container_name = cluster_config[@server_type]["base_container"]
-      @base_container_name ||= cluster_config["base_container"]
-      @packages = cluster_config[@server_type]["packages"]
-
-      if @server_type == 'chef-server'
-        if File.basename(@packages["server"]).match(/^(\w+-\w+.*)[_-]((?:\d+\.?){3,})/)
-          @chef_server_type = Regexp.last_match[1]
-          case @chef_server_type
-          when 'chef-server-core'
-            @server_ctl = 'chef-server'
-          when 'private-chef'
-            @server_ctl = 'private-chef'
-          when 'chef-server'
-            @server_ctl = 'chef-server'
-          end
-        end
-      end
+      @ipaddress = ipaddress
+      @additional_fqdn = additional_fqdn
+      @mounts = mounts
+      @ssh_keys = ssh_keys
     end
 
     def realpath(rootfs_path)
