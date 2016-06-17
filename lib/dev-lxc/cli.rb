@@ -214,7 +214,7 @@ adhoc:
       puts "Supermarket FQDN: #{cluster.config['supermarket'][:fqdn]}\n" if cluster.config['supermarket'][:fqdn]
       puts
       servers = Array.new
-      cluster.get_sorted_servers(server_name_regex).map { |s| servers << s.server.status }
+      cluster.get_sorted_servers(server_name_regex).map { |s| servers << s.status }
       max_server_name_length = servers.max_by { |s| s['name'].length }['name'].length unless servers.empty?
       servers.each { |s| printf "%#{max_server_name_length}s     %-15s %s\n", s['name'], s['state'], s['ip_addresses'] }
     end
@@ -233,7 +233,7 @@ adhoc:
       servers = get_cluster(options[:config]).get_sorted_servers(server_name_regex)
       if servers.length > 1
         puts "ERROR: The following servers matched '#{server_name_regex}'"
-        servers.map { |s| puts "       #{s.server.name}" }
+        servers.map { |s| puts "       #{s.name}" }
         puts "       Please specify a single server to attach to"
         exit 1
       elsif servers.empty?
@@ -241,9 +241,9 @@ adhoc:
         puts "       Please specify a single server to attach to"
         exit 1
       end
-      server = servers.first.server
-      unless server.defined? && server.running?
-        puts "ERROR: Server '#{server.name}' is not running"
+      container = servers.first.container
+      unless container.defined? && container.running?
+        puts "ERROR: Server '#{container.name}' is not running"
         exit 1
       end
       attach_opts = {
@@ -252,7 +252,7 @@ adhoc:
         extra_env_vars: ["LANG=en_US.UTF-8", "TERM=linux", "HOME=#{ENV['HOME']}"]
       }
       shell = ENV['SHELL']
-      server.attach(attach_opts) { system(shell) }
+      container.attach(attach_opts) { system(shell) }
     end
 
     desc "chef-repo", "Creates a chef-repo in the current directory using files from the cluster's backend /root/chef-repo"
@@ -311,7 +311,7 @@ adhoc:
       elsif options[:restore]
         running_servers = Array.new
         servers.each do |s|
-          running_servers << s.server.name if s.server.state != :stopped
+          running_servers << s.name if s.container.running?
         end
         unless running_servers.empty?
           puts "ERROR: Aborting snapshot restore because the following servers are running"
@@ -323,7 +323,7 @@ adhoc:
       else
         running_servers = Array.new
         servers.each do |s|
-          running_servers << s.server.name if s.server.state != :stopped
+          running_servers << s.name if s.container.running?
         end
         unless running_servers.empty?
           puts "ERROR: Aborting snapshot because the following servers are running"
@@ -346,7 +346,7 @@ adhoc:
       end
       unless options[:force]
         confirmation_string = String.new
-        servers.reverse_each { |s| confirmation_string += "#{s.server.name}\n" }
+        servers.reverse_each { |s| confirmation_string += "#{s.name}\n" }
         confirmation_string += "Are you sure you want to destroy these servers? (y/N)\n"
         return unless yes?(confirmation_string)
       end
