@@ -13,6 +13,10 @@ module DevLXC
       @ssh_keys = ssh_keys
     end
 
+    def name
+      @container.name
+    end
+
     def realpath(rootfs_path)
       "#{@container.config_item('lxc.rootfs')}#{rootfs_path}" if @container.defined?
     end
