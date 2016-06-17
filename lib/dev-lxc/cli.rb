@@ -309,25 +309,25 @@ adhoc:
         snapname = options[:destroy] == 'destroy' ? "LAST" : options[:destroy]
         servers.each { |s| s.snapshot_destroy(snapname); puts }
       elsif options[:restore]
-        non_stopped_servers = Array.new
+        running_servers = Array.new
         servers.each do |s|
-          non_stopped_servers << s.server.name if s.server.state != :stopped
+          running_servers << s.server.name if s.server.state != :stopped
         end
-        unless non_stopped_servers.empty?
-          puts "ERROR: Aborting snapshot restore because the following servers are not stopped"
-          puts non_stopped_servers
+        unless running_servers.empty?
+          puts "ERROR: Aborting snapshot restore because the following servers are running"
+          puts running_servers
           exit 1
         end
         snapname = options[:restore] == 'restore' ? "LAST" : options[:restore]
         servers.each { |s| s.snapshot_restore(snapname); puts }
       else
-        non_stopped_servers = Array.new
+        running_servers = Array.new
         servers.each do |s|
-          non_stopped_servers << s.server.name if s.server.state != :stopped
+          running_servers << s.server.name if s.server.state != :stopped
         end
-        unless non_stopped_servers.empty?
-          puts "ERROR: Aborting snapshot because the following servers are not stopped"
-          puts non_stopped_servers
+        unless running_servers.empty?
+          puts "ERROR: Aborting snapshot because the following servers are running"
+          puts running_servers
           exit 1
         end
         servers.each { |s| s.snapshot(options[:comment]); puts }
