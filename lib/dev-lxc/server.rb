@@ -34,6 +34,10 @@ module DevLXC
       end
     end
 
+    def install_package(package_path)
+      @container.install_package(package_path)
+    end
+
     def start
       hwaddr = @container.config_item("lxc.network.0.hwaddr")
       DevLXC.assign_ip_address(@ipaddress, @container.name, hwaddr)
