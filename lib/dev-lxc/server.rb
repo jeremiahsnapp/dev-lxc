@@ -46,8 +46,8 @@ module DevLXC
         puts "WARNING: Skipping snapshot of '#{@server.name}' because it does not exist"
         return
       end
-      if @server.state != :stopped
-        puts "WARNING: Skipping snapshot of '#{@server.name}' because it is not stopped"
+      if @server.running?
+        puts "WARNING: Skipping snapshot of '#{@server.name}' because it is running"
         return
       end
       puts "Creating snapshot of container '#{@server.name}'"
@@ -108,8 +108,8 @@ module DevLXC
         puts "WARNING: Skipping container '#{@server.name}' because it does not exist"
         return
       end
-      if @server.state != :stopped
-        puts "WARNING: Skipping container '#{@server.name}' because it is not stopped"
+      if @server.running?
+        puts "WARNING: Skipping container '#{@server.name}' because it is running"
         return
       end
       if snapname == "LAST"
