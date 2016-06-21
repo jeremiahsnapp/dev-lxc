@@ -677,7 +677,7 @@ ssl_verify_mode :verify_none
       when 'private-chef'
         # give time for all services to come up completely
         sleep 60
-        server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc")
+        server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc -v 0.3.1")
         server.run_command("/opt/opscode/embedded/bin/knife opc org create demo demo --filename /root/chef-repo/.chef/demo-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
         server.run_command("/opt/opscode/embedded/bin/knife opc user create mary-admin mary admin mary-admin@noreply.com mary-admin --filename /root/chef-repo/.chef/mary-admin.pem -c /root/chef-repo/.chef/pivotal.rb")
         server.run_command("/opt/opscode/embedded/bin/knife opc org user add demo mary-admin --admin -c /root/chef-repo/.chef/pivotal.rb")
