@@ -22,9 +22,9 @@ module DevLXC::CLI
       end
     }
 
-    desc "create [BASE_CONTAINER_NAME]", "Create a base container"
+    desc "create-base-container [BASE_CONTAINER_NAME]", "Create a base container"
     option :options, :aliases => "-o", :desc => "Specify additional options for the lxc create"
-    def create(base_container_name=nil)
+    def create_base_container(base_container_name=nil)
       start_time = Time.now
       base_container_names = %w(b-ubuntu-1204 b-ubuntu-1404 b-ubuntu-1604 b-centos-5 b-centos-6 b-centos-7)
       if base_container_name.nil? || ! base_container_names.include?(base_container_name)

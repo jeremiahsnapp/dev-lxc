@@ -157,21 +157,21 @@ dev-lxc base containers have a "dev-lxc" user with "dev-lxc" password and passwo
 You can see a menu of base containers that `dev-lxc` can create by using the following command.
 
 ```
-dev-lxc create
+dev-lxc create-base-container
 ```
 
 The initial creation of base containers can take awhile so let's go ahead and start creating
 an Ubuntu 14.04 container now.
 
 ```
-dev-lxc create b-ubuntu-1404
+dev-lxc create-base-container b-ubuntu-1404
 ```
 
 Note: It is possible to pass additional arguments to the underlying LXC create command.
 For example:
 
 ```
-dev-lxc create b-ubuntu-1404 -o -- '--no-validate --keyserver http://my.key.server.com'
+dev-lxc create-base-container b-ubuntu-1404 -o -- '--no-validate --keyserver http://my.key.server.com'
 ```
 
 #### Cluster status
@@ -580,14 +580,14 @@ more clusters you have to maintain uniqueness across the YAML config files for t
 * IP Addresses
 
     IP addresses uniqueness only matters when clusters with the same IP's are running.
-	
+
     If cluster B is started with the same IP's as an already running cluster A, then cluster B
 	will overwrite cluster A's DHCP reservation of the IP's but dnsmasq will still refuse to
 	assign the IP's to cluster B because they already in use by cluster A. dnsmasq then assigns
 	random IP's from the DHCP pool to cluster B leaving it in an unexpected state.
 
     The `dev-lxc-platform` creates the IP range 10.0.3.150 - 254 for DHCP reserved IP's.
-	
+
     Use unique IP's from that range when configuring clusters.
 
 ## Base Containers
