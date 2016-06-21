@@ -118,6 +118,8 @@ module DevLXC::CLI
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
     option :chef_backend, :type => :boolean, :desc => "Chef Backend Cluster"
+    option :append, :aliases => "-a", :type => :boolean, :desc => "Do not generate the global config header"
+    option :filename, :aliases => "-f", :desc => "Write generated content to FILE rather than standard output."
     def init
       header = %Q(# base_container must be the name of an existing container
 base_container: b-ubuntu-1404
@@ -226,7 +228,8 @@ chef-backend:
         chef-server:
         manage:
 )
-      config = header
+      config = ""
+      config += header unless options[:append]
       config += chef_config if options[:chef]
       config += tiered_chef_config if options[:tiered_chef]
       config += analytics_config if options[:analytics]
@@ -234,7 +237,12 @@ chef-backend:
       config += supermarket_config if options[:supermarket]
       config += adhoc_config if options[:adhoc]
       config += chef_backend_config if options[:chef_backend]
-      puts config
+      if options[:filename]
+        mode = options[:append] ? 'a' : 'w'
+        IO.write(options[:filename], config, mode: mode)
+      else
+        puts config
+      end
     end
 
     desc "status [SERVER_NAME_REGEX]", "Show status of servers"
