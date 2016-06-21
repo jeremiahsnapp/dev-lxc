@@ -40,8 +40,10 @@ module DevLXC
 
     def start
       hwaddr = @container.config_item("lxc.network.0.hwaddr")
-      DevLXC.assign_ip_address(@ipaddress, @container.name, hwaddr)
-      DevLXC.create_dns_record(@additional_fqdn, @container.name, @ipaddress) unless @additional_fqdn.nil?
+      if @ipaddress
+        DevLXC.assign_ip_address(@ipaddress, @container.name, hwaddr)
+        DevLXC.create_dns_record(@additional_fqdn, @container.name, @ipaddress) unless @additional_fqdn.nil?
+      end
       @container.sync_mounts(@mounts)
       @container.start
       @container.sync_ssh_keys(@ssh_keys)
@@ -153,8 +155,10 @@ module DevLXC
     end
 
     def deregister_from_dnsmasq(hwaddr)
-      DevLXC.search_file_delete_line("/etc/lxc/addn-hosts.conf", /^#{@ipaddress}\s/)
-      DevLXC.search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /,#{@ipaddress}$/)
+      if @ipaddress
+        DevLXC.search_file_delete_line("/etc/lxc/addn-hosts.conf", /^#{@ipaddress}\s/)
+        DevLXC.search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /,#{@ipaddress}$/)
+      end
       unless hwaddr.nil?
         DevLXC.search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /^#{hwaddr}/)
       end
