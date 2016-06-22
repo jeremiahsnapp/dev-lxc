@@ -111,13 +111,13 @@ module DevLXC::CLI
     end
 
     desc "init", "Provide a cluster config file"
-    option :tiered_chef, :type => :boolean, :desc => "Tiered Chef Server"
     option :chef, :type => :boolean, :desc => "Standalone Chef Server"
+    option :tiered_chef, :type => :boolean, :desc => "Tiered Chef Server"
+    option :chef_backend, :type => :boolean, :desc => "Chef Server using Chef-Backend HA"
     option :analytics, :type => :boolean, :desc => "Analytics Server"
     option :compliance, :type => :boolean, :desc => "Compliance Server"
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
-    option :chef_backend, :type => :boolean, :desc => "Chef Backend Cluster"
     option :append, :aliases => "-a", :type => :boolean, :desc => "Do not generate the global config header"
     option :filename, :aliases => "-f", :desc => "Write generated content to FILE rather than standard output."
     def init
