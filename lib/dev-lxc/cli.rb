@@ -208,14 +208,6 @@ nodes:
       end
     end
 
-    desc "realpath [SERVER_NAME_REGEX] [ROOTFS_PATH]", "Returns the real path to a file in each server"
-    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
-    def realpath(server_name_regex=nil, rootfs_path)
-      realpath = Array.new
-      get_cluster(options[:config]).get_sorted_servers(server_name_regex).map { |s| realpath << s.realpath(rootfs_path) }
-      puts realpath.compact
-    end
-
     desc "attach [SERVER_NAME_REGEX]", "Attach the terminal to a single server"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def attach(server_name_regex)

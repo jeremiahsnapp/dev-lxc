@@ -21,10 +21,6 @@ module DevLXC
       @container.status
     end
 
-    def realpath(rootfs_path)
-      "#{@container.config_item('lxc.rootfs')}#{rootfs_path}" if @container.defined?
-    end
-
     def run_command(command)
       if @container.running?
         puts "Running '#{command}' in '#{@container.name}'"
