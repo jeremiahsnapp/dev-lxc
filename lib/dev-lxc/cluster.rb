@@ -13,7 +13,7 @@ module DevLXC
       @config = Hash.new { |hash, key| hash[key] = {} }
       @server_configs = Hash.new
 
-      %w(adhoc analytics chef-backend chef-server compliance supermarket).each do |server_type|
+      %w(adhoc analytics chef-backend chef-server compliance nodes supermarket).each do |server_type|
         if cluster_config[server_type]
           @config[server_type][:mounts] = cluster_config[server_type]["mounts"]
           @config[server_type][:mounts] ||= cluster_config["mounts"]
@@ -156,6 +156,24 @@ module DevLXC
                 ssh_keys: @config[server_type][:ssh_keys]
               }
             end
+          when "nodes"
+            if cluster_config[server_type]["servers"]
+              cluster_config[server_type]["servers"].each do |server_name, server_config|
+                products = server_config['products']
+                products ||= Hash.new
+                @server_configs[server_name] = {
+                  server_type: server_type,
+                  products: products,
+                  ipaddress: server_config['ipaddress'],
+                  additional_fqdn: nil,
+                  mounts: @config[server_type][:mounts],
+                  ssh_keys: @config[server_type][:ssh_keys],
+                  chef_server_url: server_config['chef_server_url'],
+                  validation_client_name: server_config['validation_client_name'],
+                  validation_key: server_config['validation_key']
+                }
+              end
+            end
           end
         end
       end
@@ -171,7 +189,7 @@ module DevLXC
       mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
       ssh_keys.concat(cluster_config['ssh-keys']) unless cluster_config['ssh-keys'].nil?
 
-      %w(adhoc analytics chef-backend chef-server compliance supermarket).each do |server_type|
+      %w(adhoc analytics chef-backend chef-server compliance nodes supermarket).each do |server_type|
         unless cluster_config[server_type].nil?
           base_container_names << cluster_config[server_type]['base_container'] unless cluster_config[server_type]['base_container'].nil?
           hostnames << cluster_config[server_type]['api_fqdn'] unless cluster_config[server_type]['api_fqdn'].nil?
@@ -228,7 +246,7 @@ module DevLXC
 
       # the order of this list of server_types matters
       # it determines the order in which actions are applied to each server_type
-      %w(chef-backend chef-server analytics compliance supermarket adhoc).each do |server_type|
+      %w(chef-backend chef-server analytics compliance supermarket nodes adhoc).each do |server_type|
         unless @config[server_type].empty?
           case server_type
           when "chef-backend"
@@ -246,7 +264,7 @@ module DevLXC
             @config[server_type][:frontends].each do |frontend_name|
               servers << get_server(frontend_name)
             end
-          when "adhoc", "compliance", "supermarket"
+          when "adhoc", "compliance", "nodes", "supermarket"
             server_configs = @server_configs.select { |server_name, server_config| server_config[:server_type] == server_type }
             server_configs.each_key { |server_name| servers << get_server(server_name) }
           end
@@ -304,6 +322,17 @@ module DevLXC
           if !get_server(@config['chef-backend'][:leader_backend]).container.running? && servers.select { |s| s.name == @config['chef-backend'][:leader_backend] }.empty?
             puts "ERROR: '#{server.name}' requires '#{@config['chef-backend'][:leader_backend]}' to be running first."
             abort_up = true
+          end
+        end
+        if @server_configs[server.name][:server_type] == 'nodes'
+          if @server_configs[server.name][:chef_server_url].nil? && @server_configs[server.name][:validation_client_name].nil? & @server_configs[server.name][:validation_key].nil?
+            if @config['chef-server'][:bootstrap_backend] && !get_server(@config['chef-server'][:bootstrap_backend]).container.defined? && servers.select { |s| s.name == @config['chef-server'][:bootstrap_backend] }.empty?
+              puts "ERROR: '#{server.name}' requires '#{@config['chef-server'][:bootstrap_backend]}' to be configured first."
+              abort_up = true
+            elsif @config['chef-backend'][:bootstrap_frontend] && !get_server(@config['chef-backend'][:bootstrap_frontend]).container.defined? && servers.select { |s| s.name == @config['chef-backend'][:bootstrap_frontend] }.empty?
+              puts "ERROR: '#{server.name}' requires '#{@config['chef-backend'][:bootstrap_frontend]}' to be configured first."
+              abort_up = true
+            end
           end
         end
       end
@@ -487,8 +516,42 @@ module DevLXC
         configure_manage(server) if required_products.include?('manage')
       when 'compliance'
         configure_compliance(server) if required_products.include?('compliance')
+      when 'nodes'
+        configure_chef_client(server) if required_products.include?('chef') || required_products.include?('chefdk')
       when 'supermarket'
         configure_supermarket(server) if required_products.include?('supermarket')
+      end
+    end
+
+    def configure_chef_client(server)
+      if @server_configs[server.name][:chef_server_url] || @server_configs[server.name][:validation_client_name] || @server_configs[server.name][:validation_key]
+        chef_server_url = @server_configs[server.name][:chef_server_url]
+        validation_client_name = @server_configs[server.name][:validation_client_name]
+        validation_key = @server_configs[server.name][:validation_key]
+      elsif @config['chef-server'][:bootstrap_backend] && get_server(@config['chef-server'][:bootstrap_backend]).container.defined?
+        chef_server_url = "https://#{@config['chef-server'][:fqdn]}/organizations/demo"
+        validation_client_name = 'demo-validator'
+        validation_key = "#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
+      elsif @config['chef-backend'][:bootstrap_frontend] && get_server(@config['chef-backend'][:bootstrap_frontend]).container.defined?
+        chef_server_url = "https://#{@config['chef-backend'][:fqdn]}/organizations/demo"
+        validation_client_name = 'demo-validator'
+        validation_key = "#{get_server(@config['chef-backend'][:bootstrap_frontend]).container.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
+      end
+
+      puts "Configuring Chef Client in container '#{server.name}' for Chef Server '#{chef_server_url}'"
+
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/chef")
+
+      client_rb = %Q(chef_server_url '#{chef_server_url}'
+validation_client_name '#{validation_client_name}'
+ssl_verify_mode :verify_none
+)
+      IO.write("#{server.container.config_item('lxc.rootfs')}/etc/chef/client.rb", client_rb)
+
+      if validation_key && File.exist?(validation_key)
+        FileUtils.cp(validation_key, "#{server.container.config_item('lxc.rootfs')}/etc/chef/validation.pem")
+      else
+        puts "WARNING: The validation key '#{validation_key}' does not exist."
       end
     end
 

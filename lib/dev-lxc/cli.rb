@@ -114,6 +114,7 @@ module DevLXC::CLI
     option :chef, :type => :boolean, :desc => "Standalone Chef Server"
     option :tiered_chef, :type => :boolean, :desc => "Tiered Chef Server"
     option :chef_backend, :type => :boolean, :desc => "Chef Server using Chef-Backend HA"
+    option :nodes, :type => :boolean, :desc => "Node Servers"
     option :analytics, :type => :boolean, :desc => "Analytics Server"
     option :compliance, :type => :boolean, :desc => "Compliance Server"
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
@@ -228,6 +229,13 @@ chef-backend:
         chef-server:
         manage:
 )
+      nodes_config = %Q(
+nodes:
+  servers:
+    node-1.lxc:
+      products:
+        chef:
+)
       config = ""
       config += header unless options[:append]
       config += chef_config if options[:chef]
@@ -237,6 +245,7 @@ chef-backend:
       config += supermarket_config if options[:supermarket]
       config += adhoc_config if options[:adhoc]
       config += chef_backend_config if options[:chef_backend]
+      config += nodes_config if options[:nodes]
       if options[:filename]
         mode = options[:append] ? 'a' : 'w'
         IO.write(options[:filename], config, mode: mode)
