@@ -40,7 +40,7 @@ module DevLXC::CLI
 
     desc "init", "Provide a cluster config file"
     option :chef, :type => :boolean, :desc => "Standalone Chef Server"
-    option :tiered_chef, :type => :boolean, :desc => "Tiered Chef Server"
+    option :chef_tier, :type => :boolean, :desc => "Chef Server using Tier topology with one backend"
     option :chef_backend, :type => :boolean, :desc => "Chef Server using Chef Backend HA topology with three backends"
     option :nodes, :type => :boolean, :desc => "Node Servers"
     option :analytics, :type => :boolean, :desc => "Analytics Server"
@@ -63,7 +63,7 @@ base_container: b-ubuntu-1404
 
 # DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 )
-      tiered_chef_config = %Q(
+      chef_tier_config = %Q(
 chef-server:
   topology: tier
   api_fqdn: chef.lxc
@@ -167,7 +167,7 @@ nodes:
       config = ""
       config += header unless options[:append]
       config += chef_config if options[:chef]
-      config += tiered_chef_config if options[:tiered_chef]
+      config += chef_tier_config if options[:chef_tier]
       config += analytics_config if options[:analytics]
       config += compliance_config if options[:compliance]
       config += supermarket_config if options[:supermarket]
