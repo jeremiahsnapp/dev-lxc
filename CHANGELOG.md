@@ -1,5 +1,72 @@
 # dev-lxc Change Log
 
+## 2.0.0 (2016-06-23)
+
+* Overhaul README
+* Rename tiered-chef to chef-tier
+* Change init's chef-backend description
+* Remove realpath command
+* Remove commands that functionally are replaced by nodes server type
+* Add "nodes" server type
+* reorder the init config options
+* Allow servers to use dynamic IP addresses
+* Add --append and --filename to DevLXC::CLI#init
+* Rename DevLXC::CLI#create to DevLXC::CLI#create-base-container
+* Install knife-opc 0.3.1 in private-chef servers
+* Making conditional more readable in DevLXC::CLI#attach
+* Add chef-backend build code to DevLXC::Cluster
+* Add chef-backend to DevLXC::Cluster#up
+* Add chef-backend to DevLXC::Cluster#get_sorted_servers
+* Add chef-backend to DevLXC::Cluster#initialize
+* Add chef-backend to DevLXC::Cluster#validate_cluster_config
+* Add Analytics FQDN to DevLXC::CLI#status
+* Add chef-backend option to DevLXC::CLI
+* Add --skip-same-version to dpkg install_command
+* Add DevLXC::Cluster#up
+* Add build related code to DevLXC::Cluster
+* Add snapshot list to DevLXC::CLI#status
+* Remove unnecessary FQDNs from DevLXC::CLI#status
+* Refactor DevLXC::CLI to use new DevLXC::Server capabilities
+* Rename non_stopped_servers to running_servers
+* Replace DevLXC::Cluster#servers with DevLXC:Cluster#get_sorted_servers
+* Refactor DevLXC::Cluster#chef-repo
+* Refactor DevLXC::Cluster to use new DevLXC::Cluster.config, DevLXC::Cluster.server_configs and DevLXC::Cluster#get_server
+* Add DevLXC::Cluster#get_server method
+* Use mixlib-install package management in DevLXC::CLI#init
+* Remove packages validation from DevLXC::Cluster#validate_cluster_config
+* Add mixlib-install package cache management
+* Remove open-source server type
+* Completely overhaul DevLXC::Cluster#initialize
+* Minor code refactor in #create_dns_record
+* Add DevLXC::Server#install_package
+* Add DevLXC::Server#status
+* Add DevLXC::Server#name
+* Rename @server to @container
+* Use "running" instead of "not stopped"
+* Remove all cluster and build related code from DevLXC::Server
+* Overhaul DevLXC::Server#initialize
+* Remove usage of #realpath from code
+* Minor code reorg in DevLXC::CLI#init
+* Move match_server_name_regex functionality into DevLXC::Cluster#servers
+* Move validate_cluster_config into DevLXC::Cluster
+* Move Centos /etc/hosts fix into base container creation
+* Move Centos 7 setpcap related comments
+* Add confirmation check to destroy subcommand
+* Replace "platform" and "image" terms with "base" and "container"
+* Remove init subcommand's unique string option
+* Replace some "create" terminology with "build"
+* Replace unique images with snapshots
+* Replace custom images with genuine snapshot management
+* Require that the platform image container must already exist
+* Validate dev-lxc.yml platform_image
+* Store dev-lxc containers in default LXCPATH /var/lib/lxc
+* Remove global-status subcommand
+* Remove list-images subcommand
+* Remove shared image functionality
+* Remove p-ubuntu-1004 platform image
+* Preserve permissions and ownership when copying directories to other servers in a cluster
+* Update the Reporting package version
+
 ## 1.7.0 (2016-05-04)
 
 * Replace p-ubuntu-1504 with p-ubuntu-1604
