@@ -41,7 +41,7 @@ module DevLXC::CLI
     desc "init", "Provide a cluster config file"
     option :chef, :type => :boolean, :desc => "Standalone Chef Server"
     option :tiered_chef, :type => :boolean, :desc => "Tiered Chef Server"
-    option :chef_backend, :type => :boolean, :desc => "Chef Server using Chef-Backend HA"
+    option :chef_backend, :type => :boolean, :desc => "Chef Server using Chef Backend HA topology with three backends"
     option :nodes, :type => :boolean, :desc => "Node Servers"
     option :analytics, :type => :boolean, :desc => "Analytics Server"
     option :compliance, :type => :boolean, :desc => "Compliance Server"
