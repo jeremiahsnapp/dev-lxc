@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.0.1 (2016-06-23)
+
+Remove mixlib-install version constraint
+
 ## 2.0.0 (2016-06-23)
 
 * Overhaul README
