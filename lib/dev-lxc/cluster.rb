@@ -567,9 +567,9 @@ ssl_verify_mode :verify_none
       else
         puts "Joining #{server.name} to the chef-backend cluster"
         leader_backend = get_server(@config['chef-backend'][:leader_backend])
-        FileUtils.cp("#{leader_backend.container.config_item('lxc.rootfs')}/etc/chef-backend/secrets.json",
+        FileUtils.cp("#{leader_backend.container.config_item('lxc.rootfs')}/etc/chef-backend/chef-backend-secrets.json",
                      "#{server.container.config_item('lxc.rootfs')}/root/")
-        run_ctl(server, "chef-backend", "join-cluster #{@server_configs[leader_backend.name][:ipaddress]} -p #{@server_configs[server.name][:ipaddress]} -s /root/secrets.json --yes")
+        run_ctl(server, "chef-backend", "join-cluster #{@server_configs[leader_backend.name][:ipaddress]} -p #{@server_configs[server.name][:ipaddress]} -s /root/chef-backend-secrets.json --yes")
       end
     end
 
