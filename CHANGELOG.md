@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.0.2 (2016-06-24)
+
+* Change secrets.json to chef-backend-secrets.json
+
 ## 2.0.1 (2016-06-23)
 
 Remove mixlib-install version constraint
