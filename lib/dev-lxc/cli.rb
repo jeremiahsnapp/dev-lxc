@@ -136,19 +136,16 @@ chef-backend:
       leader: true
       products:
         chef-backend:
-          channel: current
     chef-backend2.lxc:
       ipaddress: 10.0.3.209
       role: backend
       products:
         chef-backend:
-          channel: current
     chef-backend3.lxc:
       ipaddress: 10.0.3.210
       role: backend
       products:
         chef-backend:
-          channel: current
     chef-frontend1.lxc:
       ipaddress: 10.0.3.211
       role: frontend
