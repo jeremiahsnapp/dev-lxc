@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.0.3 (2016-06-27)
+
+* Use "stable" package channel for chef-backend since Chef HA 2.0 has been GA released
+
 ## 2.0.2 (2016-06-24)
 
 * Change secrets.json to chef-backend-secrets.json
