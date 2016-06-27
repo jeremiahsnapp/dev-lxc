@@ -1,4 +1,15 @@
-# dev-lxc
+# dev-lxc 2.0 is Available
+
+Here are some of the new features which provide a significantly simplified and streamlined usage.
+
+* mixlib-install library is used to automatically manage a cache of product packages
+* Genuine container snapshot management (make as many snapshots as you want)
+* New "nodes" server type which auto configures nodes for a Chef Server in the same cluster
+  * Removed all xc-... bash functions because the new "nodes" server type replaces this functionality
+* Able to build Chef Server HA 2.0 cluster using chef-backend
+* Updated and simplified READMEs
+
+# dev-lxc Description
 
 A tool for building Chef Server clusters and Chef Analytics clusters using LXC containers.
 
@@ -23,6 +34,7 @@ for demo purposes, as well as general experimentation and exploration of Chef pr
 7. Build process closely follows online installation documentation
 8. Snapshots - Snapshots are created during the cluster's build process which makes rebuilding
    a cluster very fast.
+9. mixlib-install library is used to automatically manage a cache of product packages
 
 Its containers, standard init, networking and build process are designed to be similar
 to what you would build if you follow the online installation documentation so the end
@@ -189,12 +201,17 @@ nodes:
         chef:
 ```
 
+The dev-lxc.yml config file is very customizable. You can add or remove mounts, products or servers,
+change ip addresses, server names, the base_container and more.
+
 As you can see there are four server types represented by five servers.
 
 1. chef-server - chef.lxc
 2. analytics - analytics.lxc
 3. supermarket - supermarket.lxc
 4. nodes - node-1.lxc
+
+#### Global Settings
 
 The global settings used by each of the server types are the `base_container`, a list of `mounts` and
 a list of `ssh-keys`. These settings are described in the config comments.
@@ -203,6 +220,8 @@ Be sure to set `base_container` in the `dev-lxc.yml` to an existing container's 
 This container will be cloned to create each container in the cluster.  
 If you don't already have a container to use as a `base_container` then you can follow the instructions in the  
 [Create a dev-lxc Base Container section](https://github.com/jeremiahsnapp/dev-lxc#create-a-dev-lxc-base-container) to create one.
+
+#### Server Specific Settings
 
 It is possible to define different values for `base_container`, `mounts` or `ssh-keys` for a particular server type as
 you can see in the following snippet.
@@ -216,6 +235,8 @@ nodes:
 
 IP addresses from the range 10.0.3.150 - 254 can be assigned to the servers. If an IP address
 is not specified then a dynamic IP address is assigned when the server starts.
+
+#### mixlib-install Library Automatically Manages a Cache of Product Packages
 
 dev-lxc uses the [mixlib-install](https://github.com/chef/mixlib-install) library to download Chef products
 to a cache in `/var/dev-lxc` in the host VM. This cache is automatically mounted into each server when it starts.
@@ -251,6 +272,8 @@ nodes:
           package_source: /root/chefdk_0.16.1-1_amd64.deb
 ```
 
+#### Automatic Integration Between Servers
+
 dev-lxc knows how to automatically configure Chef Server standalone, Chef Server tier topology,
 Chef Server HA 2.0 as well as Chef Client, Analytics, Compliance and Supermarket.
 
@@ -274,10 +297,7 @@ nodes:
         chef:
 ```
 
-The dev-lxc.yml config file is very customizable. You can add or remove mounts, products or servers,
-change ip addresses, server names, the base_container and more.
-
-#### Cluster status
+### Cluster status
 
 Run the following command to see the status of the cluster.
 
@@ -297,7 +317,7 @@ supermarket.lxc     NOT_CREATED
 node-1.lxc          NOT_CREATED
 ```
 
-#### cluster-view, tks, tls commands
+### cluster-view, tks, tls commands
 
 The dev-lxc-platform comes with some commands that create and manage helpful
 tmux/byobu sessions to more easily see the state of a cluster.
@@ -331,7 +351,7 @@ I recommend switching to a different running tmux/byobu session before killing t
 tmux/byobu session. Otherwise you will need to reattach to the remaining tmux/byobu session.
 Use the keyboard shortcuts Alt-Up/Down to easily switch between tmux/byobu sessions.
 
-#### Start cluster
+### Start cluster
 
 Starting the cluster the first time takes awhile since it has a lot to download and build.
 
@@ -346,7 +366,7 @@ The `knife-opc` plugin is installed in the embedded ruby environment of the
 Private Chef and Enterprise Chef server to facilitate the creation of the test
 org and user.
 
-#### Create chef-repo
+### Create chef-repo
 
 Create a local chef-repo with appropriate knife.rb and pem files.
 
@@ -365,20 +385,20 @@ cd chef-repo
 knife client list
 ```
 
-#### Stop and start the cluster
+### Stop and start the cluster
 
 ```
 dev-lxc halt
 dev-lxc up
 ```
 
-#### Run arbitrary commands in each server
+### Run arbitrary commands in each server
 
 ```
 dev-lxc run-command chef 'uptime'
 ```
 
-#### Attach the terminal to a server
+### Attach the terminal to a server
 
 Attach the terminal to a server in the cluster that matches the REGEX pattern given.
 
@@ -386,7 +406,7 @@ Attach the terminal to a server in the cluster that matches the REGEX pattern gi
 dev-lxc attach chef
 ```
 
-#### Create a snapshot of the servers
+### Create a snapshot of the servers
 
 Save the changes in the servers to snapshots with a comment.
 
@@ -395,13 +415,13 @@ dev-lxc halt
 dev-lxc snapshot -c 'this is a snapshot comment'
 ```
 
-#### List snapshots
+### List snapshots
 
 ```
 dev-lxc snapshot -l
 ```
 
-#### Restore snapshots
+### Restore snapshots
 
 Restore snapshots by name.
 
@@ -412,7 +432,7 @@ dev-lxc snapshot -r
 dev-lxc up
 ```
 
-#### Destroy snapshots
+### Destroy snapshots
 
 Destroy snapshots by name or destroy all snapshots by specifying `ALL`.
 
@@ -422,7 +442,7 @@ Leave out the snapshot name or specify `LAST` to destroy the most recent snapsho
 dev-lxc snapshot -d
 ```
 
-#### Destroy cluster
+### Destroy cluster
 
 Use the following command to destroy the cluster's servers.
 
@@ -430,7 +450,7 @@ Use the following command to destroy the cluster's servers.
 dev-lxc destroy
 ```
 
-#### Use commands against specific servers
+### Use commands against specific servers
 You can also run most of these commands against a set of servers by specifying a regular expression
 that matches a set of server names.
 
