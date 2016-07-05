@@ -15,10 +15,12 @@ module DevLXC
 
       %w(adhoc analytics chef-backend chef-server compliance nodes supermarket).each do |server_type|
         if cluster_config[server_type]
-          @config[server_type][:mounts] = cluster_config[server_type]["mounts"]
-          @config[server_type][:mounts] ||= cluster_config["mounts"]
-          @config[server_type][:mounts] ||= Array.new
-          @config[server_type][:mounts] << "/var/dev-lxc var/dev-lxc"
+          @config[server_type][:mounts] = ["/var/dev-lxc var/dev-lxc"]
+          if cluster_config[server_type]["mounts"]
+            @config[server_type][:mounts].concat(cluster_config[server_type]["mounts"])
+          elsif cluster_config["mounts"]
+            @config[server_type][:mounts].concat(cluster_config["mounts"])
+          end
           @config[server_type][:ssh_keys] = cluster_config[server_type]["ssh-keys"]
           @config[server_type][:ssh_keys] ||= cluster_config["ssh-keys"]
           @config[server_type][:base_container_name] = cluster_config[server_type]["base_container"]
