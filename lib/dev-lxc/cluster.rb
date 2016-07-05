@@ -534,6 +534,8 @@ module DevLXC
       when 'compliance'
         configure_compliance(server) if required_products.include?('compliance')
       when 'nodes'
+        # Allow servers time to generate SSH Server Host Keys
+        sleep 5
         configure_chef_client(server) if required_products.include?('chef') || required_products.include?('chefdk')
       when 'supermarket'
         configure_supermarket(server) if required_products.include?('supermarket')
