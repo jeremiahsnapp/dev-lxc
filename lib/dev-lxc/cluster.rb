@@ -567,10 +567,12 @@ ssl_verify_mode :verify_none
 )
       IO.write("#{server.container.config_item('lxc.rootfs')}/etc/chef/client.rb", client_rb)
 
-      if validation_key && File.exist?(validation_key)
-        FileUtils.cp(validation_key, "#{server.container.config_item('lxc.rootfs')}/etc/chef/validation.pem")
-      else
-        puts "WARNING: The validation key '#{validation_key}' does not exist."
+      if validation_key
+        if File.exist?(validation_key)
+          FileUtils.cp(validation_key, "#{server.container.config_item('lxc.rootfs')}/etc/chef/validation.pem")
+        else
+          puts "WARNING: The validation key '#{validation_key}' does not exist."
+        end
       end
     end
 
