@@ -13,7 +13,7 @@ module DevLXC
       @config = Hash.new { |hash, key| hash[key] = {} }
       @server_configs = Hash.new
 
-      %w(adhoc analytics chef-backend chef-server compliance nodes supermarket).each do |server_type|
+      %w(adhoc analytics automate chef-backend chef-server compliance nodes supermarket).each do |server_type|
         if cluster_config[server_type]
           @config[server_type][:mounts] = ["/var/dev-lxc var/dev-lxc"]
           if cluster_config[server_type]["mounts"]
@@ -171,6 +171,24 @@ module DevLXC
                 ssh_keys: @config[server_type][:ssh_keys]
               }
             end
+          when "automate"
+            unless cluster_config[server_type]["servers"].first.nil?
+              (server_name, server_config) = cluster_config[server_type]["servers"].first
+              server_config ||= Hash.new
+              products = server_config['products']
+              products ||= Hash.new
+              @server_configs[server_name] = {
+                server_type: server_type,
+                products: products,
+                ipaddress: server_config['ipaddress'],
+                additional_fqdn: nil,
+                mounts: @config[server_type][:mounts],
+                ssh_keys: @config[server_type][:ssh_keys],
+                license_path: server_config['license_path'],
+                chef_org: server_config['chef_org'],
+                enterprise_name: server_config['enterprise_name']
+              }
+            end
           when "nodes"
             if cluster_config[server_type]["servers"]
               cluster_config[server_type]["servers"].each do |server_name, server_config|
@@ -205,7 +223,7 @@ module DevLXC
       mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
       ssh_keys.concat(cluster_config['ssh-keys']) unless cluster_config['ssh-keys'].nil?
 
-      %w(adhoc analytics chef-backend chef-server compliance nodes supermarket).each do |server_type|
+      %w(adhoc analytics automate chef-backend chef-server compliance nodes supermarket).each do |server_type|
         unless cluster_config[server_type].nil?
           base_container_names << cluster_config[server_type]['base_container'] unless cluster_config[server_type]['base_container'].nil?
           hostnames << cluster_config[server_type]['api_fqdn'] unless cluster_config[server_type]['api_fqdn'].nil?
@@ -214,6 +232,13 @@ module DevLXC
           mounts.concat(cluster_config[server_type]['mounts']) unless cluster_config[server_type]['mounts'].nil?
           ssh_keys.concat(cluster_config[server_type]['ssh-keys']) unless cluster_config[server_type]['ssh-keys'].nil?
           case server_type
+          when 'automate'
+            unless cluster_config[server_type]['license_path'].nil?
+              unless File.exists?(cluster_config[server_type]['license_path'])
+                puts "ERROR: Automate license #{cluster_config[server_type]['license_path']} does not exist."
+                exit 1
+              end
+            end
           when 'nodes'
             unless cluster_config[server_type]['validation_key'].nil?
               unless File.exists?(cluster_config[server_type]['validation_key'])
@@ -271,7 +296,7 @@ module DevLXC
 
       # the order of this list of server_types matters
       # it determines the order in which actions are applied to each server_type
-      %w(chef-backend chef-server analytics compliance supermarket nodes adhoc).each do |server_type|
+      %w(chef-backend chef-server analytics compliance supermarket automate nodes adhoc).each do |server_type|
         unless @config[server_type].empty?
           case server_type
           when "chef-backend"
@@ -289,7 +314,7 @@ module DevLXC
             @config[server_type][:frontends].each do |frontend_name|
               servers << get_server(frontend_name)
             end
-          when "adhoc", "compliance", "nodes", "supermarket"
+          when "adhoc", "automate", "compliance", "nodes", "supermarket"
             server_configs = @server_configs.select { |server_name, server_config| server_config[:server_type] == server_type }
             server_configs.each_key { |server_name| servers << get_server(server_name) }
           end
@@ -358,6 +383,15 @@ module DevLXC
               puts "ERROR: '#{server.name}' requires '#{@config['chef-backend'][:bootstrap_frontend]}' to be configured first."
               abort_up = true
             end
+          end
+        end
+        if @server_configs[server.name][:server_type] == 'automate'
+          if @config['chef-server'][:bootstrap_backend].nil?
+            puts "ERROR: '#{server.name}' requires a Chef Server bootstrap backend to be configured first."
+            abort_up = true
+          elsif !get_server(@config['chef-server'][:bootstrap_backend]).container.defined? && servers.select { |s| s.name == @config['chef-server'][:bootstrap_backend] }.empty?
+            puts "ERROR: '#{server.name}' requires '#{@config['chef-server'][:bootstrap_backend]}' to be configured first."
+            abort_up = true
           end
         end
       end
@@ -540,6 +574,15 @@ module DevLXC
           if server.name == @config['chef-server'][:bootstrap_backend]
             dot_chef_path = "/root/chef-repo/.chef"
             create_users_orgs_knife_configs(server, dot_chef_path)
+
+            automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
+            if automate_server_name
+              automate_user = "delivery"
+              automate_chef_org = @server_configs[automate_server_name][:chef_org]
+              create_user(server, automate_user, dot_chef_path)
+              create_org(server, automate_chef_org, dot_chef_path)
+              org_add_user(server, automate_chef_org, automate_user, true, dot_chef_path)
+            end
           end
         end
         configure_reporting(server) if required_products.include?('reporting')
@@ -547,6 +590,8 @@ module DevLXC
         configure_manage(server) if required_products.include?('manage')
       when 'compliance'
         configure_compliance(server) if required_products.include?('compliance')
+      when 'automate'
+        configure_automate(server) if required_products.include?('delivery')
       when 'nodes'
         # Allow servers time to generate SSH Server Host Keys
         sleep 5
@@ -554,6 +599,31 @@ module DevLXC
       when 'supermarket'
         configure_supermarket(server) if required_products.include?('supermarket')
       end
+    end
+
+    def configure_automate(server)
+      license_path = @server_configs[server.name][:license_path]
+      chef_org = @server_configs[server.name][:chef_org]
+      enterprise_name = @server_configs[server.name][:enterprise_name]
+      chef_server_url = @config['chef-server'][:fqdn]
+      supermarket_fqdn = @config['supermarket'][:fqdn]
+
+      FileUtils.cp(license_path, "#{server.container.config_item('lxc.rootfs')}/root/automate.license")
+
+      chef_server = get_server(@config['chef-server'][:bootstrap_backend])
+      automate_chef_user_key = "#{chef_server.container.config_item('lxc.rootfs')}/root/chef-repo/.chef/delivery.pem"
+      FileUtils.cp(automate_chef_user_key, "#{server.container.config_item('lxc.rootfs')}/root/automate_chef_user_key.pem")
+
+      setup_cmd = "setup"
+      setup_cmd += " --license /root/automate.license"
+      setup_cmd += " --fqdn #{server.name}"
+      setup_cmd += " --key /root/automate_chef_user_key.pem"
+      setup_cmd += " --server-url https://#{chef_server_url}/organizations/#{chef_org}"
+      setup_cmd += " --supermarket-fqdn #{supermarket_fqdn}" if supermarket_fqdn
+      setup_cmd += " --enterprise #{enterprise_name}"
+      setup_cmd += " --no-build-node"
+      setup_cmd += " --configure"
+      run_ctl(server, "delivery", setup_cmd)
     end
 
     def configure_chef_client(server)
