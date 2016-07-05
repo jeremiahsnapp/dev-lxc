@@ -704,23 +704,46 @@ ssl_verify_mode :verify_none
       server.run_command("#{component}-ctl #{subcommand}")
     end
 
-    def create_users(server)
-      puts "Creating org, user, keys and knife.rb in /root/chef-repo/.chef"
-      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/root/chef-repo/.chef")
+    def create_users_orgs_knife_configs(server, dot_chef_path)
+      server_type = @server_configs[server.name][:server_type]
+      # give time for all services to come up completely
+      sleep 10
+      if @server_configs[server.name][:chef_server_type] == 'private-chef'
+        # give more time for all services to come up completely
+        sleep 50
+        server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc -v 0.3.1")
+      end
+      chef_server_dot_chef_path = "#{server.container.config_item('lxc.rootfs')}#{dot_chef_path}"
+      FileUtils.mkdir_p(chef_server_dot_chef_path)
+      FileUtils.cp( "#{server.container.config_item('lxc.rootfs')}/etc/opscode/pivotal.pem", chef_server_dot_chef_path )
+      create_pivotal_knife_config('127.0.0.1', chef_server_dot_chef_path)
+      create_knife_config('127.0.0.1', chef_server_dot_chef_path)
+      @config[server_type][:users].each do |username|
+        create_user(server, username, dot_chef_path)
+      end
+      @config[server_type][:orgs].each do |orgname, org_users|
+        create_org(server, orgname, dot_chef_path)
+        if org_users
+          if org_users['admins']
+            org_users['admins'].each do |username|
+              org_add_user(server, orgname, username, true, dot_chef_path)
+            end
+          end
+          if org_users['non-admins']
+            org_users['non-admins'].each do |username|
+              org_add_user(server, orgname, username, false, dot_chef_path)
+            end
+          end
+        end
+      end
+    end
 
-      chef_server_root = "https://127.0.0.1"
-      chef_server_url = "https://127.0.0.1/organizations/demo"
-      admin_username = "mary-admin"
-      username = "joe-user"
-      validator_name = "demo-validator"
-
-      FileUtils.cp( "#{server.container.config_item('lxc.rootfs')}/etc/opscode/pivotal.pem", "#{server.container.config_item('lxc.rootfs')}/root/chef-repo/.chef" )
-
+    def create_pivotal_knife_config(fqdn, dot_chef_path)
       pivotal_rb = %Q(
 current_dir = File.dirname(__FILE__)
 
-chef_server_root "#{chef_server_root}"
-chef_server_url "#{chef_server_root}"
+chef_server_root "https://#{fqdn}"
+chef_server_url "https://#{fqdn}"
 
 node_name "pivotal"
 client_key "\#{current_dir}/pivotal.pem"
@@ -730,51 +753,65 @@ knife[:chef_repo_path] = Dir.pwd
 
 ssl_verify_mode :verify_none
 )
-      IO.write("#{server.container.config_item('lxc.rootfs')}/root/chef-repo/.chef/pivotal.rb", pivotal_rb)
+      IO.write("#{dot_chef_path}/pivotal.rb", pivotal_rb)
+    end
 
+    def create_knife_config(fqdn, dot_chef_path)
       knife_rb = %Q(
+username = "CHANGEME"
+orgname = "CHANGEME"
+
+if [username, orgname].include?("CHANGEME")
+  puts "ERROR: Please set 'username' and 'orgname' to proper values in knife.rb"
+  exit!
+end
+
 current_dir = File.dirname(__FILE__)
 
-chef_server_url "#{chef_server_url}"
+chef_server_url "https://#{fqdn}/organizations/\#{orgname}"
 
-node_name "#{admin_username}"
-client_key "\#{current_dir}/#{admin_username}.pem"
-)
+node_name username
+client_key "\#{current_dir}/\#{username}.pem"
 
-      knife_rb += %Q(
-#node_name "#{username}"
-#client_key "\#{current_dir}/#{username}.pem"
-) unless username.nil?
-
-      knife_rb += %Q(
-validation_client_name "#{validator_name}"
-validation_key "\#{current_dir}/#{validator_name}.pem"
+validation_client_name "\#{orgname}-validator"
+validation_key "\#{current_dir}/\#{orgname}-validator.pem"
 
 cookbook_path Dir.pwd + "/cookbooks"
 knife[:chef_repo_path] = Dir.pwd
 
 ssl_verify_mode :verify_none
 )
-      IO.write("#{server.container.config_item('lxc.rootfs')}/root/chef-repo/.chef/knife.rb", knife_rb)
+      IO.write("#{dot_chef_path}/knife.rb", knife_rb)
+    end
 
+    def create_user(server, username, dot_chef_path)
+      create_user_string = "#{username} #{username} #{username} #{username}@noreply.com #{username} --filename #{dot_chef_path}/#{username}.pem"
       case @server_configs[server.name][:chef_server_type]
       when 'private-chef'
-        # give time for all services to come up completely
-        sleep 60
-        server.run_command("/opt/opscode/embedded/bin/gem install knife-opc --no-ri --no-rdoc -v 0.3.1")
-        server.run_command("/opt/opscode/embedded/bin/knife opc org create demo demo --filename /root/chef-repo/.chef/demo-validator.pem -c /root/chef-repo/.chef/pivotal.rb")
-        server.run_command("/opt/opscode/embedded/bin/knife opc user create mary-admin mary admin mary-admin@noreply.com mary-admin --filename /root/chef-repo/.chef/mary-admin.pem -c /root/chef-repo/.chef/pivotal.rb")
-        server.run_command("/opt/opscode/embedded/bin/knife opc org user add demo mary-admin --admin -c /root/chef-repo/.chef/pivotal.rb")
-        server.run_command("/opt/opscode/embedded/bin/knife opc user create joe-user joe user joe-user@noreply.com joe-user --filename /root/chef-repo/.chef/joe-user.pem -c /root/chef-repo/.chef/pivotal.rb")
-        server.run_command("/opt/opscode/embedded/bin/knife opc org user add demo joe-user -c /root/chef-repo/.chef/pivotal.rb")
+        server.run_command("/opt/opscode/embedded/bin/knife opc user create #{create_user_string} -c #{dot_chef_path}/pivotal.rb")
       when 'chef-server'
-        # give time for all services to come up completely
-        sleep 10
-        run_ctl(server, "chef-server", "org-create demo demo --filename /root/chef-repo/.chef/demo-validator.pem")
-        run_ctl(server, "chef-server", "user-create mary-admin mary admin mary-admin@noreply.com mary-admin --filename /root/chef-repo/.chef/mary-admin.pem")
-        run_ctl(server, "chef-server", "org-user-add demo mary-admin --admin")
-        run_ctl(server, "chef-server", "user-create joe-user joe user joe-user@noreply.com joe-user --filename /root/chef-repo/.chef/joe-user.pem")
-        run_ctl(server, "chef-server", "org-user-add demo joe-user")
+        run_ctl(server, "chef-server", "user-create #{create_user_string}")
+      end
+    end
+
+    def create_org(server, orgname, dot_chef_path)
+      create_org_string = "#{orgname} #{orgname} --filename #{dot_chef_path}/#{orgname}-validator.pem"
+      case @server_configs[server.name][:chef_server_type]
+      when 'private-chef'
+        server.run_command("/opt/opscode/embedded/bin/knife opc org create #{create_org_string} -c #{dot_chef_path}/pivotal.rb")
+      when 'chef-server'
+        run_ctl(server, "chef-server", "org-create #{create_org_string}")
+      end
+    end
+
+    def org_add_user(server, orgname, username, admin, dot_chef_path)
+      org_add_user_string = "#{orgname} #{username}"
+      org_add_user_string += " --admin" if admin
+      case @server_configs[server.name][:chef_server_type]
+      when 'private-chef'
+        server.run_command("/opt/opscode/embedded/bin/knife opc org user add #{org_add_user_string} -c #{dot_chef_path}/pivotal.rb")
+      when 'chef-server'
+        run_ctl(server, "chef-server", "org-user-add #{org_add_user_string}")
       end
     end
 
