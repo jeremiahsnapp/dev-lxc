@@ -205,6 +205,15 @@ module DevLXC
           hostnames.concat(cluster_config[server_type]['servers'].keys) unless cluster_config[server_type]['servers'].nil?
           mounts.concat(cluster_config[server_type]['mounts']) unless cluster_config[server_type]['mounts'].nil?
           ssh_keys.concat(cluster_config[server_type]['ssh-keys']) unless cluster_config[server_type]['ssh-keys'].nil?
+          case server_type
+          when 'nodes'
+            unless cluster_config[server_type]['validation_key'].nil?
+              unless File.exists?(cluster_config[server_type]['validation_key'])
+                puts "ERROR: Validation key #{cluster_config[server_type]['validation_key']} does not exist."
+                exit 1
+              end
+            end
+          end
         end
       end
       unless base_container_names.empty?
