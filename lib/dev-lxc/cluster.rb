@@ -28,6 +28,7 @@ module DevLXC
           when "adhoc"
             if cluster_config[server_type]["servers"]
               cluster_config[server_type]["servers"].each do |server_name, server_config|
+                server_config ||= Hash.new
                 products = server_config['products']
                 products ||= Hash.new
                 @server_configs[server_name] = {
@@ -48,6 +49,7 @@ module DevLXC
 
             if cluster_config[server_type]["servers"]
               cluster_config[server_type]["servers"].each do |server_name, server_config|
+                server_config ||= Hash.new
                 additional_fqdn = nil
                 products = server_config['products']
                 products ||= Hash.new
@@ -85,6 +87,7 @@ module DevLXC
               @config[server_type][:backends] << @config[server_type][:leader_backend]
               @config[server_type][:frontends] << @config[server_type][:bootstrap_frontend]
               servers.each do |server_name, server_config|
+                server_config ||= Hash.new
                 additional_fqdn = nil
                 products = server_config['products']
                 products ||= Hash.new
@@ -114,6 +117,7 @@ module DevLXC
 
             if cluster_config[server_type]["servers"]
               cluster_config[server_type]["servers"].each do |server_name, server_config|
+                server_config ||= Hash.new
                 additional_fqdn = nil
                 products = server_config['products']
                 products ||= Hash.new
@@ -144,6 +148,7 @@ module DevLXC
           when "compliance", "supermarket"
             unless cluster_config[server_type]["servers"].first.nil?
               (server_name, server_config) = cluster_config[server_type]["servers"].first
+              server_config ||= Hash.new
               @config[server_type][:fqdn] = server_name
               products = server_config['products']
               products ||= Hash.new
@@ -159,6 +164,7 @@ module DevLXC
           when "nodes"
             if cluster_config[server_type]["servers"]
               cluster_config[server_type]["servers"].each do |server_name, server_config|
+                server_config ||= Hash.new
                 products = server_config['products']
                 products ||= Hash.new
                 @server_configs[server_name] = {
