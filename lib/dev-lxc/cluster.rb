@@ -79,6 +79,10 @@ module DevLXC
             end
           when "chef-backend"
             @config[server_type][:fqdn] = cluster_config[server_type]["api_fqdn"]
+            @config[server_type][:users] = cluster_config[server_type]["users"]
+            @config[server_type][:users] ||= Array.new
+            @config[server_type][:orgs] = cluster_config[server_type]["orgs"]
+            @config[server_type][:orgs] ||= Hash.new
             @config[server_type][:backends] = Array.new
             @config[server_type][:frontends] = Array.new
 
@@ -115,6 +119,10 @@ module DevLXC
             @config[server_type][:topology] = cluster_config[server_type]["topology"]
             @config[server_type][:topology] ||= 'standalone'
             @config[server_type][:fqdn] = cluster_config[server_type]["api_fqdn"]
+            @config[server_type][:users] = cluster_config[server_type]["users"]
+            @config[server_type][:users] ||= Array.new
+            @config[server_type][:orgs] = cluster_config[server_type]["orgs"]
+            @config[server_type][:orgs] ||= Hash.new
             @config[server_type][:frontends] = Array.new
 
             if cluster_config[server_type]["servers"]
@@ -520,13 +528,19 @@ module DevLXC
         configure_chef_backend(server) if required_products.include?('chef-backend')
         if required_products.include?('chef-server')
           configure_chef_frontend(server)
-          create_users(server) if server.name == @config['chef-backend'][:bootstrap_frontend]
+          if server.name == @config['chef-backend'][:bootstrap_frontend]
+            dot_chef_path = "/root/chef-repo/.chef"
+            create_users_orgs_knife_configs(server, dot_chef_path)
+          end
         end
         configure_manage(server) if required_products.include?('manage')
       when 'chef-server'
         if required_products.include?('chef-server') || required_products.include?('private-chef')
           configure_chef_server(server)
-          create_users(server) if server.name == @config['chef-server'][:bootstrap_backend]
+          if server.name == @config['chef-server'][:bootstrap_backend]
+            dot_chef_path = "/root/chef-repo/.chef"
+            create_users_orgs_knife_configs(server, dot_chef_path)
+          end
         end
         configure_reporting(server) if required_products.include?('reporting')
         configure_push_jobs_server(server) if required_products.include?('push-jobs-server')

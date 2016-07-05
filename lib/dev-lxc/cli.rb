@@ -67,6 +67,15 @@ base_container: b-ubuntu-1404
 chef-server:
   topology: tier
   api_fqdn: chef.lxc
+  users:          # a user's password will be the same as its username
+    - mary-admin
+    - joe-user
+  orgs:
+    demo:
+      admins:
+        - mary-admin
+      non-admins:
+        - joe-user
   servers:
     chef-be.lxc:
       ipaddress: 10.0.3.201
@@ -87,6 +96,15 @@ chef-server:
 )
       chef_config = %Q(
 chef-server:
+  users:          # a user's password will be the same as its username
+    - mary-admin
+    - joe-user
+  orgs:
+    demo:
+      admins:
+        - mary-admin
+      non-admins:
+        - joe-user
   servers:
     chef.lxc:
       ipaddress: 10.0.3.203
@@ -129,6 +147,15 @@ adhoc:
       chef_backend_config = %Q(
 chef-backend:
   api_fqdn: chef.lxc
+  users:          # a user's password will be the same as its username
+    - mary-admin
+    - joe-user
+  orgs:
+    demo:
+      admins:
+        - mary-admin
+      non-admins:
+        - joe-user
   servers:
     chef-backend1.lxc:
       ipaddress: 10.0.3.208
