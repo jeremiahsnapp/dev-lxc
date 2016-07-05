@@ -13,7 +13,7 @@ module DevLXC
       @config = Hash.new { |hash, key| hash[key] = {} }
       @server_configs = Hash.new
 
-      %w(adhoc analytics automate chef-backend chef-server compliance nodes supermarket).each do |server_type|
+      %w(adhoc analytics automate build-nodes chef-backend chef-server compliance nodes supermarket).each do |server_type|
         if cluster_config[server_type]
           @config[server_type][:mounts] = ["/var/dev-lxc var/dev-lxc"]
           if cluster_config[server_type]["mounts"]
@@ -27,7 +27,7 @@ module DevLXC
           @config[server_type][:base_container_name] ||= cluster_config["base_container"]
 
           case server_type
-          when "adhoc"
+          when "adhoc", "build-nodes"
             if cluster_config[server_type]["servers"]
               cluster_config[server_type]["servers"].each do |server_name, server_config|
                 server_config ||= Hash.new
@@ -223,7 +223,7 @@ module DevLXC
       mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
       ssh_keys.concat(cluster_config['ssh-keys']) unless cluster_config['ssh-keys'].nil?
 
-      %w(adhoc analytics automate chef-backend chef-server compliance nodes supermarket).each do |server_type|
+      %w(adhoc analytics automate build-nodes chef-backend chef-server compliance nodes supermarket).each do |server_type|
         unless cluster_config[server_type].nil?
           base_container_names << cluster_config[server_type]['base_container'] unless cluster_config[server_type]['base_container'].nil?
           hostnames << cluster_config[server_type]['api_fqdn'] unless cluster_config[server_type]['api_fqdn'].nil?
@@ -296,7 +296,7 @@ module DevLXC
 
       # the order of this list of server_types matters
       # it determines the order in which actions are applied to each server_type
-      %w(chef-backend chef-server analytics compliance supermarket automate nodes adhoc).each do |server_type|
+      %w(chef-backend chef-server analytics compliance supermarket automate build-nodes nodes adhoc).each do |server_type|
         unless @config[server_type].empty?
           case server_type
           when "chef-backend"
@@ -314,7 +314,7 @@ module DevLXC
             @config[server_type][:frontends].each do |frontend_name|
               servers << get_server(frontend_name)
             end
-          when "adhoc", "automate", "compliance", "nodes", "supermarket"
+          when "adhoc", "automate", "build-nodes", "compliance", "nodes", "supermarket"
             server_configs = @server_configs.select { |server_name, server_config| server_config[:server_type] == server_type }
             server_configs.each_key { |server_name| servers << get_server(server_name) }
           end
@@ -391,6 +391,34 @@ module DevLXC
             abort_up = true
           elsif !get_server(@config['chef-server'][:bootstrap_backend]).container.defined? && servers.select { |s| s.name == @config['chef-server'][:bootstrap_backend] }.empty?
             puts "ERROR: '#{server.name}' requires '#{@config['chef-server'][:bootstrap_backend]}' to be configured first."
+            abort_up = true
+          end
+        end
+        if @server_configs[server.name][:server_type] == 'build-nodes'
+          if @config['chef-server'][:bootstrap_backend].nil?
+            puts "ERROR: '#{server.name}' requires a Chef Server bootstrap backend to be configured first."
+            abort_up = true
+          elsif !get_server(@config['chef-server'][:bootstrap_backend]).container.running? && servers.select { |s| s.name == @config['chef-server'][:bootstrap_backend] }.empty?
+            puts "ERROR: '#{server.name}' requires '#{@config['chef-server'][:bootstrap_backend]}' to be running first."
+            abort_up = true
+          end
+          if @config['chef-server'][:topology] == 'tier'
+            if @config[server_type][:frontends].empty?
+              puts "ERROR: '#{server.name}' requires at least one Chef Server frontend to be configured first."
+              abort_up = true
+            elsif (@config['chef-server'][:frontends].select { |s| get_server(s).container.running? }.length + servers.select { |s| @config['chef-server'][:frontends].include?(s.name) }.length) < 1
+              puts "ERROR: '#{server.name}' requires at least one Chef Server frontend to be running first."
+              abort_up = true
+            end
+          end
+          automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
+          if automate_server_name
+            if !get_server(automate_server_name).container.running? && servers.select { |s| s.name == automate_server_name }.empty?
+              puts "ERROR: '#{server.name}' requires '#{automate_server_name}' to be running first."
+              abort_up = true
+            end
+          else
+            puts "ERROR: '#{server.name}' requires an Automate Server to be configured first."
             abort_up = true
           end
         end
@@ -539,7 +567,11 @@ module DevLXC
         server.start
       end
       @server_configs[server.name][:required_products].each do |product_name, package_source|
-        server.install_package(package_source)
+        if @server_configs[server.name][:server_type] == "automate" && product_name == "chefdk"
+          IO.write("#{server.container.config_item('lxc.rootfs')}/root/build_node_chefdk_package_path", "#{package_source}\n")
+        else
+          server.install_package(package_source)
+        end
       end
       server.stop
       server.snapshot("dev-lxc build: products installed")
@@ -558,6 +590,8 @@ module DevLXC
         sleep 5
       when 'analytics'
         configure_analytics(server) if required_products.include?('analytics')
+      when 'build-nodes'
+        configure_build_node(server)
       when 'chef-backend'
         configure_chef_backend(server) if required_products.include?('chef-backend')
         if required_products.include?('chef-server')
@@ -624,6 +658,22 @@ module DevLXC
       setup_cmd += " --no-build-node"
       setup_cmd += " --configure"
       run_ctl(server, "delivery", setup_cmd)
+    end
+
+    def configure_build_node(server)
+      automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
+      if automate_server_name
+        automate_server = get_server(automate_server_name)
+        if File.exist?("#{automate_server.container.config_item('lxc.rootfs')}/root/build_node_chefdk_package_path")
+          build_node_chefdk_package_path = IO.read("#{automate_server.container.config_item('lxc.rootfs')}/root/build_node_chefdk_package_path").chomp
+          install_build_node_cmd = "install-build-node"
+          install_build_node_cmd += " --fqdn #{server.name}"
+          install_build_node_cmd += " --username dev-lxc"
+          install_build_node_cmd += " --password dev-lxc"
+          install_build_node_cmd += " --installer #{build_node_chefdk_package_path}"
+          run_ctl(automate_server, "delivery", install_build_node_cmd)
+        end
+      end
     end
 
     def configure_chef_client(server)

@@ -47,6 +47,7 @@ module DevLXC::CLI
     option :compliance, :type => :boolean, :desc => "Compliance Server"
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :automate, :type => :boolean, :desc => "Automate Server"
+    option :build_nodes, :type => :boolean, :desc => "Build Nodes"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
     option :append, :aliases => "-a", :type => :boolean, :desc => "Do not generate the global config header"
     option :filename, :aliases => "-f", :desc => "Write generated content to FILE rather than standard output."
@@ -126,6 +127,11 @@ automate:
       license_path: /CHANGE/ME
       chef_org: delivery
       enterprise_name: demo-ent
+)
+      build_nodes_config = %Q(
+build-nodes:
+  servers:
+    build-node-1.lxc:
 )
       analytics_config = %Q(
 analytics:
@@ -209,6 +215,7 @@ nodes:
       config += compliance_config if options[:compliance]
       config += supermarket_config if options[:supermarket]
       config += automate_config if options[:automate]
+      config += build_nodes_config if options[:build_nodes]
       config += adhoc_config if options[:adhoc]
       config += chef_backend_config if options[:chef_backend]
       config += nodes_config if options[:nodes]
