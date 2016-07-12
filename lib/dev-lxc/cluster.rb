@@ -681,14 +681,18 @@ module DevLXC
         chef_server_url = @server_configs[server.name][:chef_server_url]
         validation_client_name = @server_configs[server.name][:validation_client_name]
         validation_key = @server_configs[server.name][:validation_key]
-      elsif @config['chef-server'][:bootstrap_backend] && get_server(@config['chef-server'][:bootstrap_backend]).container.defined?
+      elsif @config['chef-server'][:bootstrap_backend]
         chef_server_url = "https://#{@config['chef-server'][:fqdn]}/organizations/demo"
         validation_client_name = 'demo-validator'
-        validation_key = "#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
-      elsif @config['chef-backend'][:bootstrap_frontend] && get_server(@config['chef-backend'][:bootstrap_frontend]).container.defined?
+        if get_server(@config['chef-server'][:bootstrap_backend]).container.defined?
+          validation_key = "#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
+        end
+      elsif @config['chef-backend'][:bootstrap_frontend]
         chef_server_url = "https://#{@config['chef-backend'][:fqdn]}/organizations/demo"
         validation_client_name = 'demo-validator'
-        validation_key = "#{get_server(@config['chef-backend'][:bootstrap_frontend]).container.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
+        if get_server(@config['chef-backend'][:bootstrap_frontend]).container.defined?
+          validation_key = "#{get_server(@config['chef-backend'][:bootstrap_frontend]).container.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
+        end
       end
 
       puts "Configuring Chef Client in container '#{server.name}' for Chef Server '#{chef_server_url}'"
