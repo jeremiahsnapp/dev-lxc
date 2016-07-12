@@ -1030,6 +1030,13 @@ oc_id['applications']['supermarket'] = {
 }
 )
       end
+      automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
+      if automate_server_name
+        chef_server_config += %Q(
+data_collector['root_url'] = "https://#{automate_server_name}/data-collector/v0/"
+data_collector['token'] = "93a49a4f2482c64126f7b6015e6b0f30284287ee4054ff8807fb63d9cbd1c506"
+)
+      end
       return chef_server_config
     end
 
