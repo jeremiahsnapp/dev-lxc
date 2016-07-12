@@ -524,7 +524,7 @@ module DevLXC
         products = @server_configs[server.name][:products]
         @server_configs[server.name][:required_products] = Hash.new
         if !server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: products installed") }.empty?
-          puts "Skipping product cache preparation for container '#{server.name}' because it has a 'products installed' snapshot"
+          # Skipping product cache preparation for container because it has a 'products installed' snapshot
           next
         end
         products.each do |product_name, product_options|
