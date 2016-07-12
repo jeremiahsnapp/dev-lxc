@@ -518,12 +518,12 @@ module DevLXC
       artifact.url
     end
 
-    def prep_product_cache(servers)
+    def prep_product_cache(servers, force=false)
       all_required_products = Hash.new
       servers.each do |server|
         products = @server_configs[server.name][:products]
         @server_configs[server.name][:required_products] = Hash.new
-        if !server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: products installed") }.empty?
+        if !force && !server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: products installed") }.empty?
           # Skipping product cache preparation for container because it has a 'products installed' snapshot
           next
         end

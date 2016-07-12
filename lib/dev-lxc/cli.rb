@@ -297,6 +297,16 @@ nodes:
       print_elapsed_time(Time.now - start_time)
     end
 
+    desc "prepare-product-cache [SERVER_NAME_REGEX]", "Download required product packages to cache"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    def prepare_product_cache(server_name_regex=nil)
+      start_time = Time.now
+      cluster = get_cluster(options[:config])
+      servers = cluster.get_sorted_servers(server_name_regex)
+      cluster.prep_product_cache(servers, true)
+      print_elapsed_time(Time.now - start_time)
+    end
+
     desc "up [SERVER_NAME_REGEX]", "Start servers - This is the default if no subcommand is given"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def up(server_name_regex=nil)
