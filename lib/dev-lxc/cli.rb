@@ -289,6 +289,12 @@ nodes:
       get_cluster(options[:config]).chef_repo(options[:force], options[:pivotal])
     end
 
+    desc "print-automate-credentials", "Print Automate credentials"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    def print_automate_credentials
+      get_cluster(options[:config]).print_automate_credentials
+    end
+
     desc "run-command [SERVER_NAME_REGEX] [COMMAND]", "Runs a command in each server"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def run_command(server_name_regex=nil, command)

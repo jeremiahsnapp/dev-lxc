@@ -660,6 +660,21 @@ module DevLXC
       run_ctl(server, "delivery", setup_cmd)
     end
 
+    def print_automate_credentials
+      automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
+      if automate_server_name
+        automate_server = get_server(automate_server_name)
+        automate_credentials_files = Dir.glob("#{automate_server.container.config_item('lxc.rootfs')}/etc/delivery/*-credentials")
+        automate_credentials_files.each_with_index do |automate_credentials_file, index|
+          puts IO.read(automate_credentials_file)
+          puts if index + 1 < automate_credentials_files.length
+        end
+      else
+        puts "WARNING: An Automate server is not defined."
+        exit 1
+      end
+    end
+
     def configure_build_node(server)
       automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
       if automate_server_name
