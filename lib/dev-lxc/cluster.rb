@@ -677,6 +677,10 @@ module DevLXC
     end
 
     def configure_chef_client(server)
+      puts "Configuring Chef Client in container '#{server.name}'"
+
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/chef")
+
       if @server_configs[server.name][:chef_server_url] || @server_configs[server.name][:validation_client_name] || @server_configs[server.name][:validation_key]
         chef_server_url = @server_configs[server.name][:chef_server_url]
         validation_client_name = @server_configs[server.name][:validation_client_name]
@@ -694,10 +698,6 @@ module DevLXC
           validation_key = "#{get_server(@config['chef-backend'][:bootstrap_frontend]).container.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
         end
       end
-
-      puts "Configuring Chef Client in container '#{server.name}' for Chef Server '#{chef_server_url}'"
-
-      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/chef")
 
       client_rb = %Q(chef_server_url '#{chef_server_url}'
 validation_client_name '#{validation_client_name}'
