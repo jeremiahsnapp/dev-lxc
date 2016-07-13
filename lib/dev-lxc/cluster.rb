@@ -8,7 +8,6 @@ module DevLXC
 
     def initialize(cluster_config)
       FileUtils.mkdir_p('/var/dev-lxc') unless Dir.exist?('/var/dev-lxc')
-      validate_cluster_config(cluster_config)
 
       @config = Hash.new { |hash, key| hash[key] = {} }
       @server_configs = Hash.new
@@ -168,9 +167,10 @@ module DevLXC
           end
         end
       end
+      validate_cluster_config
     end
 
-    def validate_cluster_config(cluster_config)
+    def validate_cluster_config
       hostnames = Array.new
       mounts = Array.new
       base_container_names = Array.new
