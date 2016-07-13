@@ -37,7 +37,8 @@ module DevLXC
                 ipaddress: server_config['ipaddress'],
                 additional_fqdn: nil,
                 mounts: @config[server_type][:mounts],
-                ssh_keys: @config[server_type][:ssh_keys]
+                ssh_keys: @config[server_type][:ssh_keys],
+                base_container_name: @config[server_type][:base_container_name]
               }
               # gather configuration from only the first "automate", "compliance" or "supermarket" server
               break if %w(automate compliance supermarket).include?(server_type)
@@ -426,7 +427,7 @@ module DevLXC
 
     def clone_from_base_container(server)
       server_type = @server_configs[server.name][:server_type]
-      base_container = DevLXC::Container.new(@config[server_type][:base_container_name])
+      base_container = DevLXC::Container.new(@server_configs[server.name][:base_container_name])
       puts "Cloning base container '#{base_container.name}' into container '#{server.name}'"
       base_container.clone(server.name, {:flags => LXC::LXC_CLONE_SNAPSHOT})
       server.container.load_config
@@ -439,7 +440,7 @@ module DevLXC
 
     def get_product_url(server, product_name, product_options)
       server_type = @server_configs[server.name][:server_type]
-      base_container = DevLXC::Container.new(@config[server_type][:base_container_name])
+      base_container = DevLXC::Container.new(@server_configs[server.name][:base_container_name])
       mixlib_install_platform_detection_path = "#{base_container.config_item('lxc.rootfs')}/mixlib-install-platform-detection"
       IO.write(mixlib_install_platform_detection_path, Mixlib::Install::Generator::Bourne.detect_platform_sh)
       platform_results = `chroot #{base_container.config_item('lxc.rootfs')} bash mixlib-install-platform-detection`
