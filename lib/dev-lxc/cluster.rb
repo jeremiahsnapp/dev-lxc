@@ -268,10 +268,11 @@ module DevLXC
             @config[server_type][:frontends].each do |frontend_name|
               servers << get_server(frontend_name)
             end
-          when "adhoc", "automate", "build-nodes", "compliance", "nodes", "supermarket"
-            server_configs = @server_configs.select { |server_name, server_config| server_config[:server_type] == server_type }
-            server_configs.each_key { |server_name| servers << get_server(server_name) }
           end
+        end
+        if %w(adhoc automate build-nodes compliance nodes supermarket).include?(server_type)
+          server_configs = @server_configs.select { |server_name, server_config| server_config[:server_type] == server_type }
+          server_configs.each_key { |server_name| servers << get_server(server_name) }
         end
       end
       servers.select { |s| s.name =~ /#{server_name_regex}/ }
