@@ -171,41 +171,32 @@ module DevLXC
     end
 
     def validate_cluster_config
-      hostnames = Array.new
-      mounts = Array.new
       base_container_names = Array.new
+      mounts = Array.new
       ssh_keys = Array.new
+      hostnames = Array.new
 
-      base_container_names << cluster_config['base_container'] unless cluster_config['base_container'].nil?
-      mounts.concat(cluster_config['mounts']) unless cluster_config['mounts'].nil?
-      ssh_keys.concat(cluster_config['ssh-keys']) unless cluster_config['ssh-keys'].nil?
+      @config.map { |server_type, config| hostnames.push(config[:fqdn]) }
 
-      %w(adhoc analytics automate build-nodes chef-backend chef-server compliance nodes supermarket).each do |server_type|
-        unless cluster_config[server_type].nil?
-          base_container_names << cluster_config[server_type]['base_container'] unless cluster_config[server_type]['base_container'].nil?
-          hostnames << cluster_config[server_type]['api_fqdn'] unless cluster_config[server_type]['api_fqdn'].nil?
-          hostnames << cluster_config[server_type]['analytics_fqdn'] unless cluster_config[server_type]['analytics_fqdn'].nil?
-          hostnames.concat(cluster_config[server_type]['servers'].keys) unless cluster_config[server_type]['servers'].nil?
-          mounts.concat(cluster_config[server_type]['mounts']) unless cluster_config[server_type]['mounts'].nil?
-          ssh_keys.concat(cluster_config[server_type]['ssh-keys']) unless cluster_config[server_type]['ssh-keys'].nil?
-          case server_type
-          when 'automate'
-            unless cluster_config[server_type]['license_path'].nil?
-              unless File.exists?(cluster_config[server_type]['license_path'])
-                puts "ERROR: Automate license #{cluster_config[server_type]['license_path']} does not exist."
-                exit 1
-              end
-            end
-          when 'nodes'
-            unless cluster_config[server_type]['validation_key'].nil?
-              unless File.exists?(cluster_config[server_type]['validation_key'])
-                puts "ERROR: Validation key #{cluster_config[server_type]['validation_key']} does not exist."
-                exit 1
-              end
-            end
+      @server_configs.each do |server_name, server_config|
+        base_container_names.push(server_config[:base_container_name]).uniq! if server_config[:base_container_name]
+        mounts.concat(server_config[:mounts]).uniq! if server_config[:mounts]
+        ssh_keys.concat(server_config[:ssh_keys]).uniq! if server_config[:ssh_keys]
+        hostnames.push(server_name)
+        case server_config[:server_type]
+        when "automate"
+          if server_config[:license_path] && !File.exists?(server_config[:license_path])
+            puts "ERROR: Automate license #{server_config[:license_path]} does not exist."
+            exit 1
+          end
+        when "nodes"
+          if server_config[:validation_key] && !File.exists?(server_config[:validation_key])
+            puts "ERROR: Validation key #{server_config[:validation_key]} does not exist."
+            exit 1
           end
         end
       end
+
       unless base_container_names.empty?
         base_container_names.each do |base_container_name|
           unless ::DevLXC::Container.new(base_container_name).defined?
