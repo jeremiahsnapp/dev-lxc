@@ -154,13 +154,19 @@ module DevLXC
               })
             end
           when "nodes"
+            chef_server_url = cluster_config[server_type]['chef_server_url']
+            validation_client_name = cluster_config[server_type]['validation_client_name']
+            validation_key = cluster_config[server_type]['validation_key']
             if cluster_config[server_type]["servers"]
               cluster_config[server_type]["servers"].each do |server_name, server_config|
                 server_config ||= Hash.new
+                chef_server_url = server_config['chef_server_url'] if server_config['chef_server_url']
+                validation_client_name = server_config['validation_client_name'] if server_config['validation_client_name']
+                validation_key = server_config['validation_key'] if server_config['validation_key']
                 @server_configs[server_name].merge!({
-                  chef_server_url: server_config['chef_server_url'],
-                  validation_client_name: server_config['validation_client_name'],
-                  validation_key: server_config['validation_key']
+                  chef_server_url: chef_server_url,
+                  validation_client_name: validation_client_name,
+                  validation_key: validation_key
                 })
               end
             end
