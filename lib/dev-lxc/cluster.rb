@@ -339,7 +339,7 @@ module DevLXC
           end
         end
         if @server_configs[server.name][:server_type] == 'nodes'
-          if @server_configs[server.name][:chef_server_url].nil? && @server_configs[server.name][:validation_client_name].nil? & @server_configs[server.name][:validation_key].nil?
+          if @server_configs[server.name][:chef_server_url].nil? && @server_configs[server.name][:validation_client_name].nil? && @server_configs[server.name][:validation_key].nil?
             if @config['chef-server'][:bootstrap_backend] && !get_server(@config['chef-server'][:bootstrap_backend]).container.defined? && servers.select { |s| s.name == @config['chef-server'][:bootstrap_backend] }.empty?
               puts "ERROR: '#{server.name}' requires '#{@config['chef-server'][:bootstrap_backend]}' to be configured first."
               abort_up = true
