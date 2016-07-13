@@ -26,23 +26,25 @@ module DevLXC
           @config[server_type][:base_container_name] = cluster_config[server_type]["base_container"]
           @config[server_type][:base_container_name] ||= cluster_config["base_container"]
 
-          case server_type
-          when "adhoc", "build-nodes"
-            if cluster_config[server_type]["servers"]
-              cluster_config[server_type]["servers"].each do |server_name, server_config|
-                server_config ||= Hash.new
-                products = server_config['products']
-                products ||= Hash.new
-                @server_configs[server_name] = {
-                  server_type: server_type,
-                  products: products,
-                  ipaddress: server_config['ipaddress'],
-                  additional_fqdn: nil,
-                  mounts: @config[server_type][:mounts],
-                  ssh_keys: @config[server_type][:ssh_keys]
-                }
-              end
+          if cluster_config[server_type]["servers"]
+            cluster_config[server_type]["servers"].each do |server_name, server_config|
+              server_config ||= Hash.new
+              products = server_config['products']
+              products ||= Hash.new
+              @server_configs[server_name] = {
+                server_type: server_type,
+                products: products,
+                ipaddress: server_config['ipaddress'],
+                additional_fqdn: nil,
+                mounts: @config[server_type][:mounts],
+                ssh_keys: @config[server_type][:ssh_keys]
+              }
+              # gather configuration from only the first "automate", "compliance" or "supermarket" server
+              break if %w(automate compliance supermarket).include?(server_type)
             end
+          end
+
+          case server_type
           when "analytics"
             @config[server_type][:topology] = cluster_config[server_type]["topology"]
             @config[server_type][:topology] ||= 'standalone'
@@ -53,9 +55,6 @@ module DevLXC
               cluster_config[server_type]["servers"].each do |server_name, server_config|
                 server_config ||= Hash.new
                 additional_fqdn = nil
-                products = server_config['products']
-                products ||= Hash.new
-                @server_configs[server_name] = server_config
                 case @config[server_type][:topology]
                 when 'standalone'
                   @config[server_type][:bootstrap_backend] = server_name if server_config["role"].nil?
@@ -67,14 +66,9 @@ module DevLXC
                     @config[server_type][:frontends] << server_name
                   end
                 end
-                @server_configs[server_name] = {
-                  server_type: server_type,
-                  products: products,
-                  ipaddress: server_config['ipaddress'],
-                  additional_fqdn: additional_fqdn,
-                  mounts: @config[server_type][:mounts],
-                  ssh_keys: @config[server_type][:ssh_keys]
-                }
+                @server_configs[server_name].merge!({
+                  additional_fqdn: additional_fqdn
+                })
               end
             end
           when "chef-backend"
@@ -95,8 +89,6 @@ module DevLXC
               servers.each do |server_name, server_config|
                 server_config ||= Hash.new
                 additional_fqdn = nil
-                products = server_config['products']
-                products ||= Hash.new
                 case server_config["role"]
                 when "backend"
                   @config[server_type][:backends] << server_name unless server_name == @config[server_type][:leader_backend]
@@ -104,15 +96,10 @@ module DevLXC
                   additional_fqdn = @config[server_type][:fqdn]
                   @config[server_type][:frontends] << server_name unless server_name == @config[server_type][:bootstrap_frontend]
                 end
-                @server_configs[server_name] = {
-                  server_type: server_type,
-                  products: products,
-                  ipaddress: server_config['ipaddress'],
+                @server_configs[server_name].merge!({
                   additional_fqdn: additional_fqdn,
-                  mounts: @config[server_type][:mounts],
-                  ssh_keys: @config[server_type][:ssh_keys],
                   chef_server_type: 'chef-server'
-                }
+                })
               end
             end
           when "chef-server"
@@ -129,10 +116,8 @@ module DevLXC
               cluster_config[server_type]["servers"].each do |server_name, server_config|
                 server_config ||= Hash.new
                 additional_fqdn = nil
-                products = server_config['products']
-                products ||= Hash.new
-                chef_server_type = 'private-chef' if products.has_key?('private-chef')
-                chef_server_type = 'chef-server' if products.has_key?('chef-server')
+                chef_server_type = 'private-chef' if @server_configs[server_name][:products].has_key?('private-chef')
+                chef_server_type = 'chef-server' if @server_configs[server_name][:products].has_key?('chef-server')
                 case @config[server_type][:topology]
                 when 'standalone'
                   @config[server_type][:bootstrap_backend] = server_name if server_config["role"].nil?
@@ -144,68 +129,36 @@ module DevLXC
                     @config[server_type][:frontends] << server_name
                   end
                 end
-                @server_configs[server_name] = {
-                  server_type: server_type,
-                  products: products,
-                  ipaddress: server_config['ipaddress'],
+                @server_configs[server_name].merge!({
                   additional_fqdn: additional_fqdn,
-                  mounts: @config[server_type][:mounts],
-                  ssh_keys: @config[server_type][:ssh_keys],
                   chef_server_type: chef_server_type
-                }
+                })
               end
             end
-          when "compliance", "supermarket"
+          when "supermarket"
             unless cluster_config[server_type]["servers"].first.nil?
               (server_name, server_config) = cluster_config[server_type]["servers"].first
-              server_config ||= Hash.new
               @config[server_type][:fqdn] = server_name
-              products = server_config['products']
-              products ||= Hash.new
-              @server_configs[server_name] = {
-                server_type: server_type,
-                products: products,
-                ipaddress: server_config['ipaddress'],
-                additional_fqdn: nil,
-                mounts: @config[server_type][:mounts],
-                ssh_keys: @config[server_type][:ssh_keys]
-              }
             end
           when "automate"
             unless cluster_config[server_type]["servers"].first.nil?
               (server_name, server_config) = cluster_config[server_type]["servers"].first
               server_config ||= Hash.new
-              products = server_config['products']
-              products ||= Hash.new
-              @server_configs[server_name] = {
-                server_type: server_type,
-                products: products,
-                ipaddress: server_config['ipaddress'],
-                additional_fqdn: nil,
-                mounts: @config[server_type][:mounts],
-                ssh_keys: @config[server_type][:ssh_keys],
+              @server_configs[server_name].merge!({
                 license_path: server_config['license_path'],
                 chef_org: server_config['chef_org'],
                 enterprise_name: server_config['enterprise_name']
-              }
+              })
             end
           when "nodes"
             if cluster_config[server_type]["servers"]
               cluster_config[server_type]["servers"].each do |server_name, server_config|
                 server_config ||= Hash.new
-                products = server_config['products']
-                products ||= Hash.new
-                @server_configs[server_name] = {
-                  server_type: server_type,
-                  products: products,
-                  ipaddress: server_config['ipaddress'],
-                  additional_fqdn: nil,
-                  mounts: @config[server_type][:mounts],
-                  ssh_keys: @config[server_type][:ssh_keys],
+                @server_configs[server_name].merge!({
                   chef_server_url: server_config['chef_server_url'],
                   validation_client_name: server_config['validation_client_name'],
                   validation_key: server_config['validation_key']
-                }
+                })
               end
             end
           end
