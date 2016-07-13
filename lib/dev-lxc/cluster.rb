@@ -15,16 +15,16 @@ module DevLXC
 
       %w(adhoc analytics automate build-nodes chef-backend chef-server compliance nodes supermarket).each do |server_type|
         if cluster_config[server_type]
-          @config[server_type][:mounts] = ["/var/dev-lxc var/dev-lxc"]
+          mounts = ["/var/dev-lxc var/dev-lxc"]
           if cluster_config[server_type]["mounts"]
-            @config[server_type][:mounts].concat(cluster_config[server_type]["mounts"])
+            mounts.concat(cluster_config[server_type]["mounts"])
           elsif cluster_config["mounts"]
-            @config[server_type][:mounts].concat(cluster_config["mounts"])
+            mounts.concat(cluster_config["mounts"])
           end
-          @config[server_type][:ssh_keys] = cluster_config[server_type]["ssh-keys"]
-          @config[server_type][:ssh_keys] ||= cluster_config["ssh-keys"]
-          @config[server_type][:base_container_name] = cluster_config[server_type]["base_container"]
-          @config[server_type][:base_container_name] ||= cluster_config["base_container"]
+          ssh_keys = cluster_config[server_type]["ssh-keys"]
+          ssh_keys ||= cluster_config["ssh-keys"]
+          base_container_name = cluster_config[server_type]["base_container"]
+          base_container_name ||= cluster_config["base_container"]
 
           if cluster_config[server_type]["servers"]
             cluster_config[server_type]["servers"].each do |server_name, server_config|
@@ -36,9 +36,9 @@ module DevLXC
                 products: products,
                 ipaddress: server_config['ipaddress'],
                 additional_fqdn: nil,
-                mounts: @config[server_type][:mounts],
-                ssh_keys: @config[server_type][:ssh_keys],
-                base_container_name: @config[server_type][:base_container_name]
+                mounts: mounts,
+                ssh_keys: ssh_keys,
+                base_container_name: base_container_name
               }
               # gather configuration from only the first "automate", "compliance" or "supermarket" server
               break if %w(automate compliance supermarket).include?(server_type)
