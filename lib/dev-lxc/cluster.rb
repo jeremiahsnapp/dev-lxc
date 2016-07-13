@@ -31,6 +31,9 @@ module DevLXC
               server_config ||= Hash.new
               products = server_config['products']
               products ||= Hash.new
+              mounts = ["/var/dev-lxc var/dev-lxc"] + server_config["mounts"] if server_config["mounts"]
+              ssh_keys = server_config["ssh-keys"] if server_config["ssh-keys"]
+              base_container_name = server_config["base_container"] if server_config["base_container"]
               @server_configs[server_name] = {
                 server_type: server_type,
                 products: products,
