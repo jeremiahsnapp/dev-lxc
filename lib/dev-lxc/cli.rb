@@ -22,6 +22,12 @@ module DevLXC::CLI
       end
     }
 
+    desc "show-config", "Show calculated configuration"
+    option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    def show_config
+      get_cluster(options[:config]).show_config
+    end
+
     desc "create-base-container [BASE_CONTAINER_NAME]", "Create a base container"
     option :options, :aliases => "-o", :desc => "Specify additional options for the lxc create"
     def create_base_container(base_container_name=nil)

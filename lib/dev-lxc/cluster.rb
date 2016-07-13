@@ -231,6 +231,15 @@ module DevLXC
       end
     end
 
+    def show_config
+      require 'pp'
+      puts "Cluster config:"
+      pp @config
+      puts
+      puts "Server configs:"
+      pp @server_configs
+    end
+
     def get_server(server_name)
       ipaddress = @server_configs[server_name][:ipaddress]
       additional_fqdn = @server_configs[server_name][:additional_fqdn]
