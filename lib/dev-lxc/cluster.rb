@@ -548,6 +548,7 @@ module DevLXC
       required_products = @server_configs[server.name][:required_products].keys if @server_configs[server.name][:required_products]
       required_products ||= Array.new
       server_type = @server_configs[server.name][:server_type]
+      dot_chef_path = "/root/chef-repo/.chef"
       case server_type
       when 'adhoc'
         # Allow adhoc servers time to generate SSH Server Host Keys
@@ -561,7 +562,6 @@ module DevLXC
         if required_products.include?('chef-server')
           configure_chef_frontend(server)
           if server.name == @config['chef-backend'][:bootstrap_frontend]
-            dot_chef_path = "/root/chef-repo/.chef"
             create_users_orgs_knife_configs(server, dot_chef_path)
           end
         end
@@ -570,7 +570,6 @@ module DevLXC
         if required_products.include?('chef-server') || required_products.include?('private-chef')
           configure_chef_server(server)
           if server.name == @config['chef-server'][:bootstrap_backend]
-            dot_chef_path = "/root/chef-repo/.chef"
             create_users_orgs_knife_configs(server, dot_chef_path)
 
             automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
