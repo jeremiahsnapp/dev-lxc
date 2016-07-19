@@ -1,5 +1,17 @@
 # dev-lxc Change Log
 
+## 2.1.0 (2016-07-19)
+
+* Provide ability to define Chef org for node's chef-client config
+* Enable node chef-client configuration at server_type level
+* Add show-config subcommand
+* Enable setting mounts, ssh_keys and base_container for each server
+* Add print-automate-credentials subcommand
+* Add prepare-product-cache subcommand
+* Add build-nodes
+* Add Automate server
+* Define Chef Server orgs and users to be created
+
 ## 2.0.3 (2016-06-27)
 
 * Use "stable" package channel for chef-backend since Chef HA 2.0 has been GA released
