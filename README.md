@@ -150,7 +150,7 @@ The right pane updates every 0.5 seconds with the cluster's status provided by `
 The session's second window is named "shell". It opens in the same directory as the
 cluster's `dev-lxc.yml` file and is useful for attaching to a server to perform system administration tasks.
 
-See the [Usage docs](docs/usage.md) for more information about how to close/kill Byobu sessions.
+See the [usage docs](docs/usage.md) for more information about how to close/kill Byobu sessions.
 
 ```
 cluster-view /root/dev/clusters/automate
