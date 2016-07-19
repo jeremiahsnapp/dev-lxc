@@ -339,7 +339,7 @@ module DevLXC
           end
         end
         if @server_configs[server.name][:server_type] == 'nodes'
-          if @server_configs[server.name][:chef_server_url].nil? && @server_configs[server.name][:validation_client_name].nil? && @server_configs[server.name][:validation_key].nil?
+          if @server_configs[server.name][:chef_server_url] && @server_configs[server.name][:validation_client_name] && @server_configs[server.name][:validation_key].nil?
             if @config['chef-server'][:bootstrap_backend] && !get_server(@config['chef-server'][:bootstrap_backend]).container.defined? && servers.select { |s| s.name == @config['chef-server'][:bootstrap_backend] }.empty?
               puts "ERROR: '#{server.name}' requires '#{@config['chef-server'][:bootstrap_backend]}' to be configured first."
               abort_up = true
@@ -592,7 +592,7 @@ module DevLXC
       when 'nodes'
         # Allow servers time to generate SSH Server Host Keys
         sleep 5
-        configure_chef_client(server) if required_products.include?('chef') || required_products.include?('chefdk')
+        configure_chef_client(server, dot_chef_path) if required_products.include?('chef') || required_products.include?('chefdk')
       when 'supermarket'
         configure_supermarket(server) if required_products.include?('supermarket')
       end
@@ -654,31 +654,29 @@ module DevLXC
       end
     end
 
-    def configure_chef_client(server)
+    def configure_chef_client(server, dot_chef_path)
       puts "Configuring Chef Client in container '#{server.name}'"
 
       FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/chef")
 
-      if @server_configs[server.name][:chef_server_url] || @server_configs[server.name][:validation_client_name] || @server_configs[server.name][:validation_key]
-        chef_server_url = @server_configs[server.name][:chef_server_url]
-        validation_client_name = @server_configs[server.name][:validation_client_name]
-        validation_key = @server_configs[server.name][:validation_key]
-      elsif @config['chef-server'][:bootstrap_backend]
-        chef_server_url = "https://#{@config['chef-server'][:fqdn]}/organizations/demo"
-        validation_client_name = 'demo-validator'
-        if get_server(@config['chef-server'][:bootstrap_backend]).container.defined?
-          validation_key = "#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
-        end
-      elsif @config['chef-backend'][:bootstrap_frontend]
-        chef_server_url = "https://#{@config['chef-backend'][:fqdn]}/organizations/demo"
-        validation_client_name = 'demo-validator'
-        if get_server(@config['chef-backend'][:bootstrap_frontend]).container.defined?
-          validation_key = "#{get_server(@config['chef-backend'][:bootstrap_frontend]).container.config_item('lxc.rootfs')}/root/chef-repo/.chef/demo-validator.pem"
+      chef_server_url = @server_configs[server.name][:chef_server_url]
+      validation_client_name = @server_configs[server.name][:validation_client_name]
+      validation_key = @server_configs[server.name][:validation_key]
+      if validation_key.nil?
+        chef_server_name = @config['chef-server'][:bootstrap_backend]
+        chef_server_name ||= @config['chef-backend'][:bootstrap_frontend]
+        if chef_server_name
+          chef_server = get_server(chef_server_name)
+          if chef_server.container.defined?
+            validator_pem_files = Dir.glob("#{chef_server.container.config_item('lxc.rootfs')}#{dot_chef_path}/*-validator.pem")
+            FileUtils.cp(validator_pem_files, "#{server.container.config_item('lxc.rootfs')}/etc/chef/") unless validator_pem_files.empty?
+          end
         end
       end
 
       client_rb = %Q(chef_server_url '#{chef_server_url}'
 validation_client_name '#{validation_client_name}'
+validation_key '/etc/chef/#{validation_client_name}.pem'
 ssl_verify_mode :verify_none
 )
 
@@ -691,14 +689,6 @@ data_collector.token "93a49a4f2482c64126f7b6015e6b0f30284287ee4054ff8807fb63d9cb
       end
 
       IO.write("#{server.container.config_item('lxc.rootfs')}/etc/chef/client.rb", client_rb)
-
-      if validation_key
-        if File.exist?(validation_key)
-          FileUtils.cp(validation_key, "#{server.container.config_item('lxc.rootfs')}/etc/chef/validation.pem")
-        else
-          puts "WARNING: The validation key '#{validation_key}' does not exist."
-        end
-      end
     end
 
     def configure_chef_backend(server)
