@@ -395,8 +395,9 @@ module DevLXC
       end
       servers = get_sorted_servers(server_name_regex)
       servers.each do |server|
-        # if this is a build node and it only has one product (chefdk) then skip the install
-        next if @server_configs[server.name][:server_type] == "build-nodes" && @server_configs[server.name][:required_products].length == 1
+        if @server_configs[server.name][:server_type] == "build-nodes"
+          next if @server_configs[server.name][:required_products]["chefdk"] && @server_configs[server.name][:required_products].length == 1
+        end
         install_products(server) unless @server_configs[server.name][:required_products].empty?
       end
       servers.each do |server|
