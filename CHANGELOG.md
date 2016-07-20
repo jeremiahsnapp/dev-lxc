@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.2.1 (2016-07-20)
+
+* Add --include-products option to show-config command
+
 ## 2.2.0 (2016-07-20)
 
 * Make build nodes reregister to Chef Server
