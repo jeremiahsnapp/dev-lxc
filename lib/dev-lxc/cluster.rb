@@ -494,6 +494,9 @@ module DevLXC
         if !force && !server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: products installed") }.empty?
           # Skipping product cache preparation for container because it has a 'products installed' snapshot
           next
+        elsif !force && !server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: completed") }.empty?
+          # Skipping product cache preparation for container because it has a 'build: completed' snapshot
+          next
         end
         products.each do |product_name, product_options|
           if product_options && product_options['package_source']
@@ -531,6 +534,9 @@ module DevLXC
     def install_products(server)
       if !server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: products installed") }.empty?
         puts "Skipping product installation for container '#{server.name}' because it already has a 'products installed' snapshot"
+        return
+      elsif !server.snapshot_list.select { |sn| sn[2].start_with?("dev-lxc build: completed") }.empty?
+        puts "Skipping product installation for container '#{server.name}' because it already has a 'build: completed' snapshot"
         return
       end
       if server.container.running?
