@@ -1,5 +1,12 @@
 # dev-lxc Change Log
 
+## 2.2.0 (2016-07-20)
+
+* Make build nodes reregister to Chef Server
+* Make build nodes sleep 5s for DNS resolution availability
+* Allow build-nodes to use different base_containers than Chef Automate's
+* Change default mount point from dev to work
+
 ## 2.1.0 (2016-07-19)
 
 * Provide ability to define Chef org for node's chef-client config
