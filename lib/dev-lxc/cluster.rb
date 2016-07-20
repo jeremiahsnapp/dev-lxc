@@ -484,7 +484,7 @@ module DevLXC
       artifact.url
     end
 
-    def prep_product_cache(servers, force=false)
+    def calculate_required_products(servers, force=false)
       all_required_products = Hash.new
       servers.each do |server|
         products = @server_configs[server.name][:products]
@@ -506,6 +506,11 @@ module DevLXC
           end
         end
       end
+      all_required_products
+    end
+
+    def prep_product_cache(servers, force=false)
+      all_required_products = calculate_required_products(servers, force)
       all_required_products.each do |package_source, product_name|
         if package_source.start_with?('http')
           product_cache_path = "/var/dev-lxc/cache/chef-products/#{product_name}/#{File.basename(package_source)}"
