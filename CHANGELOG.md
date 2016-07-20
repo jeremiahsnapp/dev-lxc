@@ -1,5 +1,10 @@
 # dev-lxc Change Log
 
+## 2.2.2 (2016-07-20)
+
+* Don't calculate/install required products if "build: completed" snapshot exists
+* Be more explicit about skipping install of chefdk on build nodes
+
 ## 2.2.1 (2016-07-20)
 
 * Add --include-products option to show-config command
