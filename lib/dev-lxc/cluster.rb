@@ -555,6 +555,7 @@ module DevLXC
       when 'analytics'
         configure_analytics(server) if required_products.include?('analytics')
       when 'build-nodes'
+        sleep 5     # give time for DNS resolution to be available
         configure_build_node(server)
       when 'chef-backend'
         configure_chef_backend(server) if required_products.include?('chef-backend')
