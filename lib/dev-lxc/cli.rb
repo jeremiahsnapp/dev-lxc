@@ -129,7 +129,6 @@ automate:
       ipaddress: 10.0.3.200
       products:
         delivery:
-        chefdk:     # downloaded only for build nodes
       license_path: /CHANGE/ME
       chef_org: delivery
       enterprise_name: demo-ent
@@ -138,6 +137,8 @@ automate:
 build-nodes:
   servers:
     build-node-1.lxc:
+      products:
+        chefdk:     # downloaded only
 )
       analytics_config = %Q(
 analytics:

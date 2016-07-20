@@ -394,6 +394,8 @@ module DevLXC
       end
       servers = get_sorted_servers(server_name_regex)
       servers.each do |server|
+        # if this is a build node and it only has one product (chefdk) then skip the install
+        next if @server_configs[server.name][:server_type] == "build-nodes" && @server_configs[server.name][:required_products].length == 1
         install_products(server) unless @server_configs[server.name][:required_products].empty?
       end
       servers.each do |server|
@@ -531,11 +533,8 @@ module DevLXC
         server.start
       end
       @server_configs[server.name][:required_products].each do |product_name, package_source|
-        if @server_configs[server.name][:server_type] == "automate" && product_name == "chefdk"
-          IO.write("#{server.container.config_item('lxc.rootfs')}/root/build_node_chefdk_package_path", "#{package_source}\n")
-        else
-          server.install_package(package_source)
-        end
+        next if @server_configs[server.name][:server_type] == "build-nodes" && product_name == "chefdk"
+        server.install_package(package_source)
       end
       server.stop
       server.snapshot("dev-lxc build: products installed")
@@ -642,15 +641,12 @@ module DevLXC
       automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
       if automate_server_name
         automate_server = get_server(automate_server_name)
-        if File.exist?("#{automate_server.container.config_item('lxc.rootfs')}/root/build_node_chefdk_package_path")
-          build_node_chefdk_package_path = IO.read("#{automate_server.container.config_item('lxc.rootfs')}/root/build_node_chefdk_package_path").chomp
-          install_build_node_cmd = "install-build-node"
-          install_build_node_cmd += " --fqdn #{server.name}"
-          install_build_node_cmd += " --username dev-lxc"
-          install_build_node_cmd += " --password dev-lxc"
-          install_build_node_cmd += " --installer #{build_node_chefdk_package_path}"
-          run_ctl(automate_server, "delivery", install_build_node_cmd)
-        end
+        install_build_node_cmd = "install-build-node"
+        install_build_node_cmd += " --fqdn #{server.name}"
+        install_build_node_cmd += " --username dev-lxc"
+        install_build_node_cmd += " --password dev-lxc"
+        install_build_node_cmd += " --installer #{@server_configs[server.name][:required_products]["chefdk"]}"
+        run_ctl(automate_server, "delivery", install_build_node_cmd)
       end
     end
 
