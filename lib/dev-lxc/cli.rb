@@ -24,8 +24,9 @@ module DevLXC::CLI
 
     desc "show-config", "Show calculated configuration"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
+    option :include_products, :type => :boolean, :desc => "Calculate required products"
     def show_config
-      get_cluster(options[:config]).show_config
+      get_cluster(options[:config]).show_config(options[:include_products])
     end
 
     desc "create-base-container [BASE_CONTAINER_NAME]", "Create a base container"

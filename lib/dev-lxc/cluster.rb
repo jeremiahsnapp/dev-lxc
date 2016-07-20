@@ -237,8 +237,9 @@ module DevLXC
       end
     end
 
-    def show_config
+    def show_config(include_products=false)
       require 'pp'
+      calculate_required_products(get_sorted_servers, true) if include_products
       puts "Cluster config:"
       pp @config
       puts
