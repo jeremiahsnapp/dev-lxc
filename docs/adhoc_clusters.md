@@ -13,8 +13,8 @@ The number of servers, their names and their IP addresses can be changed to fit 
 particular requirements.
 
 ```
-mkdir -p /root/dev/clusters/delivery
-cd /root/dev/clusters/delivery
+mkdir -p /root/work/clusters/delivery
+cd /root/work/clusters/delivery
 dev-lxc init --adhoc > dev-lxc.yml
 # edit dev-lxc.yml to have enough adhoc servers for a delivery cluster
 cluster-view

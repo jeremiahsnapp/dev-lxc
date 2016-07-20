@@ -63,11 +63,11 @@ base_container: b-ubuntu-1404
 
 # list any host directories you want mounted into the servers
 #mounts:
-#  - /root/dev root/dev
+#  - /root/work root/work
 
 # list any SSH public keys you want added to /home/dev-lxc/.ssh/authorized_keys
 #ssh-keys:
-#  - /root/dev/clusters/id_rsa.pub
+#  - /root/work/clusters/id_rsa.pub
 
 # DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 )

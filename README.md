@@ -114,7 +114,7 @@ Create the [dev-lxc.yml config file](docs/configuration.md) for the cluster.
 First, create an arbitrary directory to hold the dev-lxc.yml file.
 
 ```
-mkdir -p /root/dev/clusters/automate
+mkdir -p /root/work/clusters/automate
 ```
 
 Then use the `init` subcommand to generate a sample configuration using the available options. Run `dl help init` to see what options are available.
@@ -122,13 +122,13 @@ Then use the `init` subcommand to generate a sample configuration using the avai
 The following command configures a standalone Chef Server, a Chef Automate server and a build node.
 
 ```
-dl init --chef --automate --build-nodes -f /root/dev/clusters/automate/dev-lxc.yml
+dl init --chef --automate --build-nodes -f /root/work/clusters/automate/dev-lxc.yml
 ```
 
 We can easily append additional configurations to this file. For example, the following command appends an infrastructure node.
 
 ```
-dl init --nodes -a -f /root/dev/clusters/automate/dev-lxc.yml
+dl init --nodes -a -f /root/work/clusters/automate/dev-lxc.yml
 ```
 
 Edit the dev-lxc.yml file:
@@ -153,7 +153,7 @@ cluster's `dev-lxc.yml` file and is useful for attaching to a server to perform 
 See the [usage docs](docs/usage.md) for more information about how to close/kill Byobu sessions.
 
 ```
-cluster-view /root/dev/clusters/automate
+cluster-view /root/work/clusters/automate
 ```
 
 #### Specifying a Subset of Servers
