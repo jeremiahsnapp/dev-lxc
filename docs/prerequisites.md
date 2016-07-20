@@ -52,6 +52,12 @@ brew install direnv
 
 Be sure to follow the [direnv install instructions](http://direnv.net/) to add the appropriate line to your user's shell rc file.
 
+Run the following to approve the `.envrc` file
+
+```
+direnv allow
+```
+
 #### Setup Networking
 
 Your workstation needs to know how to resolve the .lxc domain that dev-lxc containers use.
