@@ -29,8 +29,6 @@ Configure .kitchen.yml settings such as cpus, memory, synced_folders as desired.
 
 This should take less than 15 minutes.
 
-While the VM is being created you are free to open a separate terminal and follow the remaining setup instructions.
-
 ```
 cd dev-lxc-platform
 kitchen converge
