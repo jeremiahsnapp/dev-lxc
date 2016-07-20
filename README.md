@@ -32,7 +32,7 @@ If you aren't familiar with using containers please read this introduction.
 
 ### Requirements
 
-* Please follow the [Prerequisite Instructions](docs/prerequisites.md)
+* Please follow the [Prerequisites Instructions](docs/prerequisites.md)
 
 When you are done with the prerequisites you should be able to log into the dev-lxc-platform VM and start using it.
 
