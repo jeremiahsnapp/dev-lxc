@@ -647,6 +647,7 @@ module DevLXC
         install_build_node_cmd += " --username dev-lxc"
         install_build_node_cmd += " --password dev-lxc"
         install_build_node_cmd += " --installer #{@server_configs[server.name][:required_products]["chefdk"]}"
+        install_build_node_cmd += " --overwrite-registration"
         run_ctl(automate_server, "delivery", install_build_node_cmd)
       end
     end
