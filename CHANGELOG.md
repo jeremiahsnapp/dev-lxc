@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.2.3 (2016-07-27)
+
+* Copy validation key when validation_key is set
+
 ## 2.2.2 (2016-07-20)
 
 * Don't calculate/install required products if "build: completed" snapshot exists
