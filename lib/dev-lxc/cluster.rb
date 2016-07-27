@@ -683,6 +683,8 @@ module DevLXC
             FileUtils.cp(validator_pem_files, "#{server.container.config_item('lxc.rootfs')}/etc/chef/") unless validator_pem_files.empty?
           end
         end
+      else
+        FileUtils.cp(validation_key, "#{server.container.config_item('lxc.rootfs')}/etc/chef/") if File.exists?(validation_key)
       end
 
       client_rb = %Q(chef_server_url '#{chef_server_url}'
