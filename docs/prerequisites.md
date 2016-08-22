@@ -1,9 +1,9 @@
 
 #### Download and Install Prerequisites
 
-Download and install [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
+Download and install [VirtualBox 5.0.14+](https://www.virtualbox.org/wiki/Downloads).
 
-Download and install [Vagrant](https://www.vagrantup.com/downloads.html).
+Download and install [Vagrant 1.8.5+](https://www.vagrantup.com/downloads.html).
 
 Install the vagrant-persistent-storage plugin.
 
