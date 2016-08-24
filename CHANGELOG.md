@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.2.5 (2016-08-24)
+
+* Print full product cache path in SHA256 error message
+
 ## 2.2.4 (2016-08-24)
 
 * Add sha256 check for downloaded packages
