@@ -452,7 +452,7 @@ module DevLXC
       server.container.save_config
     end
 
-    def get_product_url(server, product_name, product_options)
+    def get_product_download_info(server, product_name, product_options)
       server_type = @server_configs[server.name][:server_type]
       base_container = DevLXC::Container.new(@server_configs[server.name][:base_container_name])
       mixlib_install_platform_detection_path = "#{base_container.config_item('lxc.rootfs')}/mixlib-install-platform-detection"
@@ -483,7 +483,7 @@ module DevLXC
         puts JSON.pretty_generate(options)
         exit 1
       end
-      artifact.url
+      [artifact.url, artifact.sha256]
     end
 
     def calculate_required_products(servers, force=false)
@@ -501,11 +501,11 @@ module DevLXC
         products.each do |product_name, product_options|
           if product_options && product_options['package_source']
             package_source = product_options['package_source']
-            all_required_products[package_source] = product_name
+            all_required_products[package_source] = [product_name, nil]
             @server_configs[server.name][:required_products][product_name] = package_source
           else
-            package_source = get_product_url(server, product_name, product_options)
-            all_required_products[package_source] = product_name
+            package_source, package_sha256 = get_product_download_info(server, product_name, product_options)
+            all_required_products[package_source] = [product_name, package_sha256]
             product_cache_path = "/var/dev-lxc/cache/chef-products/#{product_name}/#{File.basename(package_source)}"
             @server_configs[server.name][:required_products][product_name] = product_cache_path
           end
@@ -516,13 +516,19 @@ module DevLXC
 
     def prep_product_cache(servers, force=false)
       all_required_products = calculate_required_products(servers, force)
-      all_required_products.each do |package_source, product_name|
+      all_required_products.each do |package_source, v|
+        product_name, package_sha256 = v
         if package_source.start_with?('http')
           product_cache_path = "/var/dev-lxc/cache/chef-products/#{product_name}/#{File.basename(package_source)}"
           if !File.exist?(product_cache_path)
             FileUtils.mkdir_p(File.dirname(product_cache_path)) unless Dir.exist?(File.dirname(product_cache_path))
             puts "Downloading #{package_source} to #{product_cache_path}"
             open(package_source) { |url| File.open(product_cache_path, 'wb') { |f| f.write(url.read) } }
+          end
+          actual_sha256 = Digest::SHA256.file(product_cache_path).hexdigest
+          if package_sha256 != actual_sha256
+            puts "ERROR: Invalid SHA256 #{actual_sha256} for #{File.basename(product_cache_path)}."
+            exit 1
           end
         elsif !File.exist?(package_source)
           puts "ERROR: Package source #{package_source} does not exist."
