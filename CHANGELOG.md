@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.2.4 (2016-08-24)
+
+* Add sha256 check for downloaded packages
+
 ## 2.2.3 (2016-07-27)
 
 * Copy validation key when validation_key is set
