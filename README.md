@@ -135,7 +135,8 @@ Edit the dev-lxc.yml file:
 
 * Delete the `reporting` product from the Chef Server config since we will be using Chef Automate's Visibility.
 * Set the Automate server's `license_path` value to the location of your license file.
-* (Optionally) Modify the server names to make them [unique from other clusters](docs/manage_multiple_clusters.md) you may define.
+* (Optionally) If you built other clusters then you can modify the server names (including the nodes' `chef_server_url`) in this cluster to
+  make them [unique from the other clusters](docs/manage_multiple_clusters.md).
 
 #### cluster-view
 
