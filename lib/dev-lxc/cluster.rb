@@ -191,13 +191,13 @@ module DevLXC
         hostnames.push(server_name)
         case server_config[:server_type]
         when "automate"
-          if server_config[:license_path] && !File.exists?(server_config[:license_path])
-            puts "ERROR: Automate license #{server_config[:license_path]} does not exist."
+          if server_config[:license_path] && !File.file?(server_config[:license_path])
+            puts "ERROR: Automate license #{server_config[:license_path]} does not exist or is not a file."
             exit 1
           end
         when "nodes"
-          if server_config[:validation_key] && !File.exists?(server_config[:validation_key])
-            puts "ERROR: Validation key #{server_config[:validation_key]} does not exist."
+          if server_config[:validation_key] && !File.file?(server_config[:validation_key])
+            puts "ERROR: Validation key #{server_config[:validation_key]} does not exist or is not a file."
             exit 1
           end
         end
