@@ -1,5 +1,10 @@
 # dev-lxc Change Log
 
+## 2.2.6 (2016-09-26)
+
+* Change default path for ORG-validator.pem for clarity
+* Change default path for automate.license for clarity
+
 ## 2.2.5 (2016-08-24)
 
 * Print full product cache path in SHA256 error message
