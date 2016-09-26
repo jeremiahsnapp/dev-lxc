@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.2.7 (2016-09-26)
+
+* Improve file existence test during dev-lxc.yml validation
+
 ## 2.2.6 (2016-09-26)
 
 * Change default path for ORG-validator.pem for clarity
