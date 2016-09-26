@@ -130,7 +130,7 @@ automate:
       ipaddress: 10.0.3.200
       products:
         delivery:
-      license_path: /CHANGE/ME
+      license_path: /path/for/automate.license
       chef_org: delivery
       enterprise_name: demo-ent
 )
