@@ -684,6 +684,9 @@ module DevLXC
       setup_cmd += " --no-build-node"
       setup_cmd += " --configure"
       run_ctl(server, "delivery", setup_cmd)
+
+      # enable Compliance profiles asset store
+      DevLXC::append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb", "compliance_profiles['enable'] = true")
     end
 
     def print_automate_credentials
