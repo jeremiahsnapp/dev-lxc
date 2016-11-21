@@ -36,10 +36,7 @@ module DevLXC
 
     def start
       hwaddr = @container.config_item("lxc.network.0.hwaddr")
-      if @ipaddress
-        DevLXC.assign_ip_address(@ipaddress, @container.name, hwaddr)
-        DevLXC.create_dns_record(@additional_fqdn, @container.name, @ipaddress) unless @additional_fqdn.nil?
-      end
+      DevLXC.assign_ip_address(@ipaddress, @container.name, hwaddr) if @ipaddress
       @container.sync_mounts(@mounts)
       @container.start
       @container.sync_ssh_keys(@ssh_keys)

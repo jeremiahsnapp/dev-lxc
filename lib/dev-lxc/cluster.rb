@@ -394,6 +394,7 @@ module DevLXC
         clone_from_base_container(server) unless server.container.defined?
       end
       servers = get_sorted_servers(server_name_regex)
+      create_dns_records unless servers.empty?
       servers.each do |server|
         if @server_configs[server.name][:server_type] == "build-nodes"
           next if @server_configs[server.name][:required_products]["chefdk"] && @server_configs[server.name][:required_products].length == 1
@@ -437,6 +438,20 @@ module DevLXC
         server = get_server(server_name)
         server.start if server.container.defined?
       end
+    end
+
+    def create_dns_records
+      get_sorted_servers.each do |server|
+        ipaddress = server.container.ip_addresses.first
+        ipaddress ||= @server_configs[server.name][:ipaddress]
+        next unless ipaddress
+        additional_fqdn = @server_configs[server.name][:additional_fqdn]
+        dns_record = "#{ipaddress} #{server.name}"
+        dns_record += " #{additional_fqdn}\n" if additional_fqdn
+        DevLXC::search_file_delete_line("/etc/lxc/addn-hosts.conf", /\s#{server.name}/)
+        DevLXC::append_line_to_file("/etc/lxc/addn-hosts.conf", dns_record)
+      end
+      DevLXC::reload_dnsmasq
     end
 
     def clone_from_base_container(server)

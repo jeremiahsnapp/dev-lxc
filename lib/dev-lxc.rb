@@ -104,14 +104,6 @@ module DevLXC
     reload_dnsmasq
   end
 
-  def self.create_dns_record(fqdn, container_name, ipaddress)
-    dns_record = "#{ipaddress} #{container_name} #{fqdn}\n"
-    puts "Creating DNS record: #{dns_record}"
-    search_file_delete_line("/etc/lxc/addn-hosts.conf", /^#{ipaddress}\s/)
-    append_line_to_file("/etc/lxc/addn-hosts.conf", dns_record)
-    reload_dnsmasq
-  end
-
   def self.reload_dnsmasq
     system("pkill -HUP dnsmasq")
   end
