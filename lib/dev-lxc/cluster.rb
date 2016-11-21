@@ -288,6 +288,33 @@ module DevLXC
       servers.select { |s| s.name =~ /#{server_name_regex}/ }
     end
 
+    def destroy(server_name_regex=nil, force=false)
+      servers = get_sorted_servers(server_name_regex)
+      if servers.empty?
+        puts "No matching server names were found"
+        exit
+      end
+      unless force
+        confirmation_string = String.new
+        servers.reverse_each { |s| confirmation_string += "#{s.name}\n" }
+        confirmation_string += "Are you sure you want to destroy these servers? (y/N)\n"
+        return unless yes?(confirmation_string)
+      end
+      servers.reverse_each { |s| s.destroy; puts }
+      delete_dns_records unless get_sorted_servers.any? { |s| s.container.state != :stopped }
+    end
+
+    def halt(server_name_regex=nil)
+      servers = get_sorted_servers(server_name_regex)
+      servers.reverse_each { |s| s.stop; puts }
+      delete_dns_records unless get_sorted_servers.any? { |s| s.container.state != :stopped }
+    end
+
+    def delete_dns_records
+      @server_configs.keys.each { |server_name| DevLXC::search_file_delete_line("/etc/lxc/addn-hosts.conf", /\s#{server_name}/) }
+      DevLXC::reload_dnsmasq
+    end
+
     def up(server_name_regex=nil)
       abort_up = false
       configured_servers = Array.new

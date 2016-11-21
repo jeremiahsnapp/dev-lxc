@@ -45,7 +45,7 @@ module DevLXC
     def stop
       hwaddr = @container.config_item("lxc.network.0.hwaddr") if @container.defined?
       @container.stop
-      deregister_from_dnsmasq(hwaddr)
+      deregister_from_dhcp(hwaddr)
     end
 
     def snapshot(comment=nil)
@@ -144,12 +144,11 @@ module DevLXC
         @container.snapshot_list.each { |snapshot| @container.snapshot_destroy(snapshot.first) }
       end
       @container.destroy
-      deregister_from_dnsmasq(hwaddr)
+      deregister_from_dhcp(hwaddr)
     end
 
-    def deregister_from_dnsmasq(hwaddr)
+    def deregister_from_dhcp(hwaddr)
       if @ipaddress
-        DevLXC.search_file_delete_line("/etc/lxc/addn-hosts.conf", /^#{@ipaddress}\s/)
         DevLXC.search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /,#{@ipaddress}$/)
       end
       unless hwaddr.nil?
