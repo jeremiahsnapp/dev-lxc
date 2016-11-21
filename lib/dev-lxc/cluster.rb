@@ -1094,6 +1094,7 @@ oc_id['applications']['supermarket'] = {
         chef_server_config += %Q(
 data_collector['root_url'] = "https://#{automate_server_name}/data-collector/v0/"
 data_collector['token'] = "93a49a4f2482c64126f7b6015e6b0f30284287ee4054ff8807fb63d9cbd1c506"
+profiles['root_url'] = "https://#{automate_server_name}"
 )
       end
       return chef_server_config
