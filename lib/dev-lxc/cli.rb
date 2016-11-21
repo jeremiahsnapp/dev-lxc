@@ -55,6 +55,7 @@ module DevLXC::CLI
     option :supermarket, :type => :boolean, :desc => "Supermarket Server"
     option :automate, :type => :boolean, :desc => "Automate Server"
     option :build_nodes, :type => :boolean, :desc => "Build Nodes"
+    option :runners, :type => :boolean, :desc => "Runners"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
     option :append, :aliases => "-a", :type => :boolean, :desc => "Do not generate the global config header"
     option :filename, :aliases => "-f", :desc => "Write generated content to FILE rather than standard output."
@@ -138,6 +139,13 @@ automate:
 build-nodes:
   servers:
     build-node-1.lxc:
+      products:
+        chefdk:     # downloaded only
+)
+      runners_config = %Q(
+runners:
+  servers:
+    runner-1.lxc:
       products:
         chefdk:     # downloaded only
 )
@@ -228,6 +236,7 @@ nodes:
       config += supermarket_config if options[:supermarket]
       config += automate_config if options[:automate]
       config += build_nodes_config if options[:build_nodes]
+      config += runners_config if options[:runners]
       config += adhoc_config if options[:adhoc]
       config += chef_backend_config if options[:chef_backend]
       config += nodes_config if options[:nodes]

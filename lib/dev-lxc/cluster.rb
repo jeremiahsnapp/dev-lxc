@@ -12,7 +12,7 @@ module DevLXC
       @config = Hash.new { |hash, key| hash[key] = {} }
       @server_configs = Hash.new
 
-      %w(adhoc analytics automate build-nodes chef-backend chef-server compliance nodes supermarket).each do |server_type|
+      %w(adhoc analytics automate build-nodes chef-backend chef-server compliance nodes runners supermarket).each do |server_type|
         if cluster_config[server_type]
           mounts = ["/var/dev-lxc var/dev-lxc"]
           if cluster_config[server_type]["mounts"]
@@ -260,7 +260,7 @@ module DevLXC
 
       # the order of this list of server_types matters
       # it determines the order in which actions are applied to each server_type
-      %w(chef-backend chef-server analytics compliance supermarket automate build-nodes nodes adhoc).each do |server_type|
+      %w(chef-backend chef-server analytics compliance supermarket automate build-nodes runners nodes adhoc).each do |server_type|
         unless @config[server_type].empty?
           case server_type
           when "chef-backend"
@@ -280,7 +280,7 @@ module DevLXC
             end
           end
         end
-        if %w(adhoc automate build-nodes compliance nodes supermarket).include?(server_type)
+        if %w(adhoc automate build-nodes compliance nodes runners supermarket).include?(server_type)
           server_configs = @server_configs.select { |server_name, server_config| server_config[:server_type] == server_type }
           server_configs.each_key { |server_name| servers << get_server(server_name) }
         end
@@ -386,7 +386,7 @@ module DevLXC
             abort_up = true
           end
         end
-        if @server_configs[server.name][:server_type] == 'build-nodes'
+        if %w(build-nodes runners).include?(@server_configs[server.name][:server_type])
           if @config['chef-server'][:bootstrap_backend].nil?
             puts "ERROR: '#{server.name}' requires a Chef Server bootstrap backend to be configured first."
             abort_up = true
@@ -423,7 +423,7 @@ module DevLXC
       servers = get_sorted_servers(server_name_regex)
       create_dns_records unless servers.empty?
       servers.each do |server|
-        if @server_configs[server.name][:server_type] == "build-nodes"
+        if %w(build-nodes runners).include?(@server_configs[server.name][:server_type])
           next if @server_configs[server.name][:required_products]["chefdk"] && @server_configs[server.name][:required_products].length == 1
         end
         install_products(server) unless @server_configs[server.name][:required_products].empty?
@@ -593,7 +593,7 @@ module DevLXC
         server.start
       end
       @server_configs[server.name][:required_products].each do |product_name, package_source|
-        next if @server_configs[server.name][:server_type] == "build-nodes" && product_name == "chefdk"
+        next if %w(build-nodes runners).include?(@server_configs[server.name][:server_type]) && product_name == "chefdk"
         server.install_package(package_source)
       end
       server.stop
@@ -617,6 +617,9 @@ module DevLXC
       when 'build-nodes'
         sleep 5     # give time for DNS resolution to be available
         configure_build_node(server)
+      when 'runners'
+        sleep 5     # give time for DNS resolution to be available
+        configure_runner(server)
       when 'chef-backend'
         configure_chef_backend(server) if required_products.include?('chef-backend')
         if required_products.include?('chef-server')
@@ -709,6 +712,18 @@ module DevLXC
         install_build_node_cmd += " --installer #{@server_configs[server.name][:required_products]["chefdk"]}"
         install_build_node_cmd += " --overwrite-registration"
         run_ctl(automate_server, "delivery", install_build_node_cmd)
+      end
+    end
+
+    def configure_runner(server)
+      automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
+      if automate_server_name
+        automate_server = get_server(automate_server_name)
+        install_runner_cmd = "install-runner #{server.name} dev-lxc"
+        install_runner_cmd += " --password dev-lxc"
+        install_runner_cmd += " --installer #{@server_configs[server.name][:required_products]["chefdk"]}"
+        install_runner_cmd += " --yes"
+        run_ctl(automate_server, "delivery", install_runner_cmd)
       end
     end
 
