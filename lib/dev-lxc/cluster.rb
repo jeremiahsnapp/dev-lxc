@@ -14,25 +14,29 @@ module DevLXC
 
       %w(adhoc analytics automate build-nodes chef-backend chef-server compliance nodes runners supermarket).each do |server_type|
         if cluster_config[server_type]
-          mounts = ["/var/dev-lxc var/dev-lxc"]
-          if cluster_config[server_type]["mounts"]
-            mounts.concat(cluster_config[server_type]["mounts"])
-          elsif cluster_config["mounts"]
-            mounts.concat(cluster_config["mounts"])
-          end
-          ssh_keys = cluster_config[server_type]["ssh-keys"]
-          ssh_keys ||= cluster_config["ssh-keys"]
-          base_container_name = cluster_config[server_type]["base_container"]
-          base_container_name ||= cluster_config["base_container"]
-
           if cluster_config[server_type]["servers"]
             cluster_config[server_type]["servers"].each do |server_name, server_config|
               server_config ||= Hash.new
+
               products = server_config['products']
               products ||= Hash.new
+
+              mounts = ["/var/dev-lxc var/dev-lxc"]
+              if cluster_config[server_type]["mounts"]
+                mounts.concat(cluster_config[server_type]["mounts"])
+              elsif cluster_config["mounts"]
+                mounts.concat(cluster_config["mounts"])
+              end
               mounts = ["/var/dev-lxc var/dev-lxc"] + server_config["mounts"] if server_config["mounts"]
+
+              ssh_keys = cluster_config[server_type]["ssh-keys"]
+              ssh_keys ||= cluster_config["ssh-keys"]
               ssh_keys = server_config["ssh-keys"] if server_config["ssh-keys"]
+
+              base_container_name = cluster_config[server_type]["base_container"]
+              base_container_name ||= cluster_config["base_container"]
               base_container_name = server_config["base_container"] if server_config["base_container"]
+
               @server_configs[server_name] = {
                 server_type: server_type,
                 products: products,
