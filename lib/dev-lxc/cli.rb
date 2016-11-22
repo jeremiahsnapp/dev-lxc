@@ -340,7 +340,6 @@ nodes:
     def up(server_name_regex=nil)
       start_time = Time.now
       get_cluster(options[:config]).up(server_name_regex)
-      puts
       print_elapsed_time(Time.now - start_time)
     end
 

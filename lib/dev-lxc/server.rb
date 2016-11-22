@@ -40,6 +40,7 @@ module DevLXC
       @container.sync_mounts(@mounts)
       @container.start
       @container.sync_ssh_keys(@ssh_keys)
+      puts
     end
 
     def stop
