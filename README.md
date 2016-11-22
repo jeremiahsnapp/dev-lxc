@@ -119,10 +119,10 @@ mkdir -p /root/work/clusters/automate
 
 Then use the `init` subcommand to generate a sample configuration using the available options. Run `dl help init` to see what options are available.
 
-The following command configures a standalone Chef Server, a Chef Automate server and a build node.
+The following command configures a standalone Chef Server, a Chef Automate server and a job dispatch runner.
 
 ```
-dl init --chef --automate --build-nodes -f /root/work/clusters/automate/dev-lxc.yml
+dl init --chef --automate --runners -f /root/work/clusters/automate/dev-lxc.yml
 ```
 
 We can easily append additional configurations to this file. For example, the following command appends an infrastructure node.
@@ -161,7 +161,7 @@ cluster-view /root/work/clusters/automate
 
 Many dev-lxc subcommands can act on a subset of the cluster's servers by specifying a regular expression that matches the desired server names.
 
-For example, the following command will show the status of the build node and the infrastructure node.
+For example, the following command will show the status of the infrastructure node.
 
 ```
 dl status node

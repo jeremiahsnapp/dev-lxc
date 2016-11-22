@@ -5,10 +5,10 @@ dev-lxc uses a YAML configuration file named `dev-lxc.yml` to define a cluster.
 The `init` command generates sample config files for various server types.
 
 Let's generate a config for a cluster with a standalone Chef Server, Chef Automate server,
-private Supermarket server, build node and an infrastructure node.
+private Supermarket server, job dispatch runner and an infrastructure node.
 
 ```
-dev-lxc init --chef --automate --supermarket --build-nodes --nodes > dev-lxc.yml
+dev-lxc init --chef --automate --supermarket --runners --nodes > dev-lxc.yml
 ```
 
 The contents of `dev-lxc.yml` should look like this.
@@ -63,9 +63,9 @@ automate:
       chef_org: delivery
       enterprise_name: demo-ent
 
-build-nodes:
+runners:
   servers:
-    build-node-1.lxc:
+    runner-1.lxc:
       products:
         chefdk:     # downloaded only
 
