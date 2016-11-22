@@ -159,6 +159,7 @@ analytics:
 )
       compliance_config = %Q(
 compliance:
+  admin_user: admin         # the password will be the same as the username
   servers:
     compliance.lxc:
       ipaddress: 10.0.3.205

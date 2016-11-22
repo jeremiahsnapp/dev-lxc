@@ -143,6 +143,11 @@ module DevLXC
               (server_name, server_config) = cluster_config[server_type]["servers"].first
               @config[server_type][:fqdn] = server_name
             end
+          when "compliance"
+            unless cluster_config[server_type]["servers"].first.nil?
+              (server_name, server_config) = cluster_config[server_type]["servers"].first
+              @server_configs[server_name][:admin_user] = cluster_config[server_type]["admin_user"]
+            end
           when "automate"
             unless cluster_config[server_type]["servers"].first.nil?
               (server_name, server_config) = cluster_config[server_type]["servers"].first
@@ -876,6 +881,11 @@ data_collector.token "93a49a4f2482c64126f7b6015e6b0f30284287ee4054ff8807fb63d9cb
       FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-compliance")
       FileUtils.touch("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-compliance/.license.accepted")
       run_ctl(server, "chef-compliance", "reconfigure")
+      admin_user = @server_configs[server.name][:admin_user]
+      if admin_user
+        run_ctl(server, "chef-compliance", "user-create #{admin_user} #{admin_user}")
+        run_ctl(server, "chef-compliance", "restart core")
+      end
     end
 
     def configure_supermarket(server)
