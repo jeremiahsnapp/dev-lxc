@@ -1,5 +1,17 @@
 # dev-lxc Change Log
 
+## 2.3.0 (2016-11-22)
+
+* Create DNS records for all servers before starting a server
+* Delete DNS records for all servers if all are stopped
+* Add ability to build Automate Job Dispatch Runners
+* Enable Compliance profiles asset store in Automate
+* Enable Automate Compliance profiles proxy in Chef Server
+* Add ability to setup Compliance and create admin user
+* Fix dev-lxc.yml parsing bug
+* Allow for snapshot comments to be empty
+* Fix 'up' command's output so there is a blank line between each server
+
 ## 2.2.7 (2016-09-26)
 
 * Improve file existence test during dev-lxc.yml validation
