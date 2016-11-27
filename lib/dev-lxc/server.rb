@@ -35,6 +35,7 @@ module DevLXC
     end
 
     def start
+      return if @container.running?
       hwaddr = @container.config_item("lxc.network.0.hwaddr")
       DevLXC.assign_ip_address(@ipaddress, @container.name, hwaddr) if @ipaddress
       @container.sync_mounts(@mounts)

@@ -366,7 +366,12 @@ module DevLXC
           configure_products(server)
           configured_servers << server.name
         end
-        server.start unless server.container.running?
+        if server.container.running?
+          puts "Container '#{server.name}' is already running"
+          puts
+        else
+          server.start
+        end
       end
       configured_servers.reverse_each do |server_name|
         server = get_server(server_name)
@@ -616,7 +621,7 @@ module DevLXC
 
     def configure_products(server)
       puts "Configuring container '#{server.name}'"
-      server.start unless server.container.running?
+      server.start
       required_products = @server_configs[server.name][:required_products].keys if @server_configs[server.name][:required_products]
       required_products ||= Array.new
       server_type = @server_configs[server.name][:server_type]
