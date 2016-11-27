@@ -507,9 +507,6 @@ module DevLXC
       server.container.load_config
       puts "Deleting SSH Server Host Keys"
       FileUtils.rm_f(Dir.glob("#{server.container.config_item('lxc.rootfs')}/etc/ssh/ssh_host*_key*"))
-      puts "Adding lxc.hook.post-stop hook"
-      server.container.set_config_item("lxc.hook.post-stop", "/usr/local/share/lxc/hooks/post-stop-dhcp-release")
-      server.container.save_config
     end
 
     def get_product_download_info(server, product_name, product_options)
