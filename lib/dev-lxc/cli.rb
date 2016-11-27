@@ -343,7 +343,7 @@ nodes:
       print_elapsed_time(Time.now - start_time)
     end
 
-    desc "halt [SERVER_NAME_REGEX]", "Stop servers"
+    desc "halt [SERVER_NAME_REGEX]", "Shutdown servers"
     option :config, :desc => "Specify a cluster's YAML config file. `./dev-lxc.yml` will be used by default"
     def halt(server_name_regex=nil)
       start_time = Time.now

@@ -93,7 +93,7 @@ module DevLXC
 
     IO.write("#{base_container.config_item('lxc.rootfs')}/etc/sudoers.d/dev-lxc", "dev-lxc   ALL=NOPASSWD:ALL\n")
     FileUtils.chmod(0440, "#{base_container.config_item('lxc.rootfs')}/etc/sudoers.d/dev-lxc")
-    base_container.stop
+    base_container.shutdown
     return base_container
   end
 

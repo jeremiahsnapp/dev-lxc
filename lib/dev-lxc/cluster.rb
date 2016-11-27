@@ -315,7 +315,7 @@ module DevLXC
 
     def halt(server_name_regex=nil)
       servers = get_sorted_servers(server_name_regex)
-      servers.reverse_each { |s| s.stop; puts }
+      servers.reverse_each { |s| s.shutdown; puts }
       delete_dns_records unless get_sorted_servers.any? { |s| s.container.state != :stopped }
     end
 
@@ -609,7 +609,7 @@ module DevLXC
         next if %w(build-nodes runners).include?(@server_configs[server.name][:server_type]) && product_name == "chefdk"
         server.install_package(package_source)
       end
-      server.stop
+      server.shutdown
       server.snapshot("dev-lxc build: products installed")
       server.start if server_was_running
     end

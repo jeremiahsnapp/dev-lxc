@@ -31,14 +31,14 @@ module DevLXC
       end
     end
 
-    def stop
-      puts "Stopping container '#{self.name}'"
+    def shutdown
+      puts "Shutting down container '#{self.name}'"
       super
-      wait("STOPPED", 3)
+      wait(:stopped, 3)
     end
 
     def destroy
-      stop if running?
+      shutdown if running?
       puts "Destroying container '#{self.name}'"
       super if self.defined?
     end

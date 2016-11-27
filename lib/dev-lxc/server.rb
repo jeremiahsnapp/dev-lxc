@@ -43,9 +43,9 @@ module DevLXC
       puts
     end
 
-    def stop
+    def shutdown
       hwaddr = @container.config_item("lxc.network.0.hwaddr") if @container.defined?
-      @container.stop
+      @container.shutdown
       deregister_from_dhcp(hwaddr)
     end
 
