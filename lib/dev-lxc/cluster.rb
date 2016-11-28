@@ -332,6 +332,7 @@ module DevLXC
       servers.each do |server|
         clone_from_base_container(server) unless server.container.defined?
       end
+      # get_sorted_servers is called again in order to ensure the container objects are initialized properly in case they were just cloned from the base container
       servers = get_sorted_servers(server_name_regex)
       create_dns_records unless servers.empty?
       servers.each do |server|
