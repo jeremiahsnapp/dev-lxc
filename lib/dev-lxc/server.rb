@@ -47,7 +47,7 @@ module DevLXC
     def shutdown
       hwaddr = @container.config_item("lxc.network.0.hwaddr") if @container.defined?
       @container.shutdown
-      deregister_from_dhcp(hwaddr)
+      remove_static_ip_address(hwaddr)
     end
 
     def snapshot(comment=nil)
@@ -146,7 +146,7 @@ module DevLXC
         @container.snapshot_list.each { |snapshot| @container.snapshot_destroy(snapshot.first) }
       end
       @container.destroy
-      deregister_from_dhcp(hwaddr)
+      remove_static_ip_address(hwaddr)
     end
 
     def assign_static_ip_address(hwaddr)
@@ -156,7 +156,7 @@ module DevLXC
       DevLXC.reload_dnsmasq
     end
 
-    def deregister_from_dhcp(hwaddr)
+    def remove_static_ip_address(hwaddr)
       if @ipaddress
         DevLXC.search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /,#{@ipaddress}$/)
       end
