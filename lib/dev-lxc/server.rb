@@ -49,6 +49,7 @@ module DevLXC
       hwaddr = @container.config_item("lxc.network.0.hwaddr") if @container.defined?
       @container.shutdown
       remove_static_ip_address(hwaddr)
+      release_lingering_dhcp_ip_addresses(hwaddr)
     end
 
     def snapshot(comment=nil)
@@ -148,6 +149,7 @@ module DevLXC
       end
       @container.destroy
       remove_static_ip_address(hwaddr)
+      release_lingering_dhcp_ip_addresses(hwaddr)
     end
 
     def release_lingering_dhcp_ip_addresses(hwaddr)
