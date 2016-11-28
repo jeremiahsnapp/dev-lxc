@@ -776,8 +776,8 @@ ssl_verify_mode :verify_none
       automate_server_name = @server_configs.select {|name, config| config[:server_type] == 'automate'}.keys.first
       if automate_server_name
         client_rb += %Q(
-data_collector.server_url "https://#{automate_server_name}/data-collector/v0/"
-data_collector.token "93a49a4f2482c64126f7b6015e6b0f30284287ee4054ff8807fb63d9cbd1c506"
+# data_collector.server_url "https://#{automate_server_name}/data-collector/v0/"
+# data_collector.token "93a49a4f2482c64126f7b6015e6b0f30284287ee4054ff8807fb63d9cbd1c506"
 )
       end
 
