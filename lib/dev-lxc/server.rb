@@ -37,6 +37,7 @@ module DevLXC
     def start
       return if @container.running?
       hwaddr = @container.config_item("lxc.network.0.hwaddr")
+      release_lingering_dhcp_ip_addresses(hwaddr)
       assign_static_ip_address(hwaddr) if @ipaddress
       @container.sync_mounts(@mounts)
       @container.start
@@ -147,6 +148,26 @@ module DevLXC
       end
       @container.destroy
       remove_static_ip_address(hwaddr)
+    end
+
+    def release_lingering_dhcp_ip_addresses(hwaddr)
+      dhcp_leases = IO.readlines('/var/lib/misc/dnsmasq.lxcbr0.leases')
+      dhcp_leases.each do |dhcp_lease|
+        if m = dhcp_lease.match(/ #{hwaddr} (\d+\.\d+\.\d+\.\d+) /)
+          mac_addr = hwaddr
+          ip_addr = m[1]
+        elsif m = dhcp_lease.match(/ (\w\w:\w\w:\w\w:\w\w:\w\w:\w\w) #{@ipaddress} /)
+          mac_addr = m[1]
+          ip_addr = @ipaddress
+        elsif m = dhcp_lease.match(/ (\w\w:\w\w:\w\w:\w\w:\w\w:\w\w) (\d+\.\d+\.\d+\.\d+) #{@container.name.sub(/\.lxc$/, '')} /)
+          mac_addr = m[1]
+          ip_addr = m[2]
+        end
+        if mac_addr && ip_addr
+          puts "Releasing lingering DHCP lease: #{dhcp_lease}"
+          system("dhcp_release lxcbr0 #{ip_addr} #{mac_addr}")
+        end
+      end
     end
 
     def assign_static_ip_address(hwaddr)
