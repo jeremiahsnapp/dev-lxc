@@ -37,7 +37,7 @@ module DevLXC
     def start
       return if @container.running?
       hwaddr = @container.config_item("lxc.network.0.hwaddr")
-      DevLXC.assign_ip_address(@ipaddress, @container.name, hwaddr) if @ipaddress
+      assign_static_ip_address(hwaddr) if @ipaddress
       @container.sync_mounts(@mounts)
       @container.start
       @container.sync_ssh_keys(@ssh_keys)
@@ -147,6 +147,13 @@ module DevLXC
       end
       @container.destroy
       deregister_from_dhcp(hwaddr)
+    end
+
+    def assign_static_ip_address(hwaddr)
+      puts "Assigning IP address #{@ipaddress} to '#{@container.name}' container's lxc.network.hwaddr #{hwaddr}"
+      DevLXC.search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /(^#{hwaddr}|,#{@ipaddress}$)/)
+      DevLXC.append_line_to_file("/etc/lxc/dhcp-hosts.conf", "#{hwaddr},#{@ipaddress}\n")
+      DevLXC.reload_dnsmasq
     end
 
     def deregister_from_dhcp(hwaddr)

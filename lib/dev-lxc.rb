@@ -97,13 +97,6 @@ module DevLXC
     return base_container
   end
 
-  def self.assign_ip_address(ipaddress, container_name, hwaddr)
-    puts "Assigning IP address #{ipaddress} to '#{container_name}' container's lxc.network.hwaddr #{hwaddr}"
-    search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /(^#{hwaddr}|,#{ipaddress}$)/)
-    append_line_to_file("/etc/lxc/dhcp-hosts.conf", "#{hwaddr},#{ipaddress}\n")
-    reload_dnsmasq
-  end
-
   def self.reload_dnsmasq
     system("pkill -HUP dnsmasq")
   end
