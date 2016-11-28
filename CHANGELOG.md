@@ -1,5 +1,18 @@
 # dev-lxc Change Log
 
+## 2.3.1 (2016-11-28)
+
+* Create DevLXC::Cluster.abort_up to help with code clarity
+* Shutdown container gracefully instead of doing a hard stop
+* Skip container start if it is already running
+* Refactor DevLXC.assign_ip_address to DevLXC::Server.assign_static_ip_address
+* Change DevLXC::Server.deregister_from_dhcp to DevLXC::Server.remove_static_ip_address
+* Remove dhcp release post-stop hook since it is not the most reliable solution
+* Remove lingering DHCP IP addresses before starting a server
+* Remove lingering DHCP IP addresses after destroying or shutting down a server
+* Comment out data_collector config in a node's client.rb
+* Add a clarifying comment to DevLXC::Cluster.up
+
 ## 2.3.0 (2016-11-22)
 
 * Create DNS records for all servers before starting a server
