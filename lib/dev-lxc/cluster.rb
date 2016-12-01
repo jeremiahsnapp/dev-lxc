@@ -698,11 +698,13 @@ module DevLXC
       setup_cmd += " --supermarket-fqdn #{supermarket_fqdn}" if supermarket_fqdn
       setup_cmd += " --enterprise #{enterprise_name}"
       setup_cmd += " --no-build-node"
-      setup_cmd += " --configure"
+      setup_cmd += " --no-configure"
       run_ctl(server, "delivery", setup_cmd)
 
       # enable Compliance profiles asset store
       DevLXC::append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb", "compliance_profiles['enable'] = true")
+
+      run_ctl(server, "delivery", "reconfigure")
     end
 
     def print_automate_credentials
