@@ -1,5 +1,15 @@
 # dev-lxc Change Log
 
+## 2.3.2 (2016-12-02)
+
+* Fix DevLXC::Cluster#configure_automate so the reconfigure comes after all changes to delivery.rb
+* Add ability to save run_command output to a file
+* Use delivery-ctl create-enterprise
+* Replace run_ctl with simpler run_command
+* Use installed_products instead of required_products in DevLXC::Cluster#configure_products
+* Hard stop the server when destroying it
+* Fix destroy so confirmation message works
+
 ## 2.3.1 (2016-11-28)
 
 * Create DevLXC::Cluster.abort_up to help with code clarity
