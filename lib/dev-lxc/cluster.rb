@@ -620,8 +620,8 @@ module DevLXC
     def configure_products(server)
       puts "Configuring container '#{server.name}'"
       server.start
-      required_products = @server_configs[server.name][:required_products].keys if @server_configs[server.name][:required_products]
-      required_products ||= Array.new
+      installed_products = @server_configs[server.name][:products].keys if @server_configs[server.name][:products]
+      installed_products ||= Array.new
       server_type = @server_configs[server.name][:server_type]
       dot_chef_path = "/root/chef-repo/.chef"
       case server_type
@@ -629,7 +629,7 @@ module DevLXC
         # Allow adhoc servers time to generate SSH Server Host Keys
         sleep 5
       when 'analytics'
-        configure_analytics(server) if required_products.include?('analytics')
+        configure_analytics(server) if installed_products.include?('analytics')
       when 'build-nodes'
         sleep 5     # give time for DNS resolution to be available
         configure_build_node(server)
@@ -637,16 +637,16 @@ module DevLXC
         sleep 5     # give time for DNS resolution to be available
         configure_runner(server)
       when 'chef-backend'
-        configure_chef_backend(server) if required_products.include?('chef-backend')
-        if required_products.include?('chef-server')
+        configure_chef_backend(server) if installed_products.include?('chef-backend')
+        if installed_products.include?('chef-server')
           configure_chef_frontend(server)
           if server.name == @config['chef-backend'][:bootstrap_frontend]
             create_users_orgs_knife_configs(server, dot_chef_path)
           end
         end
-        configure_manage(server) if required_products.include?('manage')
+        configure_manage(server) if installed_products.include?('manage')
       when 'chef-server'
-        if required_products.include?('chef-server') || required_products.include?('private-chef')
+        if installed_products.include?('chef-server') || installed_products.include?('private-chef')
           configure_chef_server(server)
           if server.name == @config['chef-server'][:bootstrap_backend]
             create_users_orgs_knife_configs(server, dot_chef_path)
@@ -661,19 +661,19 @@ module DevLXC
             end
           end
         end
-        configure_reporting(server) if required_products.include?('reporting')
-        configure_push_jobs_server(server) if required_products.include?('push-jobs-server')
-        configure_manage(server) if required_products.include?('manage')
+        configure_reporting(server) if installed_products.include?('reporting')
+        configure_push_jobs_server(server) if installed_products.include?('push-jobs-server')
+        configure_manage(server) if installed_products.include?('manage')
       when 'compliance'
-        configure_compliance(server) if required_products.include?('compliance')
+        configure_compliance(server) if installed_products.include?('compliance')
       when 'automate'
-        configure_automate(server) if required_products.include?('delivery')
+        configure_automate(server) if installed_products.include?('delivery')
       when 'nodes'
         # Allow servers time to generate SSH Server Host Keys
         sleep 5
-        configure_chef_client(server, dot_chef_path) if required_products.include?('chef') || required_products.include?('chefdk')
+        configure_chef_client(server, dot_chef_path) if installed_products.include?('chef') || installed_products.include?('chefdk')
       when 'supermarket'
-        configure_supermarket(server) if required_products.include?('supermarket')
+        configure_supermarket(server) if installed_products.include?('supermarket')
       end
     end
 
