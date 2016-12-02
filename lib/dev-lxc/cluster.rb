@@ -699,12 +699,12 @@ module DevLXC
       setup_cmd += " --enterprise #{enterprise_name}"
       setup_cmd += " --no-build-node"
       setup_cmd += " --no-configure"
-      run_ctl(server, "delivery", setup_cmd)
+      server.run_command("delivery-ctl #{setup_cmd}")
 
       # enable Compliance profiles asset store
       DevLXC::append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb", "compliance_profiles['enable'] = true")
 
-      run_ctl(server, "delivery", "reconfigure")
+      server.run_command("delivery-ctl reconfigure")
 
       # give time for all services to come up completely
       sleep 10
@@ -737,7 +737,7 @@ module DevLXC
         install_build_node_cmd += " --password dev-lxc"
         install_build_node_cmd += " --installer #{@server_configs[server.name][:required_products]["chefdk"]}"
         install_build_node_cmd += " --overwrite-registration"
-        run_ctl(automate_server, "delivery", install_build_node_cmd)
+        automate_server.run_command("delivery-ctl #{install_build_node_cmd}")
       end
     end
 
@@ -749,7 +749,7 @@ module DevLXC
         install_runner_cmd += " --password dev-lxc"
         install_runner_cmd += " --installer #{@server_configs[server.name][:required_products]["chefdk"]}"
         install_runner_cmd += " --yes"
-        run_ctl(automate_server, "delivery", install_runner_cmd)
+        automate_server.run_command("delivery-ctl #{install_runner_cmd}")
       end
     end
 
@@ -800,13 +800,13 @@ ssl_verify_mode :verify_none
         FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/chef-backend")
         chef_backend_config = "publish_address '#{@server_configs[server.name][:ipaddress]}'\n"
         IO.write("#{server.container.config_item('lxc.rootfs')}/etc/chef-backend/chef-backend.rb", chef_backend_config)
-        run_ctl(server, "chef-backend", "bootstrap --yes")
+        server.run_command("chef-backend-ctl bootstrap --yes")
       else
         puts "Joining #{server.name} to the chef-backend cluster"
         leader_backend = get_server(@config['chef-backend'][:leader_backend])
         FileUtils.cp("#{leader_backend.container.config_item('lxc.rootfs')}/etc/chef-backend/chef-backend-secrets.json",
                      "#{server.container.config_item('lxc.rootfs')}/root/")
-        run_ctl(server, "chef-backend", "join-cluster #{@server_configs[leader_backend.name][:ipaddress]} -p #{@server_configs[server.name][:ipaddress]} -s /root/chef-backend-secrets.json --yes")
+        server.run_command("chef-backend-ctl join-cluster #{@server_configs[leader_backend.name][:ipaddress]} -p #{@server_configs[server.name][:ipaddress]} -s /root/chef-backend-secrets.json --yes")
       end
     end
 
@@ -814,7 +814,7 @@ ssl_verify_mode :verify_none
       puts "Creating /etc/opscode/chef-server.rb"
       FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/opscode")
       leader_backend = get_server(@config['chef-backend'][:leader_backend])
-      run_ctl(leader_backend, "chef-backend", "gen-server-config #{server.name} --filename /tmp/#{server.name}.rb")
+      leader_backend.run_command("chef-backend-ctl gen-server-config #{server.name} --filename /tmp/#{server.name}.rb")
       FileUtils.cp("#{leader_backend.container.config_item('lxc.rootfs')}/tmp/#{server.name}.rb",
                    "#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb")
       unless server.name == @config['chef-backend'][:bootstrap_frontend]
@@ -826,7 +826,7 @@ ssl_verify_mode :verify_none
         FileUtils.cp("#{bootstrap_frontend.container.config_item('lxc.rootfs')}/etc/opscode/pivotal.pem",
                      "#{server.container.config_item('lxc.rootfs')}/etc/opscode/")
       end
-      run_ctl(server, "chef-server", "reconfigure")
+      server.run_command("chef-server-ctl reconfigure")
     end
 
     def configure_chef_server(server)
@@ -846,7 +846,7 @@ ssl_verify_mode :verify_none
         FileUtils.cp_r("#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/etc/opscode",
                        "#{server.container.config_item('lxc.rootfs')}/etc", preserve: true)
       end
-      run_ctl(server, @server_configs[server.name][:chef_server_type], "reconfigure")
+      server.run_command("#{@server_configs[server.name][:chef_server_type]}-ctl reconfigure")
     end
 
     def configure_reporting(server)
@@ -857,13 +857,13 @@ ssl_verify_mode :verify_none
         FileUtils.cp_r("#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/etc/opscode-reporting",
                        "#{server.container.config_item('lxc.rootfs')}/etc", preserve: true)
       end
-      run_ctl(server, @server_configs[server.name][:chef_server_type], "reconfigure")
-      run_ctl(server, "opscode-reporting", "reconfigure")
+      server.run_command("#{@server_configs[server.name][:chef_server_type]}-ctl reconfigure")
+      server.run_command("opscode-reporting-ctl reconfigure")
     end
 
     def configure_push_jobs_server(server)
-      run_ctl(server, "opscode-push-jobs-server", "reconfigure")
-      run_ctl(server, @server_configs[server.name][:chef_server_type], "reconfigure")
+      server.run_command("opscode-push-jobs-server-ctl reconfigure")
+      server.run_command("#{@server_configs[server.name][:chef_server_type]}-ctl reconfigure")
     end
 
     def configure_manage(server)
@@ -873,9 +873,9 @@ ssl_verify_mode :verify_none
         puts "Disabling old opscode-webui in /etc/opscode/private-chef.rb"
         DevLXC.search_file_delete_line("#{server.container.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", /opscode_webui[.enable.]/)
         DevLXC.append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", "\nopscode_webui['enable'] = false\n")
-        run_ctl(server, @server_configs[server.name][:chef_server_type], "reconfigure")
+        server.run_command("#{@server_configs[server.name][:chef_server_type]}-ctl reconfigure")
       end
-      run_ctl(server, "opscode-manage", "reconfigure")
+      server.run_command("opscode-manage-ctl reconfigure")
     end
 
     def configure_analytics(server)
@@ -892,17 +892,17 @@ ssl_verify_mode :verify_none
         FileUtils.cp_r("#{get_server(@config['analytics'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/etc/opscode-analytics",
                        "#{server.container.config_item('lxc.rootfs')}/etc", preserve: true)
       end
-      run_ctl(server, "opscode-analytics", "reconfigure")
+      server.run_command("opscode-analytics-ctl reconfigure")
     end
 
     def configure_compliance(server)
       FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-compliance")
       FileUtils.touch("#{server.container.config_item('lxc.rootfs')}/var/opt/chef-compliance/.license.accepted")
-      run_ctl(server, "chef-compliance", "reconfigure")
+      server.run_command("chef-compliance-ctl reconfigure")
       admin_user = @server_configs[server.name][:admin_user]
       if admin_user
-        run_ctl(server, "chef-compliance", "user-create #{admin_user} #{admin_user}")
-        run_ctl(server, "chef-compliance", "restart core")
+        server.run_command("chef-compliance-ctl user-create #{admin_user} #{admin_user}")
+        server.run_command("chef-compliance-ctl restart core")
       end
     end
 
@@ -918,11 +918,7 @@ ssl_verify_mode :verify_none
         FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/supermarket")
         IO.write("#{server.container.config_item('lxc.rootfs')}/etc/supermarket/supermarket.json", JSON.pretty_generate(supermarket_config))
       end
-      run_ctl(server, "supermarket", "reconfigure")
-    end
-
-    def run_ctl(server, component, subcommand)
-      server.run_command("#{component}-ctl #{subcommand}")
+      server.run_command("supermarket-ctl reconfigure")
     end
 
     def create_users_orgs_knife_configs(server, dot_chef_path)
@@ -1011,7 +1007,7 @@ ssl_verify_mode :verify_none
       when 'private-chef'
         server.run_command("/opt/opscode/embedded/bin/knife opc user create #{create_user_string} -c #{dot_chef_path}/pivotal.rb")
       when 'chef-server'
-        run_ctl(server, "chef-server", "user-create #{create_user_string}")
+        server.run_command("chef-server-ctl user-create #{create_user_string}")
       end
     end
 
@@ -1021,7 +1017,7 @@ ssl_verify_mode :verify_none
       when 'private-chef'
         server.run_command("/opt/opscode/embedded/bin/knife opc org create #{create_org_string} -c #{dot_chef_path}/pivotal.rb")
       when 'chef-server'
-        run_ctl(server, "chef-server", "org-create #{create_org_string}")
+        server.run_command("chef-server-ctl org-create #{create_org_string}")
       end
     end
 
@@ -1032,7 +1028,7 @@ ssl_verify_mode :verify_none
       when 'private-chef'
         server.run_command("/opt/opscode/embedded/bin/knife opc org user add #{org_add_user_string} -c #{dot_chef_path}/pivotal.rb")
       when 'chef-server'
-        run_ctl(server, "chef-server", "org-user-add #{org_add_user_string}")
+        server.run_command("chef-server-ctl org-user-add #{org_add_user_string}")
       end
     end
 
