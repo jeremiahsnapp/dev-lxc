@@ -297,18 +297,8 @@ module DevLXC
       servers.select { |s| s.name =~ /#{server_name_regex}/ }
     end
 
-    def destroy(server_name_regex=nil, force=false)
+    def destroy(server_name_regex=nil)
       servers = get_sorted_servers(server_name_regex)
-      if servers.empty?
-        puts "No matching server names were found"
-        exit
-      end
-      unless force
-        confirmation_string = String.new
-        servers.reverse_each { |s| confirmation_string += "#{s.name}\n" }
-        confirmation_string += "Are you sure you want to destroy these servers? (y/N)\n"
-        return unless yes?(confirmation_string)
-      end
       servers.reverse_each { |s| s.destroy; puts }
       delete_dns_records unless get_sorted_servers.any? { |s| s.container.state != :stopped }
     end
