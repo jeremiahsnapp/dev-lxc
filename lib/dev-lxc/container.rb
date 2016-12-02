@@ -85,14 +85,22 @@ module DevLXC
       IO.write("#{config_item('lxc.rootfs')}#{dot_ssh_path}/authorized_keys", authorized_keys_content)
     end
 
-    def run_command(command)
+    def run_command(command, output_file=nil)
       unless running?
         puts "ERROR: Container '#{self.name}' must be running first"
         exit 1
       end
       attach_opts = { wait: true, env_policy: LXC::LXC_ATTACH_CLEAR_ENV, extra_env_vars: ['HOME=/root'] }
-      attach(attach_opts) do
-        LXC.run_command(command)
+      if output_file
+        file = File.open(output_file, 'w+')
+        attach_opts[:stdout] = file
+      end
+      begin
+        attach(attach_opts) do
+          LXC.run_command(command)
+        end
+      ensure
+        file.close if file
       end
     end
 

@@ -21,10 +21,11 @@ module DevLXC
       @container.status
     end
 
-    def run_command(command)
+    def run_command(command, output_file=nil)
       if @container.running?
         puts "Running '#{command}' in '#{@container.name}'"
-        @container.run_command(command)
+        puts "Saving output to #{output_file}" if output_file
+        @container.run_command(command, output_file)
       else
         puts "'#{@container.name}' is not running"
       end
