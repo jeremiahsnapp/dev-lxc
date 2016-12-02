@@ -692,7 +692,7 @@ module DevLXC
       server.run_command("delivery-ctl #{setup_cmd}")
 
       # enable Compliance profiles asset store
-      DevLXC::append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb", "compliance_profiles['enable'] = true")
+      DevLXC::append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb", "compliance_profiles['enable'] = true\n")
 
       server.run_command("delivery-ctl reconfigure")
 
