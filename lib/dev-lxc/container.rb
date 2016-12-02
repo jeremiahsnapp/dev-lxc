@@ -38,7 +38,7 @@ module DevLXC
     end
 
     def destroy
-      shutdown if running?
+      stop if running?
       puts "Destroying container '#{self.name}'"
       super if self.defined?
     end
