@@ -705,6 +705,11 @@ module DevLXC
       DevLXC::append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb", "compliance_profiles['enable'] = true")
 
       run_ctl(server, "delivery", "reconfigure")
+
+      # give time for all services to come up completely
+      sleep 10
+
+      server.run_command("delivery-ctl create-enterprise #{enterprise_name} --ssh-pub-key-file /etc/delivery/builder_key.pub", "#{server.container.config_item('lxc.rootfs')}/etc/delivery/#{enterprise_name}-admin-credentials")
     end
 
     def print_automate_credentials
