@@ -112,7 +112,7 @@ module DevLXC
       puts "Installing #{package_path} in container '#{self.name}'"
       case File.extname(package_path)
       when ".deb"
-        install_command = "dpkg -D10 -i --skip-same-version #{package_path}"
+        install_command = "dpkg -i --skip-same-version #{package_path}"
       when ".rpm"
         install_command = "rpm -Uvh #{package_path}"
       end
