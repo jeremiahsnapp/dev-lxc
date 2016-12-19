@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.3.3 (2016-12-19)
+
+* Remove debug output from "dpkg -i"
+
 ## 2.3.2 (2016-12-02)
 
 * Fix DevLXC::Cluster#configure_automate so the reconfigure comes after all changes to delivery.rb
