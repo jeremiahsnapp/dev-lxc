@@ -9,7 +9,7 @@ module DevLXC
   def self.create_base_container(base_container_name, base_container_options)
     base_container = DevLXC::Container.new(base_container_name)
     if base_container.defined?
-      puts "Using existing base container '#{base_container.name}'"
+      puts "Base container '#{base_container.name}' already exists"
       return base_container
     end
     puts "Creating base container '#{base_container.name}'"
