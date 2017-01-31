@@ -378,7 +378,7 @@ module DevLXC
     def abort_up(servers)
       abort_up = false
       servers.each do |server|
-        next if server.container.defined?
+        next if server.container.defined? && !server.snapshot_list.select { |sn| sn[2].to_s.start_with?("dev-lxc build: completed") }.empty?
         if @server_configs[server.name][:server_type] == 'compliance' && @config["chef-server"][:topology] == "standalone"
           if @config['chef-server'][:bootstrap_backend].nil?
             puts "ERROR: '#{server.name}' requires a Chef Server bootstrap backend to be configured first."
