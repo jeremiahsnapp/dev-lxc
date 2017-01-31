@@ -574,7 +574,7 @@ module DevLXC
             open(package_source) { |url| File.open(product_cache_path, 'wb') { |f| f.write(url.read) } }
           end
           if package_sha256 != Digest::SHA256.file(product_cache_path).hexdigest
-            puts "ERROR: Incorrect SHA256 for #{product_cache_path}."
+            puts "ERROR: Incorrect SHA256 for #{product_cache_path}"
             exit 1
           end
         elsif !File.exist?(package_source)
