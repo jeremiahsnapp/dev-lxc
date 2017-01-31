@@ -379,6 +379,15 @@ module DevLXC
       abort_up = false
       servers.each do |server|
         next if server.container.defined?
+        if @server_configs[server.name][:server_type] == 'compliance' && @config["chef-server"][:topology] == "standalone"
+          if @config['chef-server'][:bootstrap_backend].nil?
+            puts "ERROR: '#{server.name}' requires a Chef Server bootstrap backend to be configured first."
+            abort_up = true
+          elsif !get_server(@config['chef-server'][:bootstrap_backend]).container.running? && servers.select { |s| s.name == @config['chef-server'][:bootstrap_backend] }.empty?
+            puts "ERROR: '#{server.name}' requires '#{@config['chef-server'][:bootstrap_backend]}' to be running first."
+            abort_up = true
+          end
+        end
         if (@config['chef-server'][:frontends] && @config['chef-server'][:frontends].include?(server.name)) || server.name == @config['analytics'][:bootstrap_backend]
           if @config['chef-server'][:bootstrap_backend].nil?
             puts "ERROR: '#{server.name}' requires a Chef Server bootstrap backend to be configured first."
@@ -893,6 +902,31 @@ ssl_verify_mode :verify_none
       if admin_user
         server.run_command("chef-compliance-ctl user-create #{admin_user} #{admin_user}")
         server.run_command("chef-compliance-ctl restart core")
+      end
+
+      if @config["chef-server"][:topology] == "standalone"
+        chef_server = get_server(@config['chef-server'][:bootstrap_backend])
+        FileUtils.mkdir_p("#{chef_server.container.config_item('lxc.rootfs')}/root/integrate-compliance-with-chef-server")
+        FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/root/integrate-compliance-with-chef-server")
+        IO.write("#{server.container.config_item('lxc.rootfs')}/root/integrate-compliance-with-chef-server/prepare-chef-compliance",
+                 "chef-compliance-ctl connect chef-server --non-interactive true --chef-app-id 'compliance_server' --auth-id 'Chef Server' --insecure true --compliance-url 'https://#{server.name}'"
+                )
+        server.run_command("bash /root/integrate-compliance-with-chef-server/prepare-chef-compliance", "#{server.container.config_item('lxc.rootfs')}/root/integrate-compliance-with-chef-server/prepare-chef-compliance-output")
+        server.run_command("chef-compliance-ctl reconfigure")
+        server.run_command("chef-compliance-ctl restart core")
+        prepare_chef_compliance_output = IO.read("#{server.container.config_item('lxc.rootfs')}/root/integrate-compliance-with-chef-server/prepare-chef-compliance-output")
+        delimited_chef_server_command = prepare_chef_compliance_output.match(/\n---\n(.+)\n---/m)
+        if delimited_chef_server_command
+          IO.write("#{chef_server.container.config_item('lxc.rootfs')}/root/integrate-compliance-with-chef-server/configure-chef-server", delimited_chef_server_command[1])
+          chef_server.run_command("bash /root/integrate-compliance-with-chef-server/configure-chef-server", "#{chef_server.container.config_item('lxc.rootfs')}/root/integrate-compliance-with-chef-server/configure-chef-server-output")
+        end
+        configure_chef_server_output = IO.read("#{chef_server.container.config_item('lxc.rootfs')}/root/integrate-compliance-with-chef-server/configure-chef-server-output")
+        compliance_command = configure_chef_server_output.match(/^chef-compliance-ctl .+$/)
+        if compliance_command
+          IO.write("#{server.container.config_item('lxc.rootfs')}/root/integrate-compliance-with-chef-server/configure-chef-compliance", compliance_command)
+          server.run_command("bash /root/integrate-compliance-with-chef-server/configure-chef-compliance")
+          server.run_command("chef-compliance-ctl reconfigure")
+        end
       end
     end
 
