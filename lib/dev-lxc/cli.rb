@@ -60,7 +60,11 @@ module DevLXC::CLI
     option :append, :aliases => "-a", :type => :boolean, :desc => "Do not generate the global config header"
     option :filename, :aliases => "-f", :desc => "Write generated content to FILE rather than standard output."
     def init
-      header = %Q(# base_container must be the name of an existing container
+      header = %Q(# enable_build_snapshots automatically makes container snapshots at key times during the build process
+# default value is `true`
+#enable_build_snapshots: true
+
+# base_container must be the name of an existing container
 base_container: b-ubuntu-1404
 
 # list any host directories you want mounted into the servers

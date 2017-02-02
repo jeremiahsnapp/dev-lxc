@@ -14,6 +14,10 @@ dev-lxc init --chef --automate --supermarket --runners --nodes > dev-lxc.yml
 The contents of `dev-lxc.yml` should look like this.
 
 ```
+# enable_build_snapshots automatically makes container snapshots at key times during the build process
+# default value is `true`
+#enable_build_snapshots: true
+
 # base_container must be the name of an existing container
 base_container: b-ubuntu-1404
 
@@ -92,7 +96,7 @@ As you can see there are four server types represented by five servers.
 
 #### Global Settings
 
-The global settings used by each of the server types are the `base_container`, a list of `mounts` and
+The global settings used by each of the server types are `enable_build_snapshots`, the `base_container`, a list of `mounts` and
 a list of `ssh-keys`. These settings are described in the config comments.
 
 Be sure to set `base_container` in the `dev-lxc.yml` to an existing container's name.  
@@ -102,7 +106,7 @@ If you don't already have a container to use as a `base_container` then you can 
 
 #### Server Specific Settings
 
-It is possible to define different values for `base_container`, `mounts` or `ssh-keys` for a particular server type or even for a particular server as you can see in the following snippet.
+It is possible to define different values for `enable_build_snapshots`, `base_container`, `mounts` or `ssh-keys` for a particular server type or even for a particular server as you can see in the following snippet.
 
 ```
 nodes:

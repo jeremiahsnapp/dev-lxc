@@ -21,6 +21,11 @@ module DevLXC
               products = server_config['products']
               products ||= Hash.new
 
+              enable_build_snapshots = cluster_config[server_type]["enable_build_snapshots"]
+              enable_build_snapshots = cluster_config["enable_build_snapshots"] if enable_build_snapshots.nil?
+              enable_build_snapshots = server_config["enable_build_snapshots"] if server_config.key?("enable_build_snapshots")
+              enable_build_snapshots = true if enable_build_snapshots.nil?
+
               mounts = ["/var/dev-lxc var/dev-lxc"]
               if cluster_config[server_type]["mounts"]
                 mounts.concat(cluster_config[server_type]["mounts"])
@@ -42,6 +47,8 @@ module DevLXC
                 products: products,
                 ipaddress: server_config['ipaddress'],
                 additional_fqdn: nil,
+                enable_build_snapshots: enable_build_snapshots,
+                first_run: false,
                 mounts: mounts,
                 ssh_keys: ssh_keys,
                 base_container_name: base_container_name
@@ -318,14 +325,18 @@ module DevLXC
       configured_servers = Array.new
       servers = get_sorted_servers(server_name_regex)
       exit 1 if abort_up(servers)
-      prep_product_cache(servers)
       servers.each do |server|
-        clone_from_base_container(server) unless server.container.defined?
+        unless server.container.defined?
+          clone_from_base_container(server)
+          @server_configs[server.name][:first_run] = true
+        end
       end
+      prep_product_cache(servers)
       # get_sorted_servers is called again in order to ensure the container objects are initialized properly in case they were just cloned from the base container
       servers = get_sorted_servers(server_name_regex)
       create_dns_records unless servers.empty?
       servers.each do |server|
+        next if ! @server_configs[server.name][:enable_build_snapshots] && ! @server_configs[server.name][:first_run]
         if %w(build-nodes runners).include?(@server_configs[server.name][:server_type])
           next if @server_configs[server.name][:required_products]["chefdk"] && @server_configs[server.name][:required_products].length == 1
         end
@@ -336,6 +347,7 @@ module DevLXC
           if server.name == @config["chef-backend"][:bootstrap_frontend]
             running_backends = Array.new
             @config["chef-backend"][:backends].reverse_each do |server_name|
+              next unless @server_configs[server_name][:enable_build_snapshots]
               backend = get_server(server_name)
               if backend.container.defined? && backend.snapshot_list.select { |sn| sn[2].to_s.start_with?("dev-lxc build: backend cluster configured but frontend not bootstrapped") }.empty?
                 if backend.container.running?
@@ -348,14 +360,17 @@ module DevLXC
               end
             end
             @config["chef-backend"][:backends].each do |server_name|
+              next unless @server_configs[server_name][:enable_build_snapshots]
               if running_backends.include?(server_name)
                 get_server(server_name).start
                 configured_servers << server_name unless configured_servers.include?(server_name)
               end
             end
           end
-          configure_products(server)
-          configured_servers << server.name
+          if @server_configs[server.name][:enable_build_snapshots] || @server_configs[server.name][:first_run]
+            configure_products(server)
+            configured_servers << server.name
+          end
         end
         if server.container.running?
           puts "Container '#{server.name}' is already running"
@@ -365,11 +380,13 @@ module DevLXC
         end
       end
       configured_servers.reverse_each do |server_name|
+        next unless @server_configs[server_name][:enable_build_snapshots]
         server = get_server(server_name)
         server.shutdown if server.container.running?
         server.snapshot("dev-lxc build: completed")
       end
       configured_servers.each do |server_name|
+        next unless @server_configs[server_name][:enable_build_snapshots]
         server = get_server(server_name)
         server.start if server.container.defined?
       end
@@ -379,6 +396,7 @@ module DevLXC
       abort_up = false
       servers.each do |server|
         next if server.container.defined? && !server.snapshot_list.select { |sn| sn[2].to_s.start_with?("dev-lxc build: completed") }.empty?
+        next if ! @server_configs[server.name][:enable_build_snapshots] && ! @server_configs[server.name][:first_run]
         if @server_configs[server.name][:server_type] == 'compliance' && @config["chef-server"][:topology] == "standalone"
           if @config['chef-server'][:bootstrap_backend].nil?
             puts "ERROR: '#{server.name}' requires a Chef Server bootstrap backend to be configured first."
@@ -554,6 +572,9 @@ module DevLXC
         elsif !force && !server.snapshot_list.select { |sn| sn[2].to_s.start_with?("dev-lxc build: completed") }.empty?
           # Skipping product cache preparation for container because it has a 'build: completed' snapshot
           next
+        elsif ! @server_configs[server.name][:enable_build_snapshots] && ! @server_configs[server.name][:first_run]
+          # Skipping product cache preparation for container because it build snapshots are disabled and this is not the container's first run
+          next
         end
         products.each do |product_name, product_options|
           if product_options && product_options['package_source']
@@ -611,9 +632,11 @@ module DevLXC
         next if %w(build-nodes runners).include?(@server_configs[server.name][:server_type]) && product_name == "chefdk"
         server.install_package(package_source)
       end
-      server.shutdown
-      server.snapshot("dev-lxc build: products installed")
-      server.start if server_was_running
+      if @server_configs[server.name][:enable_build_snapshots]
+        server.shutdown
+        server.snapshot("dev-lxc build: products installed")
+        server.start if server_was_running
+      end
     end
 
     def configure_products(server)
