@@ -47,10 +47,8 @@ module DevLXC
     end
 
     def shutdown
-      hwaddr = @container.config_item("lxc.network.0.hwaddr") if @container.defined?
-      @container.shutdown
-      remove_static_ip_address(hwaddr)
-      release_lingering_dhcp_ip_addresses(hwaddr)
+      @container.shutdown if @container.running?
+      remove_static_ip_address(@container.config_item("lxc.network.0.hwaddr")) if @container.defined?
     end
 
     def snapshot(comment=nil)
@@ -144,18 +142,16 @@ module DevLXC
     end
 
     def destroy
-      if @container.defined?
-        hwaddr = @container.config_item("lxc.network.0.hwaddr")
-        @container.snapshot_list.each { |snapshot| @container.snapshot_destroy(snapshot.first) }
-      end
+      return unless @container.defined?
+      @container.snapshot_list.each { |snapshot| @container.snapshot_destroy(snapshot.first) }
+      hwaddr = @container.config_item("lxc.network.0.hwaddr")
       @container.destroy
       remove_static_ip_address(hwaddr)
-      release_lingering_dhcp_ip_addresses(hwaddr)
     end
 
     def release_lingering_dhcp_ip_addresses(hwaddr)
       dhcp_leases = IO.readlines('/var/lib/misc/dnsmasq.lxcbr0.leases')
-      dhcp_leases.each do |dhcp_lease|
+      leases_to_release = dhcp_leases.map do |dhcp_lease|
         if m = dhcp_lease.match(/ #{hwaddr} (\d+\.\d+\.\d+\.\d+) /)
           mac_addr = hwaddr
           ip_addr = m[1]
@@ -167,9 +163,17 @@ module DevLXC
           ip_addr = m[2]
         end
         if mac_addr && ip_addr
-          puts "Releasing lingering DHCP lease: #{dhcp_lease}"
-          system("dhcp_release lxcbr0 #{ip_addr} #{mac_addr}")
+          { dhcp_lease: dhcp_lease, mac_addr: mac_addr, ip_addr: ip_addr }
         end
+      end
+      leases_to_release.compact!
+      unless leases_to_release.empty?
+        system("systemctl stop lxc-net.service")
+        leases_to_release.each do |l|
+          puts "Releasing lingering DHCP lease: #{l[:dhcp_lease]}"
+          DevLXC.search_file_delete_line("/var/lib/misc/dnsmasq.lxcbr0.leases", /( #{l[:mac_addr]} #{l[:ip_addr]} )/)
+        end
+        system("systemctl start lxc-net.service")
       end
     end
 
@@ -180,14 +184,11 @@ module DevLXC
       DevLXC.reload_dnsmasq
     end
 
-    def remove_static_ip_address(hwaddr)
-      if @ipaddress
-        DevLXC.search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /,#{@ipaddress}$/)
-      end
-      unless hwaddr.nil?
+    def remove_static_ip_address(hwaddr=nil)
+      if hwaddr
         DevLXC.search_file_delete_line("/etc/lxc/dhcp-hosts.conf", /^#{hwaddr}/)
+        DevLXC.reload_dnsmasq
       end
-      DevLXC.reload_dnsmasq
     end
 
   end
