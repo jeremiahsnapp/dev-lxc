@@ -1,5 +1,15 @@
 # dev-lxc Change Log
 
+## 2.4.0 (2017-02-03)
+
+* Refactor DHCP address management
+* Add enable_build_snapshots config option
+* Skip abort test if server exists AND "build: completed" snapshot exists
+* Add auto-integration of Compliance and standalone Chef Server
+* Remove period from sha256sum error message
+* Reword message when base container already exists
+* Update prerequisites.md
+
 ## 2.3.3 (2016-12-19)
 
 * Remove debug output from "dpkg -i"
