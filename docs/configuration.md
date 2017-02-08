@@ -123,7 +123,7 @@ is not specified then a dynamic IP address is assigned when the server starts.
 #### mixlib-install Library Automatically Manages a Cache of Product Packages
 
 dev-lxc uses the [mixlib-install](https://github.com/chef/mixlib-install) library to download Chef products
-to a cache in `/var/dev-lxc` in the host VM. This cache is automatically mounted into each server when it starts.
+to a cache in `/var/dev-lxc` in the host instance. This cache is automatically mounted into each server when it starts.
 
 A list of Chef products to be installed can be defined for each server
 using [product names that mixlib-install understands](https://github.com/chef/mixlib-install/blob/master/PRODUCT_MATRIX.md).
