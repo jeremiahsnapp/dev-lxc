@@ -30,6 +30,8 @@ If you aren't familiar with using containers you might be interested in this int
 
 [LXC 1.0 Introduction](https://www.stgraber.org/2013/12/20/lxc-1-0-blog-post-series/)
 
+Additional dev-lxc related documentation can be found in the [docs folder](docs) in this repository.
+
 ## Build dev-lxc-platform instance
 
 The dev-lxc tool is used in a system that has been configured by the dev-lxc-platform cookbook.
