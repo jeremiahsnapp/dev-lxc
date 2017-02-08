@@ -21,6 +21,13 @@ The contents of `dev-lxc.yml` should look like this.
 # base_container must be the name of an existing container
 base_container: b-ubuntu-1404
 
+# memory_per_server sets the maximum amount of user memory (including file cache) for each server.
+# dev-lxc will set the `memory.limit_in_bytes` cgroup for each server to apply this limit.
+# If no units are specified, the value is interpreted as bytes.
+# You can use suffixes to represent larger units — k or K for kilobytes, m or M for megabytes, and g or G for gigabytes.
+# The default behavior is that no limit is set.
+#memory_per_server: 4G
+
 # list any host directories you want mounted into the servers
 #mounts:
 #  - /root/work root/work
@@ -96,8 +103,7 @@ As you can see there are four server types represented by five servers.
 
 #### Global Settings
 
-The global settings used by each of the server types are `enable_build_snapshots`, the `base_container`, a list of `mounts` and
-a list of `ssh-keys`. These settings are described in the config comments.
+The global settings used by each of the server types are `enable_build_snapshots`, the `base_container`, `memory_per_server`, a list of `mounts` and a list of `ssh-keys`. These settings are described in the config comments.
 
 Be sure to set `base_container` in the `dev-lxc.yml` to an existing container's name.  
 This container will be cloned to create each container in the cluster.  
@@ -106,7 +112,7 @@ If you don't already have a container to use as a `base_container` then you can 
 
 #### Server Specific Settings
 
-It is possible to define different values for `enable_build_snapshots`, `base_container`, `mounts` or `ssh-keys` for a particular server type or even for a particular server as you can see in the following snippet.
+It is possible to define different values for `enable_build_snapshots`, `base_container`, `memory_per_server`, `mounts` or `ssh-keys` for a particular server type or even for a particular server as you can see in the following snippet.
 
 ```
 nodes:

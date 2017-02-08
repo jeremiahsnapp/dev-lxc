@@ -5,10 +5,11 @@ module DevLXC
   class Server
     attr_reader :container
 
-    def initialize(name, ipaddress, additional_fqdn, mounts, ssh_keys)
+    def initialize(name, ipaddress, additional_fqdn, memory_per_server, mounts, ssh_keys)
       @container = DevLXC::Container.new(name)
       @ipaddress = ipaddress
       @additional_fqdn = additional_fqdn
+      @memory_per_server = memory_per_server
       @mounts = mounts
       @ssh_keys = ssh_keys
     end
@@ -43,6 +44,7 @@ module DevLXC
       @container.sync_mounts(@mounts)
       @container.start
       @container.sync_ssh_keys(@ssh_keys)
+      @container.set_cgroup_item('memory.limit_in_bytes', @memory_per_server) if @memory_per_server
       puts
     end
 

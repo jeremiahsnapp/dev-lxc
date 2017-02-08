@@ -67,6 +67,13 @@ module DevLXC::CLI
 # base_container must be the name of an existing container
 base_container: b-ubuntu-1404
 
+# memory_per_server sets the maximum amount of user memory (including file cache) for each server.
+# dev-lxc will set the `memory.limit_in_bytes` cgroup for each server to apply this limit.
+# If no units are specified, the value is interpreted as bytes.
+# You can use suffixes to represent larger units — k or K for kilobytes, m or M for megabytes, and g or G for gigabytes.
+# The default behavior is that no limit is set.
+#memory_per_server: 4G
+
 # list any host directories you want mounted into the servers
 #mounts:
 #  - /root/work root/work

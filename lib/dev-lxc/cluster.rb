@@ -26,6 +26,10 @@ module DevLXC
               enable_build_snapshots = server_config["enable_build_snapshots"] if server_config.key?("enable_build_snapshots")
               enable_build_snapshots = true if enable_build_snapshots.nil?
 
+              memory_per_server = cluster_config[server_type]["memory_per_server"]
+              memory_per_server ||= cluster_config["memory_per_server"]
+              memory_per_server = server_config["memory_per_server"] if server_config["memory_per_server"]
+
               mounts = ["/var/dev-lxc var/dev-lxc"]
               if cluster_config[server_type]["mounts"]
                 mounts.concat(cluster_config[server_type]["mounts"])
@@ -49,6 +53,7 @@ module DevLXC
                 additional_fqdn: nil,
                 enable_build_snapshots: enable_build_snapshots,
                 first_run: false,
+                memory_per_server: memory_per_server,
                 mounts: mounts,
                 ssh_keys: ssh_keys,
                 base_container_name: base_container_name
@@ -266,9 +271,10 @@ module DevLXC
     def get_server(server_name)
       ipaddress = @server_configs[server_name][:ipaddress]
       additional_fqdn = @server_configs[server_name][:additional_fqdn]
+      memory_per_server = @server_configs[server_name][:memory_per_server]
       mounts = @server_configs[server_name][:mounts]
       ssh_keys = @server_configs[server_name][:ssh_keys]
-      Server.new(server_name, ipaddress, additional_fqdn, mounts, ssh_keys)
+      Server.new(server_name, ipaddress, additional_fqdn, memory_per_server, mounts, ssh_keys)
     end
 
     def get_sorted_servers(server_name_regex=nil)
