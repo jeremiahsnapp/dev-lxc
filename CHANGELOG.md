@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.5.0 (2017-02-08)
+
+* Add memory_per_server config option to limit memory per server
+
 ## 2.4.0 (2017-02-03)
 
 * Refactor DHCP address management
