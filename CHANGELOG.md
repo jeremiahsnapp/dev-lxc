@@ -1,5 +1,10 @@
 # dev-lxc Change Log
 
+## 2.6.0 (2017-02-09)
+
+* Make api_fqdn unique for chef-tier and chef-backend configs
+* Add https_proxy to generated knife.rb and client.rb files
+
 ## 2.5.0 (2017-02-08)
 
 * Add memory_per_server config option to limit memory per server
