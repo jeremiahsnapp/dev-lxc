@@ -224,7 +224,9 @@ Run `mitmproxy` in a terminal on the host instance.
 
 Uncomment the `https_proxy` line in the `chef-repo/.chef/knife.rb` or in a node's `/etc/chef/client.rb` so traffic will be proxied through mitmproxy.
 
-Run chef-client in the node or knife commands from the chef-repo and watch the HTTP requests appear in the mitmproxy console.
+Run chef-client in the node or knife commands from the chef-repo directory and watch the HTTP requests appear in the mitmproxy console.
+
+If you configured your workstation's SSH config file with LocalForward as described in dev-lxc-platform's README then you should be able to configure the web browser to use "127.0.0.1 8080" for HTTP and HTTPS proxies and watch the HTTP requests appear in the mitmproxy console.
 
 ### Manage the Cluster
 
