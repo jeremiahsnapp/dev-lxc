@@ -123,10 +123,11 @@ mkdir -p /root/work/clusters/automate
 
 Then use the `init` subcommand to generate a sample configuration using the available options. Run `dl help init` to see what options are available.
 
-The following command configures a standalone Chef Server, a Chef Automate server and a job dispatch runner.
+The following command configures a standalone Chef Server, Supermarket server, Compliance server,
+Chef Automate server, and a job dispatch runner.
 
 ```
-dl init --chef --automate --runners -f /root/work/clusters/automate/dev-lxc.yml
+dl init --chef --compliance --supermarket --automate --runners -f /root/work/clusters/automate/dev-lxc.yml
 ```
 
 We can easily append additional configurations to this file. For example, the following command appends an infrastructure node.
@@ -190,7 +191,7 @@ This can be helpful when you don't want to start building the cluster yet but yo
 
 At this point all of the cluster's servers should be running.
 
-If you setup the workstation's networking correctly as described in the prerequisites you should be able to ping any server from your workstation using it's FQDN. You can also browse to any server that has a web interface.
+If you enabled dynamic forwarding (SOCKS v5) in your workstation's SSH config file and configured a web browser to use the SOCKS v5 proxy as described in the dev-lxc-platform README.md then you should be able to browse from your workstation to any dev-lxc server that has a web interface using its FQDN.
 
 Since the cluster has a Chef Server you can use the `chef-repo` subcommand to create a chef-repo directory in the host instance that contains a knife.rb and all of the keys for the users and org validator clients that are defined in dev-lxc.yml. This makes it very easy to use tools such as knife or berkshelf.
 
@@ -212,7 +213,7 @@ You can use the `attach` subcommand to login to the root user of a server.
 For example, the following command should attach to the Chef Server.
 
 ```
-dl at chef
+dl attach chef
 ```
 
 Since the cluster has a Chef Server and an infrastructure node dev-lxc made sure it configured the node's chef-client for the Chef Server so it is easy to converge the node.

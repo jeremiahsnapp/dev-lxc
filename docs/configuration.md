@@ -4,11 +4,11 @@ dev-lxc uses a YAML configuration file named `dev-lxc.yml` to define a cluster.
 
 The `init` command generates sample config files for various server types.
 
-Let's generate a config for a cluster with a standalone Chef Server, Chef Automate server,
-private Supermarket server, job dispatch runner and an infrastructure node.
+Let's generate a config for a cluster with a standalone Chef Server, Supermarket server,
+Compliance server, Chef Automate server, job dispatch runner and an infrastructure node.
 
 ```
-dev-lxc init --chef --automate --supermarket --runners --nodes > dev-lxc.yml
+dev-lxc init --chef --compliance --supermarket --automate --runners --nodes > dev-lxc.yml
 ```
 
 The contents of `dev-lxc.yml` should look like this.
@@ -57,6 +57,14 @@ chef-server:
         push-jobs-server:
         reporting:
 
+compliance:
+  admin_user: admin         # the password will be the same as the username
+  servers:
+    compliance.lxc:
+      ipaddress: 10.0.3.205
+      products:
+        compliance:
+
 supermarket:
   servers:
     supermarket.lxc:
@@ -94,12 +102,14 @@ nodes:
 The dev-lxc.yml config file is very customizable. You can add or remove mounts, products or servers,
 change ip addresses, server names, the base_container and more.
 
-As you can see there are four server types represented by five servers.
+As you can see there are six server types represented by six servers.
 
 1. chef-server - chef.lxc
-2. analytics - analytics.lxc
+2. compliance - compliance.lxc
 3. supermarket - supermarket.lxc
-4. nodes - node-1.lxc
+4. automate - automate.lxc
+5. runners - runner-1.lxc
+6. nodes - node-1.lxc
 
 #### Global Settings
 
@@ -171,7 +181,7 @@ When defining a Chef Server you can include organizations and users that will be
 dev-lxc knows how to automatically configure Chef Server standalone, Chef Server tier topology,
 Chef Server HA 2.0 as well as Chef Automate, Chef Client, Analytics, Compliance and Supermarket.
 
-If a Chef Automate, Analytics server or Supermarket server is defined in the same config file as
+If a Chef Automate server, Compliance server, Analytics server or Supermarket server is defined in the same config file as
 a Chef Server then each server will automatically be integrated with that Chef Server.
 
 If a node server with Chef Client or Chef DK installed is defined in the same config file as
