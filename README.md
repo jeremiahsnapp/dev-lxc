@@ -218,6 +218,14 @@ dl attach chef
 
 Since the cluster has a Chef Server and an infrastructure node dev-lxc made sure it configured the node's chef-client for the Chef Server so it is easy to converge the node.
 
+### Use mitmproxy to view HTTP traffic
+
+Run `mitmproxy` in a terminal on the host instance.
+
+Uncomment the `https_proxy` line in the `chef-repo/.chef/knife.rb` or in a node's `/etc/chef/client.rb` so traffic will be proxied through mitmproxy.
+
+Run chef-client in the node or knife commands from the chef-repo and watch the HTTP requests appear in the mitmproxy console.
+
 ### Manage the Cluster
 
 The right pane of the "cluster" window should show `dev-lxc status` output. This shows the status of each server including any existing snapshots.
