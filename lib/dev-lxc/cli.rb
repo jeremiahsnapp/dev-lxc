@@ -87,7 +87,7 @@ base_container: b-ubuntu-1404
       chef_tier_config = %Q(
 chef-server:
   topology: tier
-  api_fqdn: chef.lxc
+  api_fqdn: chef-tier.lxc
   users:          # a user's password will be the same as its username
     - mary-admin
     - joe-user
@@ -193,7 +193,7 @@ adhoc:
 )
       chef_backend_config = %Q(
 chef-backend:
-  api_fqdn: chef.lxc
+  api_fqdn: chef-ha.lxc
   users:          # a user's password will be the same as its username
     - mary-admin
     - joe-user
