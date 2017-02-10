@@ -803,7 +803,8 @@ module DevLXC
         FileUtils.cp(validation_key, "#{server.container.config_item('lxc.rootfs')}/etc/chef/") if File.exists?(validation_key)
       end
 
-      client_rb = %Q(#https_proxy 'https://10.0.3.1:8080'
+      client_rb = %Q(#http_proxy 'http://10.0.3.1:8080'
+#https_proxy 'http://10.0.3.1:8080'
 
 chef_server_url '#{chef_server_url}'
 validation_client_name '#{validation_client_name}'
@@ -1029,7 +1030,8 @@ ssl_verify_mode :verify_none
     end
 
     def create_knife_config(fqdn, dot_chef_path)
-      knife_rb = %Q(#https_proxy 'https://10.0.3.1:8080'
+      knife_rb = %Q(#http_proxy 'http://127.0.0.1:8080'
+#https_proxy 'http://127.0.0.1:8080'
 
 username = "CHANGEME"
 orgname = "CHANGEME"
