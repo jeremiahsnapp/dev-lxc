@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.6.1 (2017-02-10)
+
+* Fix http_proxy and https_proxy in generated knife.rb and client.rb files
+
 ## 2.6.0 (2017-02-09)
 
 * Make api_fqdn unique for chef-tier and chef-backend configs
