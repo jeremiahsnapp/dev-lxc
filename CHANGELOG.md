@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.6.2 (2017-02-21)
+
+* Replace unicode dash with ascii hyphen
+
 ## 2.6.1 (2017-02-10)
 
 * Fix http_proxy and https_proxy in generated knife.rb and client.rb files
