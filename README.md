@@ -37,7 +37,7 @@ Additional dev-lxc related documentation can be found in the [docs folder](docs)
 The dev-lxc tool is used in a system that has been configured by the dev-lxc-platform cookbook.
 
 The easiest way to build a dev-lxc-platform system is to download the dev-lxc-platform repository
-and use Test Kitchen to build a VirtualBox Vagrant instance or an AWS EC2 instance.
+and use Test Kitchen to build an AWS EC2 instance or a VirtualBox Vagrant instance.
 
 Follow the instructions in the [dev-lxc-platform README](https://github.com/jeremiahsnapp/dev-lxc-platform) to build
 a dev-lxc-platform instance.
