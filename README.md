@@ -98,30 +98,12 @@ dev-lxc help
 dev-lxc help <subcommand>
 ```
 
-### dev-lxc Alias and Subcommands
-
-The dev-lxc command has a `dl` alias for ease of use.
-
-You only have to type enough of a `dev-lxc` subcommand to make it unique.
-
-For example, the following commands are equivalent:
-
-```
-dev-lxc status
-dl st
-```
-
-```
-dev-lxc snapshot
-dl sn
-```
-
 ### Create Base Container
 
 The [base container](docs/base_containers.md) used for the cluster's containers must be created first. Let's use Ubuntu 14.04 for the base container.
 
 ```
-dl create b-ubuntu-1404
+dev-lxc create b-ubuntu-1404
 ```
 
 ### Create Config File
@@ -140,13 +122,13 @@ The following command configures a standalone Chef Server, Supermarket server, C
 Chef Automate server, and a job dispatch runner.
 
 ```
-dl init --chef --compliance --supermarket --automate --runners -f /root/work/clusters/automate/dev-lxc.yml
+dev-lxc init --chef --compliance --supermarket --automate --runners -f /root/work/clusters/automate/dev-lxc.yml
 ```
 
 We can easily append additional configurations to this file. For example, the following command appends an infrastructure node.
 
 ```
-dl init --nodes -a -f /root/work/clusters/automate/dev-lxc.yml
+dev-lxc init --nodes -a -f /root/work/clusters/automate/dev-lxc.yml
 ```
 
 Edit the dev-lxc.yml file:
@@ -173,6 +155,24 @@ See the [usage docs](docs/usage.md) for more information about how to close/kill
 
 ```
 cluster-view /root/work/clusters/automate
+```
+
+### dev-lxc Alias and Subcommands
+
+The dev-lxc command has a `dl` alias for ease of use.
+
+Also, you only have to type enough of a `dev-lxc` subcommand to make it unique.
+
+For example, the following commands are equivalent:
+
+```
+dev-lxc status
+dl st
+```
+
+```
+dev-lxc snapshot
+dl sn
 ```
 
 ### Specifying a Subset of Servers
