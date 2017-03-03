@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 2.7.0 (2017-03-03)
+
+* Make chef-repo command only create .chef directory
+
 ## 2.6.2 (2017-02-21)
 
 * Replace unicode dash with ascii hyphen
