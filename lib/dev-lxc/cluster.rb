@@ -1124,7 +1124,7 @@ ssl_verify_mode :verify_none
         end
       end
 
-      if File.exists?("./chef-repo/.chef/knife.rb") && ! force
+      if File.exists?("#{dot_chef_path}/knife.rb") && ! force
         puts "Skipping knife.rb because it already exists in `#{dot_chef_path}`"
       else
         create_knife_config(chef_server_fqdn, dot_chef_path)
