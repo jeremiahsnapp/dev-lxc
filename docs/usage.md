@@ -104,7 +104,7 @@ dev-lxc print-automate-credentials
 
 ### Create chef-repo
 
-Create a local chef-repo with appropriate knife.rb and pem files.
+Create a `.chef` directory in the current directory with appropriate knife.rb and pem files.
 
 Use the `-p` option to also get pivotal.pem and pivotal.rb files.
 
@@ -117,7 +117,6 @@ dev-lxc chef-repo
 Now you can easily use knife to access the cluster.
 
 ```
-cd chef-repo
 knife client list
 ```
 

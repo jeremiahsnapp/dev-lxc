@@ -206,13 +206,11 @@ At this point all of the cluster's servers should be running.
 
 If you enabled dynamic forwarding (SOCKS v5) in your workstation's SSH config file and configured a web browser to use the SOCKS v5 proxy as described in the dev-lxc-platform README.md then you should be able to browse from your workstation to any dev-lxc server that has a web interface using its FQDN.
 
-Since the cluster has a Chef Server you can use the `chef-repo` subcommand to create a chef-repo directory in the host instance that contains a knife.rb and all of the keys for the users and org validator clients that are defined in dev-lxc.yml. This makes it very easy to use tools such as knife or berkshelf.
+Since the cluster has a Chef Server you can use the `chef-repo` subcommand to create a `.chef` directory in the host instance that contains a knife.rb and all of the keys for the users and org validator clients that are defined in dev-lxc.yml. This makes it very easy to use tools such as knife or berkshelf.
 
 ```
 dl chef
-cd chef-repo
 knife client list
-cd ..
 ```
 
 Since the cluster has a Chef Automate server you can use the `print-automate-credentials` subcommand to see what the login credentials.
@@ -235,9 +233,7 @@ Since the cluster has a Chef Server and an infrastructure node dev-lxc made sure
 
 Run `mitmproxy` in a terminal on the host instance.
 
-Uncomment the `https_proxy` line in the `chef-repo/.chef/knife.rb` or in a node's `/etc/chef/client.rb` so traffic will be proxied through mitmproxy.
-
-Run chef-client in the node or knife commands from the chef-repo directory and watch the HTTP requests appear in the mitmproxy console.
+Uncomment the `https_proxy` line in the chef-repo's `.chef/knife.rb` or in a node's `/etc/chef/client.rb` so traffic from knife commands or chef-client runs will be proxied through mitmproxy making the HTTP requests visible in the mitmproxy console.
 
 If you configured your workstation's SSH config file with LocalForward as described in dev-lxc-platform's README then you should be able to configure the web browser to use "127.0.0.1 8080" for HTTP and HTTPS proxies and watch the HTTP requests appear in the mitmproxy console.
 

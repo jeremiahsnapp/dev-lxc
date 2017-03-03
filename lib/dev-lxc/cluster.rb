@@ -1092,7 +1092,7 @@ ssl_verify_mode :verify_none
 
     def chef_repo(force=false, pivotal=false)
       chef_server_dot_chef_path = "/root/chef-repo/.chef"
-      dot_chef_path = "./chef-repo/.chef"
+      dot_chef_path = ".chef"
 
       if @config['chef-server'][:bootstrap_backend]
         chef_server = get_server(@config['chef-server'][:bootstrap_backend])
