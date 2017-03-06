@@ -1,5 +1,13 @@
 # dev-lxc Change Log
 
+## 3.0.0 (2017-03-06)
+
+* Rename `dev-lxc` binary to `dl`
+* Comment out the "reporting" product in generated config files since it is a legacy product.
+* Change default automate license_path in generated config files to something more readily usable.
+* Change default mounts and ssh-keys paths in generated config files
+* Overhaul documentation
+
 ## 2.7.0 (2017-03-03)
 
 * Make chef-repo command only create .chef directory
