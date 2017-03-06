@@ -239,6 +239,10 @@ dl destroy
 
 For more in-depth documentation please see the pages in the [docs folder](docs).
 
+## Example dev-lxc.yml files
+
+See the files in [example-clusters](example-clusters).
+
 ## Contributing
 
 1. Fork it
