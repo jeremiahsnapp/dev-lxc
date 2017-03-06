@@ -105,7 +105,7 @@ chef-server:
       products:
         chef-server:
         push-jobs-server:
-        reporting:
+#        reporting:
     chef-fe1.lxc:
       ipaddress: 10.0.3.202
       role: frontend
@@ -113,7 +113,7 @@ chef-server:
         chef-server:
         manage:
         push-jobs-server:
-        reporting:
+#        reporting:
 )
       chef_config = %Q(
 chef-server:
@@ -133,7 +133,7 @@ chef-server:
         chef-server:
         manage:
         push-jobs-server:
-        reporting:
+#        reporting:
 )
       automate_config = %Q(
 automate:
