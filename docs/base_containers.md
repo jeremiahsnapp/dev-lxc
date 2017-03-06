@@ -26,19 +26,19 @@ dev-lxc base containers have a "dev-lxc" user with "dev-lxc" password and passwo
 You can see a menu of base containers that `dev-lxc` can create by using the following command.
 
 ```
-dev-lxc create-base-container
+dl create-base-container
 ```
 
 The initial creation of base containers can take awhile so let's go ahead and start creating
 an Ubuntu 14.04 container now.
 
 ```
-dev-lxc create-base-container b-ubuntu-1404
+dl create-base-container b-ubuntu-1404
 ```
 
 Note: It is possible to pass additional arguments to the underlying LXC create command.
 For example:
 
 ```
-dev-lxc create-base-container b-ubuntu-1404 -o -- '--no-validate --keyserver http://my.key.server.com'
+dl create-base-container b-ubuntu-1404 -o -- '--no-validate --keyserver http://my.key.server.com'
 ```

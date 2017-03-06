@@ -88,158 +88,114 @@ sudo -i
 chef gem update dev-lxc
 ```
 
+## dl Command and Subcommands
+
+`dl` is the dev-lxc command line tool.
+
+`dev-lxc` subcommands and some options can be auto-completed by pressing the `Tab` key.
+
+You only have to type enough of a `dev-lxc` subcommand to make it unique.
+
+For example, the following commands are equivalent:
+
+```
+dl help
+dl he
+```
+
+## Display dev-lxc help
+
+```
+dl help
+
+dl help <subcommand>
+```
+
 ## Demo: Build Chef Automate Cluster
-
-### Display dev-lxc help
-
-```
-dev-lxc help
-
-dev-lxc help <subcommand>
-```
 
 ### Create Base Container
 
-The [base container](docs/base_containers.md) used for the cluster's containers must be created first. Let's use Ubuntu 14.04 for the base container.
+Create an Ubuntu 14.04 base container for the cluster's containers.
 
 ```
-dev-lxc create b-ubuntu-1404
+dl create b-ubuntu-1404
 ```
 
 ### Create Config File
 
-Create the [dev-lxc.yml config file](docs/configuration.md) for the cluster.
-
-First, create an arbitrary directory to hold the dev-lxc.yml file.
+Create a directory to hold the dev-lxc.yml file.
 
 ```
-mkdir -p /root/work/clusters/automate
+mkdir -p /root/clusters/automate
 ```
 
-Then use the `init` subcommand to generate a sample configuration using the available options. Run `dl help init` to see what options are available.
-
-The following command configures a standalone Chef Server, Supermarket server, Compliance server,
-Chef Automate server, and a job dispatch runner.
+The following command creates a dev-lxc.yml file that defines a standalone Chef Server, Supermarket server, Compliance server,
+Chef Automate server a Job Dispatch Runner and an infrastructure node.
 
 ```
-dev-lxc init --chef --compliance --supermarket --automate --runners -f /root/work/clusters/automate/dev-lxc.yml
+dl init --chef --compliance --supermarket --automate --runners --nodes > /root/clusters/automate/dev-lxc.yml
 ```
 
-We can easily append additional configurations to this file. For example, the following command appends an infrastructure node.
-
-```
-dev-lxc init --nodes -a -f /root/work/clusters/automate/dev-lxc.yml
-```
-
-Edit the dev-lxc.yml file:
-
-* Delete the `reporting` product from the Chef Server config since we will be using Chef Automate's Visibility.
-* Set the Automate server's `license_path` value to the location of your license file.
-* (Optionally) If you built other clusters then you can modify the server names (including the nodes' `chef_server_url`) in this cluster to
-  make them [unique from the other clusters](docs/manage_multiple_clusters.md).
+Copy your delivery.license file to the `/root/clusters` directory.
 
 ### cluster-view
 
-Run the `cluster-view` command to create a Byobu session specifically for this cluster.
+Run the `cluster-view` command to create a Byobu (tmux) session specifically for this cluster.
+
+```
+cluster-view /root/clusters/automate
+```
 
 The session's first window is named "cluster".
 
 The left pane is useful for running dev-lxc commands.
 
-The right pane updates every 0.5 seconds with the cluster's status provided by `dev-lxc status`.
+The right pane updates every 0.5 seconds with the cluster's status provided by `dl status`.
 
 The session's second window is named "shell". It opens in the same directory as the
 cluster's `dev-lxc.yml` file and is useful for attaching to a server to perform system administration tasks.
 
 See the [usage docs](docs/usage.md) for more information about how to close/kill Byobu sessions.
 
-```
-cluster-view /root/work/clusters/automate
-```
-
-### dev-lxc Alias and Subcommands
-
-The dev-lxc command has a `dl` alias for ease of use.
-
-Also, you only have to type enough of a `dev-lxc` subcommand to make it unique.
-
-For example, the following commands are equivalent:
-
-```
-dev-lxc status
-dl st
-```
-
-```
-dev-lxc snapshot
-dl sn
-```
-
-### Specifying a Subset of Servers
-
-Many dev-lxc subcommands can act on a subset of the cluster's servers by specifying a regular expression that matches the desired server names.
-
-For example, the following command will show the status of the infrastructure node.
-
-```
-dl status node
-```
-
 ### Build the Cluster
-
-dev-lxc knows to build the servers in an appropriate order.
-
-It downloads the product packages to a cache location and installs the packages in each server.
-
-It configures each product and creates necessary things such as Chef organizations and users as needed.
 
 ```
 dl up
 ```
 
-Note: You also have the option of running the `prepare-product-cache` subcommand which downloads required product packages to the cache.  
-This can be helpful when you don't want to start building the cluster yet but you want the package cache ready when you build the cluster later.
-
 ### Use the Servers
 
 At this point all of the cluster's servers should be running.
 
-If you enabled dynamic forwarding (SOCKS v5) in your workstation's SSH config file and configured a web browser to use the SOCKS v5 proxy as described in the dev-lxc-platform README.md then you should be able to browse from your workstation to any dev-lxc server that has a web interface using its FQDN.
+Since the cluster has a Chef Server and an infrastructure node dev-lxc made sure it configured the node's chef-client for the Chef Server so it is easy to converge the node.
+
+You can use the `attach` subcommand to login to the root user of a server. For example, the following commands should attach to node-1.lxc, start a chef-client run and exit the node.
+
+```
+dl attach node
+chef-client
+exit
+```
 
 Since the cluster has a Chef Server you can use the `chef-repo` subcommand to create a `.chef` directory in the host instance that contains a knife.rb and all of the keys for the users and org validator clients that are defined in dev-lxc.yml. This makes it very easy to use tools such as knife or berkshelf.
 
 ```
-dl chef
+dl chef-repo
+# set `username` to `mary-admin` and `orgname` to `demo` in `.chef/knife.rb`
 knife client list
 ```
 
-Since the cluster has a Chef Automate server you can use the `print-automate-credentials` subcommand to see what the login credentials.
+Since the cluster has a Chef Automate server you can use the `print-automate-credentials` subcommand to see the login credentials.
 
 ```
 dl print
 ```
 
-You can use the `attach` subcommand to login to the root user of a server.
-
-For example, the following command should attach to the Chef Server.
-
-```
-dl attach chef
-```
-
-Since the cluster has a Chef Server and an infrastructure node dev-lxc made sure it configured the node's chef-client for the Chef Server so it is easy to converge the node.
-
-### Use mitmproxy to view HTTP traffic
-
-Run `mitmproxy` in a terminal on the host instance.
-
-Uncomment the `https_proxy` line in the chef-repo's `.chef/knife.rb` or in a node's `/etc/chef/client.rb` so traffic from knife commands or chef-client runs will be proxied through mitmproxy making the HTTP requests visible in the mitmproxy console.
-
-If you configured your workstation's SSH config file with LocalForward as described in dev-lxc-platform's README then you should be able to configure the web browser to use "127.0.0.1 8080" for HTTP and HTTPS proxies and watch the HTTP requests appear in the mitmproxy console.
+If you enabled dynamic forwarding (SOCKS v5) in your workstation's SSH config file and configured a web browser to use the SOCKS v5 proxy as described in the dev-lxc-platform README.md then you should be able to browse from your workstation to any server that has a web interface using its FQDN. For example, browse to https://automate.lxc and login with the credentials that you just displayed in the previous step.
 
 ### Manage the Cluster
 
-The right pane of the "cluster" window should show `dev-lxc status` output. This shows the status of each server including any existing snapshots.
+The right pane of the "cluster" window should show `dl status` output. This shows the status of each server including any existing snapshots.
 
 It is recommended that you stop the servers before restoring or creating snapshots.
 
@@ -250,7 +206,7 @@ dl halt
 You can restore the most recent snapshot of all the servers.
 
 ```
-dl sn -r
+dl snapshot -r
 ```
 
 You could also restore a specific snapshot by name if you desire.
@@ -258,26 +214,30 @@ You could also restore a specific snapshot by name if you desire.
 For example, you could restore the Chef Automate server to the state right after its package was installed but before it was configured.
 
 ```
-dl sn automate -r snap0
+dl snapshot automate -r snap0
 ```
 
 You can create snapshots with or without a comment.
 
 ```
-dl sn -c 'Demo snapshot'
+dl snapshot -c 'Demo snapshot'
 ```
 
 You can destroy snapshots.
 
 ```
-dl sn -d snap2
+dl snapshot -d snap2
 ```
 
-And finally you can destroy the servers and there snapshots.
+Generally speaking, a cluster can be reused for a long time especially since snapshots easily allow you to restore the cluster to its initial build state. However, if you really want to destroy the servers and their snapshots you can use the `destroy` subcommand.
 
 ```
-dl d
+dl destroy
 ```
+
+## More Documentation
+
+For more in-depth documentation please see the pages in the [docs folder](docs).
 
 ## Contributing
 

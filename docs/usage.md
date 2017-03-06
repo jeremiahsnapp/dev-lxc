@@ -1,19 +1,72 @@
 ## Usage
 
-### Show Calculated Configuration
+### dl Command and Subcommands
 
-Mostly for debugging purposes you have the ability to print the calculated cluster configuration.
+`dl` is the dev-lxc command line tool.
+
+`dev-lxc` subcommands and some options can be auto-completed by pressing the `Tab` key.
+
+You only have to type enough of a `dev-lxc` subcommand to make it unique.
+
+For example, the following commands are equivalent:
 
 ```
-dev-lxc show-config
+dl help
+dl he
 ```
+
+### Display dev-lxc help
+
+```
+dl help
+
+dl help <subcommand>
+```
+
+### Configure a cluster
+
+See the [configuration docs](docs/configuration.md) to learn how to use the `dl init` command to create and configure a `dev-lxc.yml` file.
+
+### cluster-view, tks, tls commands
+
+The dev-lxc-platform comes with some commands that create and manage helpful
+tmux/byobu sessions to more easily see the state of a cluster.
+
+Running the `cluster-view` command in the same directory as a `dev-lxc.yml` file
+creates a tmux/byobu session with the same name as the cluster's directory.
+
+`cluster-view` can also be run with the parent directory of a `dev-lxc.yml` file
+as the first argument and `cluster-view` will change to that directory before
+creating the tmux/byobu session.
+
+The session's first window is named "cluster".
+
+The left side is for running dev-lxc commands.
+
+The right side updates every 0.5 seconds with the cluster's status provided by `dl status`.
+
+The session's second window is named "shell". It opens in the same directory as the
+cluster's `dev-lxc.yml` file.
+
+The `tls` and `tks` commands are really aliases.
+
+`tls` is an alias for `tmux list-sessions` and is used to see what tmux/byobu sessions
+are running.
+
+`tks` is an alias for `tmux kill-session -t` and is used to kill tmux/byobu sessions.
+When specifying the session to be killed you only need as many characters of the session
+name that are required to make the name unique among the list of running sessions.
+
+I recommend switching to a different running tmux/byobu session before killing the current
+tmux/byobu session. Otherwise you will need to reattach to the remaining tmux/byobu session.
+Use the keyboard shortcuts Alt-Up/Down to easily switch between tmux/byobu sessions.
 
 ### Cluster status
 
 Run the following command to see the status of the cluster.
 
 ```
-dev-lxc status
+dl status
 ```
 
 This is an example of the output.
@@ -35,49 +88,15 @@ Many dev-lxc subcommands can act on a subset of the cluster's servers by specify
 For example, the following command will show the status of the Chef Server.
 
 ```
-dev-lxc status chef
+dl status chef
 ```
-
-### cluster-view, tks, tls commands
-
-The dev-lxc-platform comes with some commands that create and manage helpful
-tmux/byobu sessions to more easily see the state of a cluster.
-
-Running the `cluster-view` command in the same directory as a `dev-lxc.yml` file
-creates a tmux/byobu session with the same name as the cluster's directory.
-
-`cluster-view` can also be run with the parent directory of a `dev-lxc.yml` file
-as the first argument and `cluster-view` will change to that directory before
-creating the tmux/byobu session.
-
-The session's first window is named "cluster".
-
-The left side is for running dev-lxc commands.
-
-The right side updates every 0.5 seconds with the cluster's status provided by `dev-lxc status`.
-
-The session's second window is named "shell". It opens in the same directory as the
-cluster's `dev-lxc.yml` file.
-
-The `tls` and `tks` commands are really aliases.
-
-`tls` is an alias for `tmux list-sessions` and is used to see what tmux/byobu sessions
-are running.
-
-`tks` is an alias for `tmux kill-session -t` and is used to kill tmux/byobu sessions.
-When specifying the session to be killed you only need as many characters of the session
-name that are required to make the name unique among the list of running sessions.
-
-I recommend switching to a different running tmux/byobu session before killing the current
-tmux/byobu session. Otherwise you will need to reattach to the remaining tmux/byobu session.
-Use the keyboard shortcuts Alt-Up/Down to easily switch between tmux/byobu sessions.
 
 ### Start cluster
 
 Starting the cluster the first time takes awhile since it has a lot to download and build.
 
 ```
-dev-lxc up
+dl up
 ```
 
 A test org, users, knife.rb and keys are automatically created in
@@ -91,7 +110,7 @@ Note: You also have the option of running the `prepare-product-cache` subcommand
 This can be helpful when you don't want to start building the cluster yet but you want the package cache ready when you build the cluster later.
 
 ```
-dev-lxc prepare-product-cache
+dl prepare-product-cache
 ```
 
 ### Print Chef Automate Credentials
@@ -99,7 +118,7 @@ dev-lxc prepare-product-cache
 If the cluster has a Chef Automate server you can use the `print-automate-credentials` subcommand to see what the login credentials.
 
 ```
-dev-lxc print-automate-credentials
+dl print-automate-credentials
 ```
 
 ### Create chef-repo
@@ -111,7 +130,7 @@ Use the `-p` option to also get pivotal.pem and pivotal.rb files.
 Use the `-f` option to overwrite existing knife.rb and pivotal.rb files.
 
 ```
-dev-lxc chef-repo
+dl chef-repo
 ```
 
 Now you can easily use knife to access the cluster.
@@ -123,14 +142,14 @@ knife client list
 ### Stop and start the cluster
 
 ```
-dev-lxc halt
-dev-lxc up
+dl halt
+dl up
 ```
 
 ### Run arbitrary commands in each server
 
 ```
-dev-lxc run-command chef 'uptime'
+dl run-command chef 'uptime'
 ```
 
 ### Attach the terminal to a server
@@ -138,7 +157,7 @@ dev-lxc run-command chef 'uptime'
 Attach the terminal to a server in the cluster that matches the REGEX pattern given.
 
 ```
-dev-lxc attach chef
+dl attach chef
 ```
 
 ### Create a snapshot of the servers
@@ -146,14 +165,14 @@ dev-lxc attach chef
 Save the changes in the servers to snapshots with a comment.
 
 ```
-dev-lxc halt
-dev-lxc snapshot -c 'this is a snapshot comment'
+dl halt
+dl snapshot -c 'this is a snapshot comment'
 ```
 
 ### List snapshots
 
 ```
-dev-lxc snapshot -l
+dl snapshot -l
 ```
 
 ### Restore snapshots
@@ -163,8 +182,8 @@ Restore snapshots by name.
 Leave out the snapshot name or specify `LAST` to restore the most recent snapshot.
 
 ```
-dev-lxc snapshot -r
-dev-lxc up
+dl snapshot -r
+dl up
 ```
 
 ### Destroy snapshots
@@ -174,7 +193,7 @@ Destroy snapshots by name or destroy all snapshots by specifying `ALL`.
 Leave out the snapshot name or specify `LAST` to destroy the most recent snapshots.
 
 ```
-dev-lxc snapshot -d
+dl snapshot -d
 ```
 
 ### Destroy cluster
@@ -182,5 +201,13 @@ dev-lxc snapshot -d
 Use the following command to destroy the cluster's servers.
 
 ```
-dev-lxc destroy
+dl destroy
+```
+
+### Show Calculated Configuration
+
+Mostly for debugging purposes you have the ability to print the calculated cluster configuration.
+
+```
+dl show-config
 ```

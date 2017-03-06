@@ -5,10 +5,16 @@ dev-lxc uses a YAML configuration file named `dev-lxc.yml` to define a cluster.
 The `init` command generates sample config files for various server types.
 
 Let's generate a config for a cluster with a standalone Chef Server, Supermarket server,
-Compliance server, Chef Automate server, job dispatch runner and an infrastructure node.
+Compliance server, Chef Automate server and a Job Dispatch Runner.
 
 ```
-dev-lxc init --chef --compliance --supermarket --automate --runners --nodes > dev-lxc.yml
+dl init --chef --compliance --supermarket --automate --runners > dev-lxc.yml
+```
+
+We can easily append additional configurations to this file. For example, the following command appends an infrastructure node.
+
+```
+dl init --nodes -a >> /root/work/clusters/automate/dev-lxc.yml
 ```
 
 The contents of `dev-lxc.yml` should look like this.
@@ -30,11 +36,11 @@ base_container: b-ubuntu-1404
 
 # list any host directories you want mounted into the servers
 #mounts:
-#  - /root/work root/work
+#  - /root/clusters root/clusters
 
 # list any SSH public keys you want added to /home/dev-lxc/.ssh/authorized_keys
 #ssh-keys:
-#  - /root/work/clusters/id_rsa.pub
+#  - /root/clusters/id_rsa.pub
 
 # DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
 
@@ -55,7 +61,7 @@ chef-server:
         chef-server:
         manage:
         push-jobs-server:
-        reporting:
+#        reporting:
 
 compliance:
   admin_user: admin         # the password will be the same as the username
