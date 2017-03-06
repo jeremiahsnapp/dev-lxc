@@ -92,9 +92,9 @@ chef gem update dev-lxc
 
 `dl` is the dev-lxc command line tool.
 
-`dev-lxc` subcommands and some options can be auto-completed by pressing the `Tab` key.
+`dl` subcommands and some options can be auto-completed by pressing the `Tab` key.
 
-You only have to type enough of a `dev-lxc` subcommand to make it unique.
+You only have to type enough of a `dl` subcommand to make it unique.
 
 For example, the following commands are equivalent:
 
