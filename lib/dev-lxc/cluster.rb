@@ -695,7 +695,7 @@ module DevLXC
       when 'compliance'
         configure_compliance(server) if installed_products.include?('compliance')
       when 'automate'
-        configure_automate(server) if installed_products.include?('delivery')
+        configure_automate(server) if installed_products.include?('automate') || installed_products.include?('delivery')
       when 'nodes'
         # Allow servers time to generate SSH Server Host Keys
         sleep 5

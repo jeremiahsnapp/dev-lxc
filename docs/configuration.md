@@ -83,7 +83,7 @@ automate:
     automate.lxc:
       ipaddress: 10.0.3.200
       products:
-        delivery:
+        automate:
       license_path: /path/for/automate.lxc
       chef_org: delivery
       enterprise_name: demo-ent
