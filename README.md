@@ -172,7 +172,7 @@ Since the cluster has a Chef Automate server you can use the `print-automate-cre
 dl print
 ```
 
-If you enabled dynamic forwarding (SOCKS v5) in your workstation's SSH config file and configured a web browser to use the SOCKS v5 proxy as described in the dev-lxc-platform README.md then you should be able to browse from your workstation to any server that has a web interface using its FQDN. For example, browse to https://automate.lxc and login with the credentials that you just displayed in the previous step.
+If you enabled local port forwarding for port 8888 in your workstation's SSH config file and configured your web browser to use `127.0.0.1:8888` for HTTP and HTTPS proxies as described in the [dev-lxc-platform README.md](https://github.com/jeremiahsnapp/dev-lxc-platform) then you should be able to browse from your workstation to any server that has a web interface using its FQDN.
 
 For example, browse to https://automate.lxc and login with the credentials provided by `dl print-automate-credentials`.
 

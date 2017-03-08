@@ -803,7 +803,8 @@ module DevLXC
         FileUtils.cp(validation_key, "#{server.container.config_item('lxc.rootfs')}/etc/chef/") if File.exists?(validation_key)
       end
 
-      client_rb = %Q(#http_proxy 'http://10.0.3.1:8080'
+      client_rb = %Q(# uncomment the following proxy lines to send traffic through mitmproxy
+#http_proxy 'http://10.0.3.1:8080'
 #https_proxy 'http://10.0.3.1:8080'
 
 chef_server_url '#{chef_server_url}'
@@ -1030,7 +1031,10 @@ ssl_verify_mode :verify_none
     end
 
     def create_knife_config(fqdn, dot_chef_path)
-      knife_rb = %Q(#http_proxy 'http://127.0.0.1:8080'
+      knife_rb = %Q(# uncomment the following proxy lines to send traffic through a proxy
+# mitmproxy uses port 8080
+# tinyproxy uses port 8888
+#http_proxy 'http://127.0.0.1:8080'
 #https_proxy 'http://127.0.0.1:8080'
 
 username = "CHANGEME"
