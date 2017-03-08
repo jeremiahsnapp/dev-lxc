@@ -13,8 +13,8 @@ The number of servers, their names and their IP addresses can be changed to fit 
 particular requirements.
 
 ```
-mkdir -p /root/clusters/delivery
-dl init --adhoc > /root/clusters/delivery/dev-lxc.yml
-cluster-view /root/clusters/delivery
+mkdir -p /root/clusters/adhoc
+dl init --adhoc > /root/clusters/adhoc/dev-lxc.yml
+cluster-view /root/clusters/adhoc
 dl up
 ```
