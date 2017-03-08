@@ -2,12 +2,12 @@
 
 ## 3.1.0 (2017-03-08)
 
-Add example dev-lxc.yml files
-Change product name from 'delivery' to 'automate'
-Minor cleanup in adhoc_clusters docs
-Move byobu keybindings docs to its own file
-Minor improvements to README
-Minor updates about how to use tinyproxy or mitmproxy
+* Add example dev-lxc.yml files
+* Change product name from 'delivery' to 'automate'
+* Minor cleanup in adhoc_clusters docs
+* Move byobu keybindings docs to its own file
+* Minor improvements to README
+* Minor updates about how to use tinyproxy or mitmproxy
 
 ## 3.0.0 (2017-03-06)
 
