@@ -40,7 +40,7 @@ The easiest way to build a dev-lxc-platform system is to download the dev-lxc-pl
 and use Test Kitchen to build an AWS EC2 instance or a VirtualBox Vagrant instance.
 
 Follow the instructions in the [dev-lxc-platform README](https://github.com/jeremiahsnapp/dev-lxc-platform) to build
-a dev-lxc-platform instance.
+a dev-lxc-platform instance. It takes about 7 minutes to build the dev-lxc-platform instance.
 
 ## Login to the dev-lxc-platform instance
 
@@ -119,7 +119,7 @@ Copy your delivery.license file to the `/root/clusters` directory.
 
 ### cluster-view
 
-Run the `cluster-view` command to create a Byobu (tmux) session specifically for this cluster.
+Run the `cluster-view` command to create a Byobu session specifically for this cluster.
 
 ```
 cluster-view /root/clusters/automate
@@ -148,7 +148,9 @@ At this point all of the cluster's servers should be running.
 
 Since the cluster has a Chef Server and an infrastructure node dev-lxc made sure it configured the node's chef-client for the Chef Server so it is easy to converge the node.
 
-You can use the `attach` subcommand to login to the root user of a server. For example, the following commands should attach to node-1.lxc, start a chef-client run and exit the node.
+You can use the `attach` subcommand to login to a server as the root user.
+
+For example, the following commands should attach to node-1.lxc, start a chef-client run and exit the node.
 
 ```
 dl attach node
@@ -172,28 +174,28 @@ dl print
 
 If you enabled dynamic forwarding (SOCKS v5) in your workstation's SSH config file and configured a web browser to use the SOCKS v5 proxy as described in the dev-lxc-platform README.md then you should be able to browse from your workstation to any server that has a web interface using its FQDN. For example, browse to https://automate.lxc and login with the credentials that you just displayed in the previous step.
 
+For example, browse to https://automate.lxc and login with the credentials provided by `dl print-automate-credentials`.
+
 ### Manage the Cluster
 
-The right pane of the "cluster" window should show `dl status` output. This shows the status of each server including any existing snapshots.
-
-It is recommended that you stop the servers before restoring or creating snapshots.
+Let's stop the servers before restoring and creating snapshots.
 
 ```
 dl halt
+```
+
+You can restore a specific snapshot by name if you desire.
+
+For example, the following command restores the Chef Automate server to the state right after its package was installed but before it was configured.
+
+```
+dl snapshot automate -r snap0
 ```
 
 You can restore the most recent snapshot of all the servers.
 
 ```
 dl snapshot -r
-```
-
-You could also restore a specific snapshot by name if you desire.
-
-For example, you could restore the Chef Automate server to the state right after its package was installed but before it was configured.
-
-```
-dl snapshot automate -r snap0
 ```
 
 You can create snapshots with or without a comment.
