@@ -2,13 +2,23 @@
 
 dev-lxc uses a YAML configuration file named `dev-lxc.yml` to define a cluster.
 
-The `init` command generates sample config files for various server types.
+The `init` command generates sample config files for various server types. You can run `dl help init` to see the many types of server configurations that can be generated.
 
-Let's generate a config for a cluster with a standalone Chef Server, Supermarket server,
-Compliance server, Chef Automate server and a Job Dispatch Runner.
+The `--base-container` option can be used to set the type of base container you want used in the generated configuration.
+
+The `--product-versions` option can be used to set the package channel and version to use for multiple products. If a version is not specified then it will default to `latest`. If `none` is used then that product will be removed from the generated configuration.
+
+For example, the following command will generate a configuration for a standalone Chef Server that uses the `b-centos-7` base container and install chef-server 12.13.0 from the `stable` channel, the latest version of manage from the `current` channel and remove the reporting product.
 
 ```
-dl init --chef --compliance --supermarket --automate --runners > dev-lxc.yml
+dl init --chef --base-container b-centos-7 --product-versions chef-server:stable:12.13.0 manage:current reporting:none
+```
+
+Let's generate a config for a cluster with a standalone Chef Server, Supermarket server,
+Compliance server, Chef Automate server and a Job Dispatch Runner and remove the "reporting" product from the generated configuration.
+
+```
+dl init --chef --compliance --supermarket --automate --runners --product-versions reporting:none > dev-lxc.yml
 ```
 
 We can easily append additional configurations to this file. For example, the following command appends an infrastructure node.
@@ -59,9 +69,14 @@ chef-server:
       ipaddress: 10.0.3.203
       products:
         chef-server:
+          channel: stable
+          version: latest
         manage:
+          channel: stable
+          version: latest
         push-jobs-server:
-#        reporting:
+          channel: stable
+          version: latest
 
 compliance:
   admin_user: admin         # the password will be the same as the username
@@ -70,6 +85,8 @@ compliance:
       ipaddress: 10.0.3.205
       products:
         compliance:
+          channel: stable
+          version: latest
 
 supermarket:
   servers:
@@ -77,6 +94,8 @@ supermarket:
       ipaddress: 10.0.3.206
       products:
         supermarket:
+          channel: stable
+          version: latest
 
 automate:
   servers:
@@ -84,7 +103,9 @@ automate:
       ipaddress: 10.0.3.200
       products:
         automate:
-      license_path: /path/for/automate.lxc
+          channel: stable
+          version: latest
+      license_path: ../delivery.license
       chef_org: delivery
       enterprise_name: demo-ent
 
@@ -93,6 +114,8 @@ runners:
     runner-1.lxc:
       products:
         chefdk:     # downloaded only
+          channel: stable
+          version: latest
 
 nodes:
   chef_server_url: https://chef.lxc/organizations/demo
@@ -103,6 +126,9 @@ nodes:
     node-1.lxc:
       products:
         chef:
+          channel: stable
+          version: latest
+
 ```
 
 The dev-lxc.yml config file is very customizable. You can add or remove mounts, products or servers,

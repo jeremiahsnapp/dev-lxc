@@ -2,17 +2,19 @@ The files in this directory are working examples of cluster dev-lxc.yml files. Y
 
 ### automate
 
-The [automate_dev-lxc.yml](example-clusters/automate_dev-lxc.yml) file was created using the following command.
-
-```
-dl init --chef --compliance --supermarket --automate --runners --nodes
-```
-
 Cluster build time: 19 minutes
+
+The [automate_dev-lxc.yml](automate_dev-lxc.yml) file was created using the following command.
+
+```
+dl init --chef --compliance --supermarket --automate --runners --nodes --product-versions reporting:none
+```
 
 ### chef-backend
 
-The [chef-backend_dev-lxc.yml](example-clusters/chef-backend_dev-lxc.yml) file was created using the following command.
+Cluster build time: 12 minutes
+
+The [chef-backend_dev-lxc.yml](chef-backend_dev-lxc.yml) file was created using the following command.
 
 The nodes' `chef_server_url` hostname was changed to `chef-ha.lxc` and the node's hostname was changed to `node-1-ha.lxc`.
 
@@ -20,18 +22,14 @@ The nodes' `chef_server_url` hostname was changed to `chef-ha.lxc` and the node'
 dl init --chef-backend --nodes
 ```
 
-Cluster build time: 12 minutes
-
 ### tier
 
-The [tier_dev-lxc.yml](example-clusters/tier_dev-lxc.yml) file was created using the following command.
+Cluster build time: 14 minutes
 
-The `reporting` product was uncommented for `chef-be.lxc` and `chef-fe1.lxc`.
+The [tier_dev-lxc.yml](tier_dev-lxc.yml) file was created using the following command.
 
 The nodes' `chef_server_url` hostname was changed to `chef-tier.lxc` and the node's hostname was changed to `node-1-tier.lxc`.
 
 ```
 dl init --chef-tier --analytics --nodes
 ```
-
-Cluster build time: 14 minutes

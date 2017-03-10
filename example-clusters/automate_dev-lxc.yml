@@ -37,9 +37,14 @@ chef-server:
       ipaddress: 10.0.3.203
       products:
         chef-server:
+          channel: stable
+          version: latest
         manage:
+          channel: stable
+          version: latest
         push-jobs-server:
-#        reporting:
+          channel: stable
+          version: latest
 
 compliance:
   admin_user: admin         # the password will be the same as the username
@@ -48,6 +53,8 @@ compliance:
       ipaddress: 10.0.3.205
       products:
         compliance:
+          channel: stable
+          version: latest
 
 supermarket:
   servers:
@@ -55,6 +62,8 @@ supermarket:
       ipaddress: 10.0.3.206
       products:
         supermarket:
+          channel: stable
+          version: latest
 
 automate:
   servers:
@@ -62,6 +71,8 @@ automate:
       ipaddress: 10.0.3.200
       products:
         automate:
+          channel: stable
+          version: latest
       license_path: ../delivery.license
       chef_org: delivery
       enterprise_name: demo-ent
@@ -71,6 +82,8 @@ runners:
     runner-1.lxc:
       products:
         chefdk:     # downloaded only
+          channel: stable
+          version: latest
 
 nodes:
   chef_server_url: https://chef.lxc/organizations/demo
@@ -81,3 +94,5 @@ nodes:
     node-1.lxc:
       products:
         chef:
+          channel: stable
+          version: latest

@@ -109,10 +109,10 @@ mkdir -p /root/clusters/automate
 ```
 
 The following command creates a dev-lxc.yml file that defines a standalone Chef Server, Supermarket server, Compliance server,
-Chef Automate server a Job Dispatch Runner and an infrastructure node.
+Chef Automate server a Job Dispatch Runner and an infrastructure node and removes the "reporting" product from the generated configuration.
 
 ```
-dl init --chef --compliance --supermarket --automate --runners --nodes > /root/clusters/automate/dev-lxc.yml
+dl init --chef --compliance --supermarket --automate --runners --nodes --product-versions reporting:none > /root/clusters/automate/dev-lxc.yml
 ```
 
 Copy your delivery.license file to the `/root/clusters` directory.

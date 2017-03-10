@@ -41,23 +41,30 @@ chef-server:
       bootstrap: true
       products:
         chef-server:
+          channel: stable
+          version: latest
         push-jobs-server:
-#        reporting:
+          channel: stable
+          version: latest
+        reporting:
+          channel: stable
+          version: latest
     chef-fe1.lxc:
       ipaddress: 10.0.3.202
       role: frontend
       products:
         chef-server:
+          channel: stable
+          version: latest
         manage:
+          channel: stable
+          version: latest
         push-jobs-server:
-#        reporting:
-
-analytics:
-  servers:
-    analytics.lxc:
-      ipaddress: 10.0.3.204
-      products:
-        analytics:
+          channel: stable
+          version: latest
+        reporting:
+          channel: stable
+          version: latest
 
 nodes:
   chef_server_url: https://chef-tier.lxc/organizations/demo
@@ -68,3 +75,14 @@ nodes:
     node-1-tier.lxc:
       products:
         chef:
+          channel: stable
+          version: latest
+
+analytics:
+  servers:
+    analytics.lxc:
+      ipaddress: 10.0.3.204
+      products:
+        analytics:
+          channel: stable
+          version: latest

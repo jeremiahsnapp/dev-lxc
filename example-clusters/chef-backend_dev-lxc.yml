@@ -40,23 +40,33 @@ chef-backend:
       leader: true
       products:
         chef-backend:
+          channel: stable
+          version: latest
     chef-backend2.lxc:
       ipaddress: 10.0.3.209
       role: backend
       products:
         chef-backend:
+          channel: stable
+          version: latest
     chef-backend3.lxc:
       ipaddress: 10.0.3.210
       role: backend
       products:
         chef-backend:
+          channel: stable
+          version: latest
     chef-frontend1.lxc:
       ipaddress: 10.0.3.211
       role: frontend
       bootstrap: true
       products:
         chef-server:
+          channel: stable
+          version: latest
         manage:
+          channel: stable
+          version: latest
 
 nodes:
   chef_server_url: https://chef-ha.lxc/organizations/demo
@@ -67,3 +77,5 @@ nodes:
     node-1-ha.lxc:
       products:
         chef:
+          channel: stable
+          version: latest
