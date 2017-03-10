@@ -1,3 +1,4 @@
+require 'erb'
 require "yaml"
 require 'dev-lxc'
 require 'thor'
@@ -57,15 +58,24 @@ module DevLXC::CLI
     option :build_nodes, :type => :boolean, :desc => "Build Nodes"
     option :runners, :type => :boolean, :desc => "Runners"
     option :adhoc, :type => :boolean, :desc => "Adhoc Servers"
+    option :base_container, :default => 'b-ubuntu-1404', :desc => "Specify the base container name"
+    option :product_versions, :type => :hash, :default => {}, :desc => "Specify channel and version (default 'latest') for products [product:channel,version ...]; [product:none] removes the product from the config"
     option :append, :aliases => "-a", :type => :boolean, :desc => "Do not generate the global config header"
     option :filename, :aliases => "-f", :desc => "Write generated content to FILE rather than standard output."
     def init
-      header = %Q(# enable_build_snapshots automatically makes container snapshots at key times during the build process
+      product_versions = Hash.new { |hash, key| hash[key] = { channel: 'stable', version: 'latest' } }
+      options[:product_versions].keys.each do |product|
+        product_versions[product][:channel], product_versions[product][:version] = options[:product_versions][product].to_s.split(',', 2)
+        product_versions[product][:version] ||= 'latest'
+      end
+
+      dev_lxc_template = %Q(<% unless options[:append] -%>
+# enable_build_snapshots automatically makes container snapshots at key times during the build process
 # default value is `true`
 #enable_build_snapshots: true
 
 # base_container must be the name of an existing container
-base_container: b-ubuntu-1404
+base_container: <%= options[:base_container] %>
 
 # memory_per_server sets the maximum amount of user memory (including file cache) for each server.
 # dev-lxc will set the `memory.limit_in_bytes` cgroup for each server to apply this limit.
@@ -83,8 +93,104 @@ base_container: b-ubuntu-1404
 #  - /root/clusters/id_rsa.pub
 
 # DHCP reserved (static) IPs must be selected from the IP range 10.0.3.150 - 254
-)
-      chef_tier_config = %Q(
+<% end -%>
+<% if options[:chef] -%>
+
+chef-server:
+  users:          # a user's password will be the same as its username
+    - mary-admin
+    - joe-user
+  orgs:
+    demo:
+      admins:
+        - mary-admin
+      non-admins:
+        - joe-user
+  servers:
+    chef.lxc:
+      ipaddress: 10.0.3.203
+      products:
+        <%- unless product_versions['chef-server'][:channel] == 'none' -%>
+        chef-server:
+          channel: <%= product_versions['chef-server'][:channel] %>
+          version: <%= product_versions['chef-server'][:version] %>
+        <%- end -%>
+        <%- unless product_versions['manage'][:channel] == 'none' -%>
+        manage:
+          channel: <%= product_versions['manage'][:channel] %>
+          version: <%= product_versions['manage'][:version] %>
+        <%- end -%>
+        <%- unless product_versions['push-jobs-server'][:channel] == 'none' -%>
+        push-jobs-server:
+          channel: <%= product_versions['push-jobs-server'][:channel] %>
+          version: <%= product_versions['push-jobs-server'][:version] %>
+        <%- end -%>
+        <%- unless product_versions['reporting'][:channel] == 'none' -%>
+        reporting:
+          channel: <%= product_versions['reporting'][:channel] %>
+          version: <%= product_versions['reporting'][:version] %>
+        <%- end -%>
+<% end -%>
+<% if options[:chef_backend] -%>
+
+chef-backend:
+  api_fqdn: chef-ha.lxc
+  users:          # a user's password will be the same as its username
+    - mary-admin
+    - joe-user
+  orgs:
+    demo:
+      admins:
+        - mary-admin
+      non-admins:
+        - joe-user
+  servers:
+    chef-backend1.lxc:
+      ipaddress: 10.0.3.208
+      role: backend
+      leader: true
+      products:
+        <%- unless product_versions['chef-backend'][:channel] == 'none' -%>
+        chef-backend:
+          channel: <%= product_versions['chef-backend'][:channel] %>
+          version: <%= product_versions['chef-backend'][:version] %>
+        <%- end -%>
+    chef-backend2.lxc:
+      ipaddress: 10.0.3.209
+      role: backend
+      products:
+        <%- unless product_versions['chef-backend'][:channel] == 'none' -%>
+        chef-backend:
+          channel: <%= product_versions['chef-backend'][:channel] %>
+          version: <%= product_versions['chef-backend'][:version] %>
+        <%- end -%>
+    chef-backend3.lxc:
+      ipaddress: 10.0.3.210
+      role: backend
+      products:
+        <%- unless product_versions['chef-backend'][:channel] == 'none' -%>
+        chef-backend:
+          channel: <%= product_versions['chef-backend'][:channel] %>
+          version: <%= product_versions['chef-backend'][:version] %>
+        <%- end -%>
+    chef-frontend1.lxc:
+      ipaddress: 10.0.3.211
+      role: frontend
+      bootstrap: true
+      products:
+        <%- unless product_versions['chef-server'][:channel] == 'none' -%>
+        chef-server:
+          channel: <%= product_versions['chef-server'][:channel] %>
+          version: <%= product_versions['chef-server'][:version] %>
+        <%- end -%>
+        <%- unless product_versions['manage'][:channel] == 'none' -%>
+        manage:
+          channel: <%= product_versions['manage'][:channel] %>
+          version: <%= product_versions['manage'][:version] %>
+        <%- end -%>
+<% end -%>
+<% if options[:chef_tier] -%>
+
 chef-server:
   topology: tier
   api_fqdn: chef-tier.lxc
@@ -103,132 +209,115 @@ chef-server:
       role: backend
       bootstrap: true
       products:
+        <%- unless product_versions['chef-server'][:channel] == 'none' -%>
         chef-server:
+          channel: <%= product_versions['chef-server'][:channel] %>
+          version: <%= product_versions['chef-server'][:version] %>
+        <%- end -%>
+        <%- unless product_versions['push-jobs-server'][:channel] == 'none' -%>
         push-jobs-server:
-#        reporting:
+          channel: <%= product_versions['push-jobs-server'][:channel] %>
+          version: <%= product_versions['push-jobs-server'][:version] %>
+        <%- end -%>
+        <%- unless product_versions['reporting'][:channel] == 'none' -%>
+        reporting:
+          channel: <%= product_versions['reporting'][:channel] %>
+          version: <%= product_versions['reporting'][:version] %>
+        <%- end -%>
     chef-fe1.lxc:
       ipaddress: 10.0.3.202
       role: frontend
       products:
+        <%- unless product_versions['chef-server'][:channel] == 'none' -%>
         chef-server:
+          channel: <%= product_versions['chef-server'][:channel] %>
+          version: <%= product_versions['chef-server'][:version] %>
+        <%- end -%>
+        <%- unless product_versions['manage'][:channel] == 'none' -%>
         manage:
+          channel: <%= product_versions['manage'][:channel] %>
+          version: <%= product_versions['manage'][:version] %>
+        <%- end -%>
+        <%- unless product_versions['push-jobs-server'][:channel] == 'none' -%>
         push-jobs-server:
-#        reporting:
-)
-      chef_config = %Q(
-chef-server:
-  users:          # a user's password will be the same as its username
-    - mary-admin
-    - joe-user
-  orgs:
-    demo:
-      admins:
-        - mary-admin
-      non-admins:
-        - joe-user
-  servers:
-    chef.lxc:
-      ipaddress: 10.0.3.203
-      products:
-        chef-server:
-        manage:
-        push-jobs-server:
-#        reporting:
-)
-      automate_config = %Q(
-automate:
-  servers:
-    automate.lxc:
-      ipaddress: 10.0.3.200
-      products:
-        automate:
-      license_path: ../delivery.license
-      chef_org: delivery
-      enterprise_name: demo-ent
-)
-      build_nodes_config = %Q(
-build-nodes:
-  servers:
-    build-node-1.lxc:
-      products:
-        chefdk:     # downloaded only
-)
-      runners_config = %Q(
-runners:
-  servers:
-    runner-1.lxc:
-      products:
-        chefdk:     # downloaded only
-)
-      analytics_config = %Q(
-analytics:
-  servers:
-    analytics.lxc:
-      ipaddress: 10.0.3.204
-      products:
-        analytics:
-)
-      compliance_config = %Q(
+          channel: <%= product_versions['push-jobs-server'][:channel] %>
+          version: <%= product_versions['push-jobs-server'][:version] %>
+        <%- end -%>
+        <%- unless product_versions['reporting'][:channel] == 'none' -%>
+        reporting:
+          channel: <%= product_versions['reporting'][:channel] %>
+          version: <%= product_versions['reporting'][:version] %>
+        <%- end -%>
+<% end -%>
+<% if options[:compliance] -%>
+
 compliance:
   admin_user: admin         # the password will be the same as the username
   servers:
     compliance.lxc:
       ipaddress: 10.0.3.205
       products:
+        <%- unless product_versions['compliance'][:channel] == 'none' -%>
         compliance:
-)
-      supermarket_config = %Q(
+          channel: <%= product_versions['compliance'][:channel] %>
+          version: <%= product_versions['compliance'][:version] %>
+        <%- end -%>
+<% end -%>
+<% if options[:supermarket] -%>
+
 supermarket:
   servers:
     supermarket.lxc:
       ipaddress: 10.0.3.206
       products:
+        <%- unless product_versions['supermarket'][:channel] == 'none' -%>
         supermarket:
-)
-      adhoc_config = %Q(
-adhoc:
+          channel: <%= product_versions['supermarket'][:channel] %>
+          version: <%= product_versions['supermarket'][:version] %>
+        <%- end -%>
+<% end -%>
+<% if options[:automate] -%>
+
+automate:
   servers:
-    adhoc.lxc:
-      ipaddress: 10.0.3.207
-)
-      chef_backend_config = %Q(
-chef-backend:
-  api_fqdn: chef-ha.lxc
-  users:          # a user's password will be the same as its username
-    - mary-admin
-    - joe-user
-  orgs:
-    demo:
-      admins:
-        - mary-admin
-      non-admins:
-        - joe-user
+    automate.lxc:
+      ipaddress: 10.0.3.200
+      products:
+        <%- unless product_versions['automate'][:channel] == 'none' -%>
+        automate:
+          channel: <%= product_versions['automate'][:channel] %>
+          version: <%= product_versions['automate'][:version] %>
+        <%- end -%>
+      license_path: ../delivery.license
+      chef_org: delivery
+      enterprise_name: demo-ent
+<% end -%>
+<% if options[:build_nodes] -%>
+
+build-nodes:
   servers:
-    chef-backend1.lxc:
-      ipaddress: 10.0.3.208
-      role: backend
-      leader: true
+    build-node-1.lxc:
       products:
-        chef-backend:
-    chef-backend2.lxc:
-      ipaddress: 10.0.3.209
-      role: backend
+        <%- unless product_versions['chefdk'][:channel] == 'none' -%>
+        chefdk:     # downloaded only
+          channel: <%= product_versions['chefdk'][:channel] %>
+          version: <%= product_versions['chefdk'][:version] %>
+        <%- end -%>
+<% end -%>
+<% if options[:runners] -%>
+
+runners:
+  servers:
+    runner-1.lxc:
       products:
-        chef-backend:
-    chef-backend3.lxc:
-      ipaddress: 10.0.3.210
-      role: backend
-      products:
-        chef-backend:
-    chef-frontend1.lxc:
-      ipaddress: 10.0.3.211
-      role: frontend
-      bootstrap: true
-      products:
-        chef-server:
-        manage:
-)
-      nodes_config = %Q(
+        <%- unless product_versions['chefdk'][:channel] == 'none' -%>
+        chefdk:     # downloaded only
+          channel: <%= product_versions['chefdk'][:channel] %>
+          version: <%= product_versions['chefdk'][:version] %>
+        <%- end -%>
+<% end -%>
+<% if options[:nodes] -%>
+
 nodes:
   chef_server_url: https://chef.lxc/organizations/demo
   validation_client_name: demo-validator
@@ -237,26 +326,40 @@ nodes:
   servers:
     node-1.lxc:
       products:
+        <%- unless product_versions['chef'][:channel] == 'none' -%>
         chef:
+          channel: <%= product_versions['chef'][:channel] %>
+          version: <%= product_versions['chef'][:version] %>
+        <%- end -%>
+<% end -%>
+<% if options[:analytics] -%>
+
+analytics:
+  servers:
+    analytics.lxc:
+      ipaddress: 10.0.3.204
+      products:
+        <%- unless product_versions['analytics'][:channel] == 'none' -%>
+        analytics:
+          channel: <%= product_versions['analytics'][:channel] %>
+          version: <%= product_versions['analytics'][:version] %>
+        <%- end -%>
+<% end -%>
+<% if options[:adhoc] -%>
+
+adhoc:
+  servers:
+    adhoc.lxc:
+      ipaddress: 10.0.3.207
+<% end -%>
 )
-      config = ""
-      config += header unless options[:append]
-      config += chef_config if options[:chef]
-      config += chef_tier_config if options[:chef_tier]
-      config += analytics_config if options[:analytics]
-      config += compliance_config if options[:compliance]
-      config += supermarket_config if options[:supermarket]
-      config += automate_config if options[:automate]
-      config += build_nodes_config if options[:build_nodes]
-      config += runners_config if options[:runners]
-      config += adhoc_config if options[:adhoc]
-      config += chef_backend_config if options[:chef_backend]
-      config += nodes_config if options[:nodes]
+
+      dev_lxc_config = ERB.new(dev_lxc_template, nil, '-').result(binding)
       if options[:filename]
         mode = options[:append] ? 'a' : 'w'
-        IO.write(options[:filename], config, mode: mode)
+        IO.write(options[:filename], dev_lxc_config, mode: mode)
       else
-        puts config
+        puts dev_lxc_config
       end
     end
 
