@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 3.2.0 (2017-03-10)
+
+* Add --base-container and --product-versions options to the `init` subcommand
+
 ## 3.1.0 (2017-03-08)
 
 * Add example dev-lxc.yml files
