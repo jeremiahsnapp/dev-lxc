@@ -14,7 +14,12 @@ module DevLXC::CLI
           puts "       Create a `./dev-lxc.yml` file or specify the path using `--config`."
           exit 1
         end
-        cluster_config = YAML.load(IO.read(config_file))
+        begin
+          cluster_config = YAML.load(IO.read(config_file))
+        rescue Psych::SyntaxError => e
+          puts "ERROR: A YAML syntax error was found at line #{e.line} column #{e.column}"
+          exit 1
+        end
         ::DevLXC::Cluster.new(cluster_config)
       end
 
