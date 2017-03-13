@@ -171,7 +171,9 @@ module DevLXC
               @server_configs[server_name].merge!({
                 license_path: server_config['license_path'],
                 chef_org: server_config['chef_org'],
-                enterprise_name: server_config['enterprise_name']
+                enterprise_name: server_config['enterprise_name'],
+                delivery_rb: server_config['delivery.rb'],
+                delivery_rb_partials: server_config['delivery.rb_partials']
               })
             end
           when "nodes"
@@ -217,6 +219,18 @@ module DevLXC
           if server_config[:license_path] && !File.file?(server_config[:license_path])
             puts "ERROR: Automate license #{server_config[:license_path]} does not exist or is not a file."
             exit 1
+          end
+          if server_config[:delivery_rb] && !File.file?(server_config[:delivery_rb])
+            puts "ERROR: Automate config #{server_config[:delivery_rb]} does not exist or is not a file."
+            exit 1
+          end
+          if server_config[:delivery_rb_partials]
+            server_config[:delivery_rb_partials].each do |partial|
+              unless File.file?(partial)
+                puts "ERROR: Automate config partial #{partial} does not exist or is not a file."
+                exit 1
+              end
+            end
           end
         when "nodes"
           if server_config[:validation_key] && !File.file?(server_config[:validation_key])
@@ -731,8 +745,20 @@ module DevLXC
       setup_cmd += " --no-configure"
       server.run_command("delivery-ctl #{setup_cmd}")
 
-      # enable Compliance profiles asset store
-      DevLXC::append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb", "compliance_profiles['enable'] = true\n")
+      if @server_configs[server.name][:delivery_rb]
+        puts "Copying #{@server_configs[server.name][:delivery_rb]} to /etc/delivery/delivery.rb"
+        FileUtils.cp(@server_configs[server.name][:delivery_rb], "#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb")
+      else
+        # enable Compliance profiles asset store
+        DevLXC::append_line_to_file("#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb", "compliance_profiles['enable'] = true\n")
+      end
+      if @server_configs[server.name][:delivery_rb_partials]
+        @server_configs[server.name][:delivery_rb_partials].each do |partial|
+          puts "Appending #{partial} to /etc/delivery/delivery.rb"
+          partial_content = IO.read(partial)
+          IO.write("#{server.container.config_item('lxc.rootfs')}/etc/delivery/delivery.rb", partial_content, mode: 'a')
+        end
+      end
 
       server.run_command("delivery-ctl reconfigure")
 
