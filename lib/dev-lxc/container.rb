@@ -18,6 +18,11 @@ module DevLXC
       puts "Starting container '#{self.name}'"
       super
       wait(:running, 3)
+      # sometimes after the dev-lxc-platform system has booted up it is not able to ping containers after they have been started
+      # it's not clear to me why this happens
+      # restarting systemd-resolved just once completely fixes the problem
+      # but to avoid more complicated code i am solving this by restarting systemd-resolved every time a container starts
+      system("systemctl restart systemd-resolved.service")
       puts "Waiting for '#{self.name}' container's network"
       ips = nil
       60.times do
