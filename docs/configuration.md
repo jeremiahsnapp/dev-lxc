@@ -208,6 +208,48 @@ nodes:
 
 When defining a Chef Server you can include organizations and users that will be automatically created and associated accordingly.
 
+#### Specify Chef Server Predefined Full and Partial Configurations
+
+The following options work for a standalone Chef Server, the backend and frontends of a tier Chef Server cluster and the frontends of a chef-backend HA Chef Server cluster.
+
+The `chef-server.rb` option can be used to fill a Chef server's chef-server.rb with predefined content from a file.
+
+The `chef-server.rb_partials` option can be used to append predefined content from multiple files to a Chef server's chef-server.rb file.
+
+```
+servers:
+  chef.lxc:
+    chef-server.rb: /path/to/a/full/configuration/file
+    chef-server.rb_partials:
+      - /path/to/a/partial/configuration/file
+      - /path/to/another/partial/configuration/file
+    ipaddress: 10.0.3.203
+    products:
+      chef-server:
+        channel: stable
+        version: latest
+```
+
+#### Specify Automate Server Predefined Full and Partial Configurations
+
+The `delivery.rb` option can be used to fill an Automate server's delivery.rb with predefined content from a file.
+
+The `delivery.rb_partials` option can be used to append predefined content from multiple files to an Automate server's delivery.rb file.
+
+```
+servers:
+  automate.lxc:
+    delivery.rb: /path/to/a/full/configuration/file
+    delivery.rb_partials:
+      - /path/to/a/partial/configuration/file
+      - /path/to/another/partial/configuration/file
+    ipaddress: 10.0.3.200
+    products:
+      automate:
+        channel: stable
+        version: latest
+```
+
 #### Automatic Integration Between Servers
 
 dev-lxc knows how to automatically configure Chef Server standalone, Chef Server tier topology,
