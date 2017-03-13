@@ -848,9 +848,7 @@ ssl_verify_mode :verify_none
       puts "Creating /etc/opscode/chef-server.rb"
       FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/opscode")
       leader_backend = get_server(@config['chef-backend'][:leader_backend])
-      leader_backend.run_command("chef-backend-ctl gen-server-config #{server.name} --filename /tmp/#{server.name}.rb")
-      FileUtils.cp("#{leader_backend.container.config_item('lxc.rootfs')}/tmp/#{server.name}.rb",
-                   "#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb")
+      leader_backend.run_command("chef-backend-ctl gen-server-config #{server.name}", "#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb")
       unless server.name == @config['chef-backend'][:bootstrap_frontend]
         bootstrap_frontend = get_server(@config['chef-backend'][:bootstrap_frontend])
         %w(pivotal.pem private-chef-secrets.json webui_priv.pem webui_pub.pem).each do |file|
