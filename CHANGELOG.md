@@ -1,5 +1,15 @@
 # dev-lxc Change Log
 
+## 3.3.0 (2017-03-13)
+
+* Increase "waiting for container's network" timeout to 60s
+* Provide warning if no servers are defined in dev-lxc.yml
+* Fix the way additional frontends in a chef-backend cluster are configured
+* Minor improvement to how a chef-backend's frontend chef-server.rb is generated
+* Add delivery.rb and delivery.rb_partials config options
+* Add chef-server.rb and chef-server.rb_partials config options
+* Restart systemd-resolved.service every time a container starts
+
 ## 3.2.0 (2017-03-10)
 
 * Add --base-container and --product-versions options to the `init` subcommand
