@@ -205,6 +205,8 @@ module DevLXC
 
       @config.map { |server_type, config| hostnames.push(config[:fqdn]) }
 
+      puts "WARNING: No servers are configured in dev-lxc.yml." if @server_configs.empty?
+
       @server_configs.each do |server_name, server_config|
         base_container_names.push(server_config[:base_container_name]).uniq! if server_config[:base_container_name]
         mounts.concat(server_config[:mounts]).uniq! if server_config[:mounts]
