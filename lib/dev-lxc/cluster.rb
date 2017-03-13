@@ -114,6 +114,10 @@ module DevLXC
                 when "frontend"
                   additional_fqdn = @config[server_type][:fqdn]
                   @config[server_type][:frontends] << server_name unless server_name == @config[server_type][:bootstrap_frontend]
+                  @server_configs[server_name].merge!({
+                    chef_server_rb: server_config['chef-server.rb'],
+                    chef_server_rb_partials: server_config['chef-server.rb_partials']
+                  })
                 end
                 @server_configs[server_name].merge!({
                   additional_fqdn: additional_fqdn,
@@ -150,7 +154,9 @@ module DevLXC
                 end
                 @server_configs[server_name].merge!({
                   additional_fqdn: additional_fqdn,
-                  chef_server_type: chef_server_type
+                  chef_server_type: chef_server_type,
+                  chef_server_rb: server_config['chef-server.rb'],
+                  chef_server_rb_partials: server_config['chef-server.rb_partials']
                 })
               end
             end
@@ -228,6 +234,19 @@ module DevLXC
             server_config[:delivery_rb_partials].each do |partial|
               unless File.file?(partial)
                 puts "ERROR: Automate config partial #{partial} does not exist or is not a file."
+                exit 1
+              end
+            end
+          end
+        when "chef-server", "chef-backend"
+          if server_config[:chef_server_rb] && !File.file?(server_config[:chef_server_rb])
+            puts "ERROR: Chef Server config #{server_config[:chef_server_rb]} does not exist or is not a file."
+            exit 1
+          end
+          if server_config[:chef_server_rb_partials]
+            server_config[:chef_server_rb_partials].each do |partial|
+              unless File.file?(partial)
+                puts "ERROR: Chef Server config partial #{partial} does not exist or is not a file."
                 exit 1
               end
             end
@@ -874,7 +893,19 @@ ssl_verify_mode :verify_none
       puts "Creating /etc/opscode/chef-server.rb"
       FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/opscode")
       leader_backend = get_server(@config['chef-backend'][:leader_backend])
-      leader_backend.run_command("chef-backend-ctl gen-server-config #{server.name}", "#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb")
+      if @server_configs[server.name][:chef_server_rb]
+        puts "Copying #{@server_configs[server.name][:chef_server_rb]} to /etc/opscode/chef-server.rb"
+        FileUtils.cp(@server_configs[server.name][:chef_server_rb], "#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb")
+      else
+        leader_backend.run_command("chef-backend-ctl gen-server-config #{server.name}", "#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb")
+      end
+      if @server_configs[server.name][:chef_server_rb_partials]
+        @server_configs[server.name][:chef_server_rb_partials].each do |partial|
+          puts "Appending #{partial} to /etc/opscode/chef-server.rb"
+          partial_content = IO.read(partial)
+          IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb", partial_content, mode: 'a')
+        end
+      end
       unless server.name == @config['chef-backend'][:bootstrap_frontend]
         bootstrap_frontend = get_server(@config['chef-backend'][:bootstrap_frontend])
         %w(pivotal.pem private-chef-secrets.json webui_priv.pem webui_pub.pem).each do |file|
@@ -896,16 +927,51 @@ ssl_verify_mode :verify_none
         when 'private-chef'
           puts "Creating /etc/opscode/private-chef.rb"
           FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/opscode")
-          IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", chef_server_config)
+          if @server_configs[server.name][:chef_server_rb]
+            puts "Copying #{@server_configs[server.name][:chef_server_rb]} to /etc/opscode/private-chef.rb"
+            FileUtils.cp(@server_configs[server.name][:chef_server_rb], "#{server.container.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb")
+          else
+            IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", chef_server_config)
+          end
+          if @server_configs[server.name][:chef_server_rb_partials]
+            @server_configs[server.name][:chef_server_rb_partials].each do |partial|
+              puts "Appending #{partial} to /etc/opscode/private-chef.rb"
+              partial_content = IO.read(partial)
+              IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/private-chef.rb", partial_content, mode: 'a')
+            end
+          end
         when 'chef-server'
           puts "Creating /etc/opscode/chef-server.rb"
           FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/etc/opscode")
-          IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb", chef_server_config)
+          if @server_configs[server.name][:chef_server_rb]
+            puts "Copying #{@server_configs[server.name][:chef_server_rb]} to /etc/opscode/chef-server.rb"
+            FileUtils.cp(@server_configs[server.name][:chef_server_rb], "#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb")
+          else
+            IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb", chef_server_config)
+          end
+          if @server_configs[server.name][:chef_server_rb_partials]
+            @server_configs[server.name][:chef_server_rb_partials].each do |partial|
+              puts "Appending #{partial} to /etc/opscode/chef-server.rb"
+              partial_content = IO.read(partial)
+              IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb", partial_content, mode: 'a')
+            end
+          end
         end
       elsif @config['chef-server'][:frontends].include?(server.name)
         puts "Copying /etc/opscode from bootstrap backend '#{@config['chef-server'][:bootstrap_backend]}'"
         FileUtils.cp_r("#{get_server(@config['chef-server'][:bootstrap_backend]).container.config_item('lxc.rootfs')}/etc/opscode",
                        "#{server.container.config_item('lxc.rootfs')}/etc", preserve: true)
+        if @server_configs[server.name][:chef_server_rb]
+          puts "Copying #{@server_configs[server.name][:chef_server_rb]} to /etc/opscode/#{@server_configs[server.name][:chef_server_type]}.rb"
+          FileUtils.cp(@server_configs[server.name][:chef_server_rb], "#{server.container.config_item('lxc.rootfs')}/etc/opscode/#{@server_configs[server.name][:chef_server_type]}.rb")
+        end
+        if @server_configs[server.name][:chef_server_rb_partials]
+          @server_configs[server.name][:chef_server_rb_partials].each do |partial|
+            puts "Appending #{partial} to /etc/opscode/#{@server_configs[server.name][:chef_server_type]}.rb"
+            partial_content = IO.read(partial)
+            IO.write("#{server.container.config_item('lxc.rootfs')}/etc/opscode/#{@server_configs[server.name][:chef_server_type]}.rb", partial_content, mode: 'a')
+          end
+        end
       end
       server.run_command("#{@server_configs[server.name][:chef_server_type]}-ctl reconfigure")
     end
