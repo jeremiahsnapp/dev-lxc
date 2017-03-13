@@ -20,7 +20,7 @@ module DevLXC
       wait(:running, 3)
       puts "Waiting for '#{self.name}' container's network"
       ips = nil
-      30.times do
+      60.times do
         ips = self.ip_addresses
         break unless ips.empty?
         sleep 1
