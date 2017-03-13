@@ -92,6 +92,8 @@ dl help <subcommand>
 
 ## Demo: Build Chef Automate Cluster
 
+Cluster build time: 19 minutes
+
 ### Create Base Container
 
 Create an Ubuntu 14.04 base container for the cluster's containers.
@@ -216,13 +218,13 @@ Generally speaking, a cluster can be reused for a long time especially since sna
 dl destroy
 ```
 
-## More Documentation
-
-For more in-depth documentation please see the pages in the [docs folder](docs).
-
 ## Example dev-lxc.yml files
 
 See the files in [example-clusters](example-clusters).
+
+## More Documentation
+
+For more in-depth documentation please see the pages in the [docs folder](docs).
 
 ## Contributing
 
