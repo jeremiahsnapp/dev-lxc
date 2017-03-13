@@ -853,12 +853,15 @@ ssl_verify_mode :verify_none
                    "#{server.container.config_item('lxc.rootfs')}/etc/opscode/chef-server.rb")
       unless server.name == @config['chef-backend'][:bootstrap_frontend]
         bootstrap_frontend = get_server(@config['chef-backend'][:bootstrap_frontend])
-        puts "Copying /etc/opscode/private-chef-secrets.json from bootstrap frontend '#{bootstrap_frontend.name}'"
-        FileUtils.cp("#{bootstrap_frontend.container.config_item('lxc.rootfs')}/etc/opscode/private-chef-secrets.json",
-                     "#{server.container.config_item('lxc.rootfs')}/etc/opscode/")
-        puts "Copying /etc/opscode/pivotal.pem from bootstrap frontend '#{bootstrap_frontend.name}'"
-        FileUtils.cp("#{bootstrap_frontend.container.config_item('lxc.rootfs')}/etc/opscode/pivotal.pem",
-                     "#{server.container.config_item('lxc.rootfs')}/etc/opscode/")
+        %w(pivotal.pem private-chef-secrets.json webui_priv.pem webui_pub.pem).each do |file|
+          puts "Copying /etc/opscode/#{file} from bootstrap frontend '#{bootstrap_frontend.name}'"
+          FileUtils.cp("#{bootstrap_frontend.container.config_item('lxc.rootfs')}/etc/opscode/#{file}", "#{server.container.config_item('lxc.rootfs')}/etc/opscode/")
+        end
+        FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/var/opt/opscode/upgrades/")
+        puts "Copying /var/opt/opscode/upgrades/migration-level from bootstrap frontend '#{bootstrap_frontend.name}'"
+        FileUtils.cp("#{bootstrap_frontend.container.config_item('lxc.rootfs')}/var/opt/opscode/upgrades/migration-level", "#{server.container.config_item('lxc.rootfs')}/var/opt/opscode/upgrades/")
+        puts "Touching /var/opt/opscode/bootstrapped"
+        FileUtils.touch("#{server.container.config_item('lxc.rootfs')}/var/opt/opscode/bootstrapped")
       end
       server.run_command("chef-server-ctl reconfigure")
     end
