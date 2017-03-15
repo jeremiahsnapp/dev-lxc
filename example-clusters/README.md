@@ -1,6 +1,6 @@
 The files in this directory are working examples of cluster dev-lxc.yml files. You can upload them to separate directories in your dev-lxc-platform instance, rename each file to `dev-lxc.yml` and run `dl up` to build each cluster.
 
-## automate
+## automate cluster
 
 Cluster build time: 19 minutes
 
@@ -41,7 +41,7 @@ The following command was used to create the `automate_dev-lxc.yml` file.
 dl init --chef --compliance --supermarket --automate --runners --nodes --product-versions reporting:none
 ```
 
-## chef-backend
+## chef-backend cluster
 
 Cluster build time: 12 minutes
 
@@ -84,7 +84,7 @@ dl init --chef-backend --nodes
 
 The nodes' `chef_server_url` hostname was changed to `chef-ha.lxc` and the node's hostname was changed to `node-1-ha.lxc`.
 
-## tier
+## tier cluster
 
 Cluster build time: 14 minutes
 
@@ -120,7 +120,7 @@ dl init --chef-tier --analytics --nodes
 
 The nodes' `chef_server_url` hostname was changed to `chef-tier.lxc` and the node's hostname was changed to `node-1-tier.lxc`.
 
-## external
+## external cluster
 
 Cluster build time: 5 minutes
 
