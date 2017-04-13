@@ -74,8 +74,8 @@ automate:
           channel: stable
           version: latest
       license_path: ../delivery.license
-      chef_org: delivery
-      enterprise_name: demo-ent
+      chef_org: automate
+      enterprise_name: default
 
 runners:
   servers:

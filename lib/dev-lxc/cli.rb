@@ -294,8 +294,8 @@ automate:
           version: <%= product_versions['automate'][:version] %>
         <%- end -%>
       license_path: ../delivery.license
-      chef_org: delivery
-      enterprise_name: demo-ent
+      chef_org: automate
+      enterprise_name: default
 <% end -%>
 <% if options[:build_nodes] -%>
 
