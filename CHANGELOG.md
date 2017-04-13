@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 3.3.1 (2017-04-13)
+
+* Change Automate's default chef_org and enterprise_name
+
 ## 3.3.0 (2017-03-13)
 
 * Increase "waiting for container's network" timeout to 60s
