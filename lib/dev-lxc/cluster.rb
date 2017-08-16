@@ -747,6 +747,9 @@ module DevLXC
       chef_server_url = @config['chef-server'][:fqdn]
       supermarket_fqdn = @config['supermarket'][:fqdn]
 
+      FileUtils.mkdir_p("#{server.container.config_item('lxc.rootfs')}/var/opt/delivery")
+      FileUtils.touch("#{server.container.config_item('lxc.rootfs')}/var/opt/delivery/.telemetry.disabled")
+
       FileUtils.cp(license_path, "#{server.container.config_item('lxc.rootfs')}/root/automate.license")
 
       chef_server = get_server(@config['chef-server'][:bootstrap_backend])
