@@ -1,5 +1,9 @@
 # dev-lxc Change Log
 
+## 3.3.2 (2017-08-16)
+
+* Disable Automate telemetry
+
 ## 3.3.1 (2017-04-13)
 
 * Change Automate's default chef_org and enterprise_name
